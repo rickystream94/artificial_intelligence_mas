@@ -2,10 +2,10 @@ param (
     [Parameter(Mandatory=$true)][string]$LevelName,
     [string]$SearchType = "bfs",
     [int]$MillisPerGuiAction = 50,
-    [int]$TimeoutInSeconds = 180
+    [int]$TimeoutInSeconds = 300
  )
 
- # Recompile classes
+# Recompile classes
 javac searchclient/*.java
 
 # Launch server + search client
