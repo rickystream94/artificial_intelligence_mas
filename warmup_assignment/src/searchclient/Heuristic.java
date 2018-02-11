@@ -11,7 +11,10 @@ import searchclient.Location;
 
 public abstract class Heuristic implements Comparator<Node> {
 
-	private HashMap<Character, HashMap<Location, Integer>> distancesPerGoalType = new HashMap<>();
+	/**
+	 * This apparently complicated field is in charge of holding, for each cell, its distance from the closest goal for each goal type.
+	 */
+	private HashMap<Character, HashMap<Location, Integer>> minDistancesFromGoals = new HashMap<>();
 
 	public Heuristic(Node initialState) {
 		// Here's a chance to pre-process the static parts of the level.
@@ -30,18 +33,19 @@ public abstract class Heuristic implements Comparator<Node> {
 		goalTypesSet.stream().forEach(x -> System.err.print(x + " "));
 		System.err.println();
 
-		// 2) For each goal type found, create an entry in the distancesPerGoalType hashmap
-		goalTypesSet.stream().forEach(x -> distancesPerGoalType.put(x, new HashMap<Location, Integer>()));
+		// 2) For each goal type found, create an entry in the minDistancesFromGoals hashmap
+		goalTypesSet.stream().forEach(x -> minDistancesFromGoals.put(x, new HashMap<Location, Integer>()));
 
-		// 3) For each cell and for each goal type, add a new entry in the distancesPerGoalType 
-		// Example: goalType='a' for location=new Location(1,0) and distanceValue=3 --> distancesPerGoalType.get(goalType).put(location,distanceValue);
+		// 3) For each cell and for each goal type, add a new entry in the minDistancesFromGoals 
+		// Example: goalType='a' for location = new Location(1,0) and distanceValue = 3
+		// --> minDistancesFromGoals.get(goalType).put(location,distanceValue);
 		for (int row = 0; row < Node.rowSize; row++) {
 			for (int col = 0; col < Node.colSize; col++) {
-				// Check if there is not a wall in (row,col)
+				// Check if there is not a wall in walls[row][col]
 				if (!Node.walls[row][col]) {
-					for (char goalType : distancesPerGoalType.keySet()) {
-						int distance = getDistanceToClosestGoal(row, col, goalType);
-						distancesPerGoalType.get(goalType).put(new Location(row, col), distance);
+					for (char goalType : minDistancesFromGoals.keySet()) {
+						int distance = distanceCellToClosestGoal(row, col, goalType);
+						minDistancesFromGoals.get(goalType).put(new Location(row, col), distance);
 					}
 				}
 			}
@@ -51,14 +55,18 @@ public abstract class Heuristic implements Comparator<Node> {
 	}
 
 	/**
-	 * Given a location of a cell identified by (cellRow,cellCol), the method returns the Manhattan distance to the closest goal.
+	 * Given a location of a cell identified by (cellRow,cellCol), the method returns the Manhattan distance to the closest goal of type goalType.
+	 * @param cellRow row of the cell
+	 * @param cellCol column of the cell
+	 * @param goalType type of the goal (e.g. 'a', 'b', 'c'...)
+	 * @return Manhattan distance between the cell and the closest goal of type goalType
 	 */
-	private int getDistanceToClosestGoal(int cellRow, int cellCol, char goalType) {
+	private int distanceCellToClosestGoal(int cellRow, int cellCol, char goalType) {
 		int dist, minDist = 1000;
 		for (int row = 0; row < Node.rowSize; row++) {
 			for (int col = 0; col < Node.colSize; col++) {
 				// Check if there is a goal in goals[row][col]
-				if (Node.goals[row][col] > 0 && Node.goals[row][col] == goalType) {
+				if (Node.goals[row][col] == goalType) {
 					dist = manhattanDistance(cellRow, cellCol, row, col);
 					if (dist < minDist)
 						minDist = dist;
@@ -71,7 +79,7 @@ public abstract class Heuristic implements Comparator<Node> {
 	/**
 	* Given the location of the agent identified by (n.agentRow,n.agentCol), the method returns the Manhattan distance to the closest box.
 	*/
-	private int getDistanceToClosestBox(Node n) {
+	/* private int distanceAgentToItsClosestBox(Node n) {
 		int dist, minDist = 1000;
 		for (int row = 0; row < Node.rowSize; row++) {
 			for (int col = 0; col < Node.colSize; col++) {
@@ -84,6 +92,46 @@ public abstract class Heuristic implements Comparator<Node> {
 			}
 		}
 		return minDist;
+	} */
+
+	/**
+	 * Given the current positions of the boxes, returns the distance between the agent and the box closest to the goal of the same type
+	 * @param n Input node that holds the current positions of the boxes (n.boxes[...][...]) and the position of the agent
+	 * @return Distance between the agent and the box closest to the goal of the same type
+	 */
+	private int distanceAgentAndBoxClosestToItsGoal(Node n) {
+		int boxRow = 0, boxCol = 0, dist, minDist = 1000;
+		for (int row = 0; row < Node.rowSize; row++) {
+			for (int col = 0; col < Node.colSize; col++) {
+				if (n.boxes[row][col] > 0) {
+					char goalType = Character.toLowerCase(n.boxes[row][col]);
+					dist = this.minDistancesFromGoals.get(goalType).get(new Location(row, col));
+					if (dist < minDist) {
+						boxRow = row;
+						boxCol = col;
+						minDist = dist;
+					}
+				}
+			}
+		}
+		return manhattanDistance(n.agentRow, n.agentCol, boxRow, boxCol);
+	}
+
+	/**
+	 * @param n input node
+	 * @return The sum of the distances between each box and the closest goal of the same type (e.g. Box_A and goal 'a' are of the same type)
+	 */
+	private int sumOfDistancesEachBoxAndItsClosestGoal(Node n) {
+		int sum = 0;
+		for (int row = 0; row < Node.rowSize; row++) {
+			for (int col = 0; col < Node.colSize; col++) {
+				if (n.boxes[row][col] > 0) {
+					char goalType = Character.toLowerCase(n.boxes[row][col]);
+					sum += this.minDistancesFromGoals.get(goalType).get(new Location(row, col));
+				}
+			}
+		}
+		return sum;
 	}
 
 	/**
@@ -94,21 +142,18 @@ public abstract class Heuristic implements Comparator<Node> {
 	}
 
 	public int h(Node n) {
+		int cost = 0;
+
 		// 1) Sum of all distances between each box and its closest goal
-		int costSum = 0;
-		for (int row = 0; row < Node.rowSize; row++) {
-			for (int col = 0; col < Node.colSize; col++) {
-				if (n.boxes[row][col] > 0) {
-					char goalType = Character.toLowerCase(n.boxes[row][col]);
-					costSum += this.distancesPerGoalType.get(goalType).get(new Location(row, col));
-				}
-			}
-		}
+		cost += sumOfDistancesEachBoxAndItsClosestGoal(n);
 
-		// 2) Add distance from player to its closest box
-		costSum += getDistanceToClosestBox(n);
+		// 2) Add distance from player to its closest box --> not really helpful
+		//cost += distanceAgentToItsClosestBox(n);
 
-		return costSum;
+		// 3) Add distance from player and the box closest to the goal
+		cost += distanceAgentAndBoxClosestToItsGoal(n);
+
+		return cost;
 	}
 
 	public abstract int f(Node n);
