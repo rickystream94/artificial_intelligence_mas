@@ -54,6 +54,3 @@ fabric.properties
 *.xml
 *.class
 *.txt
-
-# Only new levels!
-src/levels/*.lvl
