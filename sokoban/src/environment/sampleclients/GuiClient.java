@@ -1,4 +1,4 @@
-package sampleclients;
+package environment.sampleclients;
 
 import java.awt.Dimension;
 import java.awt.Font;

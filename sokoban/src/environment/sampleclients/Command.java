@@ -1,4 +1,4 @@
-package sampleclients;
+package environment.sampleclients;
 
 import java.util.LinkedList;
 

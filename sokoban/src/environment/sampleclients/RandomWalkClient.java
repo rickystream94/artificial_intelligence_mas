@@ -1,4 +1,4 @@
-package sampleclients;
+package environment.sampleclients;
 
 import java.io.*;
 import java.util.*;
