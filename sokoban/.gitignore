@@ -54,3 +54,6 @@ fabric.properties
 *.xml
 *.class
 *.txt
+
+# Makefiles
+Makefile
