@@ -1,12 +1,15 @@
-package environment;
+package algorithm;
 
 import java.util.LinkedList;
 
 public class Command {
 	static {
 		LinkedList< Command > cmds = new LinkedList< Command >();
+
+		cmds.add(new Command()); // NoOp
+
 		for ( dir d : dir.values() ) {
-			cmds.add( new Command( d ) );
+			cmds.add( new Command( d ) ); // Move
 		}
 
 		for ( dir d1 : dir.values() ) {
@@ -39,12 +42,18 @@ public class Command {
 	};
 	
 	public static enum type {
-		Move, Push, Pull
+		Move, Push, Pull, NoOp
 	};
 
 	public final type actType;
 	public final dir dir1;
 	public final dir dir2;
+
+	public Command() {
+		actType = type.NoOp;
+		dir1 = null;
+		dir2 = null;
+	}
 
 	public Command( dir d ) {
 		actType = type.Move;
