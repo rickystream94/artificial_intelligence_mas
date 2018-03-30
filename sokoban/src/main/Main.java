@@ -1,6 +1,6 @@
 package main;
 
-import environment.*;
+import environment.World;
 
 public class Main {
 
