@@ -15,10 +15,10 @@ public class Node {
 	}
 
 	public List<Agent> getAgents() {
-		return agents;
+		return this.agents;
 	}
 
 	public List<Box> getBoxes() {
-		return boxes;
+		return this.boxes;
 	}
 }
