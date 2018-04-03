@@ -1,16 +1,17 @@
 package main;
 
+import java.io.*;
 import environment.World;
 
 public class Main {
 
-	public static void main(String[] args) {
-		try {
+	public static void main(String[] args) throws IOException{
+		//try {
 			System.err.println( "Hello from Hell. I am sending this using the error outputstream" );
 			World w = new World(System.in);
 			System.err.println(w);
-		} catch (Exception e) {
-			System.err.println(e);
-		}
+		//} catch (Exception e) {
+		//	System.err.println(e);
+		//}
 	}
 }

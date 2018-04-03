@@ -11,11 +11,15 @@ import java.util.Set;
 import java.util.List; 
 import java.util.Arrays; 
 import java.util.ArrayList; 
+import java.util.LinkedList; 
 import utils.FibonacciHeap;
+import algorithm.Strategy;
 
 public class World {
 	private SokobanMap map;
 	private Node node;
+
+	private List<Agent> agents;
 	private FibonacciHeap<Goal> subGoals;
 
 	private BufferedReader in;
@@ -25,21 +29,45 @@ public class World {
 		this.map = new SokobanMap();
 		this.node = new Node(this.map);
 		this.subGoals = new FibonacciHeap<Goal>();
+		this.agents = new ArrayList<Agent>();
 
 		readMap();
 	}
 
+	public LinkedList<Node> search(Strategy strategy, Node initialState) {
+		strategy.addToFrontier(initialState);
+		while (true) {
+
+			if (strategy.frontierIsEmpty()) {
+				return null;
+			}
+
+			Node leafNode = strategy.getAndRemoveLeaf();
+
+			if ( leafNode.isGoalState() ) {
+				return leafNode.extractPlan();
+			}
+
+			strategy.addToExplored(leafNode);
+			for (Node n : leafNode.getExpandedNodes()) {
+				if ( !strategy.isExplored(n) && !strategy.inFrontier(n) ) {
+					strategy.addToFrontier(n);
+				}
+			}
+		}
+	} 
+
 	private void readMap() throws IOException {
 		Map< Character, String > colors;
 		String line, color;
-		List<Agent> agents;
 		List<Goal> goals;
-		List<Box> boxes;
-		Set<Wall> walls;
+		List<Agent> agents;
+		HashMap<Coordinate,Box> boxes;
+		HashMap<Coordinate,Wall> walls;
 		int width, heigth;
 
-		agents = this.node.getAgents();
 		boxes = this.node.getBoxes();
+		agents = this.node.getAgents();
 		goals = this.map.getGoals();
 		walls = this.map.getWalls();
 		colors = new HashMap< Character, String >();
@@ -67,6 +95,7 @@ public class World {
 					Agent agent = new Agent(heigth,i,id, colors.get(id));
 					if(agent.getColor() == null && colors.size() > 0)
 						agent.setColor("blue");
+					this.agents.add(agent);
 					agents.add(agent);
 				}
 
@@ -79,12 +108,11 @@ public class World {
 					Box box = new Box(heigth,i,id, colors.get(id));					
 					if(box.getColor() == null && colors.size() > 0)
 						box.setColor("blue");
-					boxes.add(box);
+					boxes.put(new Coordinate(heigth,i), box);
 				}
 
 				if ( id == '+' ) {
-					Wall wall = new Wall(heigth,i); 
-					walls.add(wall);
+					walls.put(new Coordinate(heigth,i), new Wall(heigth,i)); 
 				}
 			}
 			if(i > width) width = i;
@@ -98,53 +126,50 @@ public class World {
 	}
 
 	@Override
-	public String toString() {
-		String s;
-		List<Agent> agents;
-		List<Goal> goals;
-		List<Box> boxes;
-		Set<Wall> walls;
-		int heigth, width;
-		char[][] world;
+		public String toString() {
+			String s;
+			List<Agent> agents;
+			List<Goal> goals;
+			HashMap<Coordinate,Box> boxes;
+			HashMap<Coordinate,Wall> walls;
+			int heigth, width;
+			char[][] world;
 
-		s = "";
-		agents = this.node.getAgents();
-		boxes = this.node.getBoxes();
-		goals = this.map.getGoals();
-		walls = this.map.getWalls();
-		heigth = this.map.getHeigth();
-		width = this.map.getWidth();
+			s = "";
+			agents = this.agents;
+			boxes = this.node.getBoxes();
+			goals = this.map.getGoals();
+			walls = this.map.getWalls();
+			heigth = this.map.getHeigth();
+			width = this.map.getWidth();
 
-		world = new char[heigth][width];
+			world = new char[heigth][width];
 
-		for (char[] row: world)
-			Arrays.fill(row, ' ');
+			for (char[] row: world)
+				Arrays.fill(row, ' ');
 
-		for (Wall wall: walls)
-			world[wall.getX()][wall.getY()] = '+';
+			for (Wall wall: walls.values())
+				world[wall.getX()][wall.getY()] = '+';
 
-		for (Box box: boxes) 
-			world[box.getX()][box.getY()] = box.getValue();
+			for (Box box: boxes.values()) 
+				world[box.getX()][box.getY()] = box.getValue();
 
-		for (Agent agent: agents)
-			world[agent.getX()][agent.getY()] = agent.getValue();
+			for (Agent agent: agents)
+				world[agent.getX()][agent.getY()] = agent.getValue();
 
-		for (Goal goal: goals)
-			world[goal.getX()][goal.getY()] = goal.getValue();
+			for (Goal goal: goals)
+				world[goal.getX()][goal.getY()] = goal.getValue();
 
-		for (Wall wall: walls)
-			world[wall.getX()][wall.getY()] = '+';
+			s += String.format("Dimensions: (%d,%d)\n",heigth,width);
 
-		s += String.format("Dimensions: (%d,%d)\n",heigth,width);
-
-		for (char[] row: world) {
-			for (char coordinate: row) {
-				s += coordinate;
+			for (char[] row: world) {
+				for (char coordinate: row) {
+					s += coordinate;
+				}
+				s += '\n';
 			}
-			s += '\n';
-		}
 
-		return s;
-	}
+			return s;
+		}
 
 }

@@ -3,7 +3,6 @@ package environment;
 public class Goal {
 	private Coordinate coordinate;
 	private char value;
-	private int priority = 0;
 
 	public Goal(int x, int y, char val) {
 		this.coordinate = new Coordinate(x,y);
@@ -16,6 +15,10 @@ public class Goal {
 
 	public int getY() {
 		return this.coordinate.getY();
+	}
+
+	public Coordinate getCoordinate() {
+		return this.coordinate;
 	}
 
 	public char getValue() {

@@ -30,4 +30,9 @@ public class Agent {
 	public void setColor(String color) {
 		this.color = color;
 	}
+
+	public void setCoordinate(int x, int y) {
+		this.coordinate.setX(x);
+		this.coordinate.setY(y);
+	}
 }
