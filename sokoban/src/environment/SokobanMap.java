@@ -12,18 +12,18 @@ public class SokobanMap {
 	private int heigth;
 
 	private List<Goal> goals;
-	private Set<Point> walls;
+	private Set<Wall> walls;
 
 	public SokobanMap() {
 		this.goals = new ArrayList<Goal>();
-		this.walls = new HashSet<Point>();
+		this.walls = new HashSet<Wall>();
 	}
 	
 	public List<Goal> getGoals() {
 		return this.goals;
 	}
 
-	public Set<Point> getWalls() {
+	public Set<Wall> getWalls() {
 		return this.walls;
 	}
 

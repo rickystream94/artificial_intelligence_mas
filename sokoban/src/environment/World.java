@@ -35,7 +35,7 @@ public class World {
 		List<Agent> agents;
 		List<Goal> goals;
 		List<Box> boxes;
-		Set<Point> walls;
+		Set<Wall> walls;
 		int width, heigth;
 
 		agents = this.node.getAgents();
@@ -83,7 +83,7 @@ public class World {
 				}
 
 				if ( id == '+' ) {
-					Point wall = new Point(heigth,i); 
+					Wall wall = new Wall(heigth,i); 
 					walls.add(wall);
 				}
 			}
@@ -103,7 +103,7 @@ public class World {
 		List<Agent> agents;
 		List<Goal> goals;
 		List<Box> boxes;
-		Set<Point> walls;
+		Set<Wall> walls;
 		int heigth, width;
 		char[][] world;
 
@@ -120,7 +120,7 @@ public class World {
 		for (char[] row: world)
 			Arrays.fill(row, ' ');
 
-		for (Point wall: walls)
+		for (Wall wall: walls)
 			world[wall.getX()][wall.getY()] = '+';
 
 		for (Box box: boxes) 
@@ -132,14 +132,14 @@ public class World {
 		for (Goal goal: goals)
 			world[goal.getX()][goal.getY()] = goal.getValue();
 
-		for (Point wall: walls)
+		for (Wall wall: walls)
 			world[wall.getX()][wall.getY()] = '+';
 
 		s += String.format("Dimensions: (%d,%d)\n",heigth,width);
 
 		for (char[] row: world) {
-			for (char point: row) {
-				s += point;
+			for (char coordinate: row) {
+				s += coordinate;
 			}
 			s += '\n';
 		}

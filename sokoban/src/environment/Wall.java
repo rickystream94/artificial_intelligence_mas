@@ -1,13 +1,10 @@
 package environment;
 
-public class Goal {
+public class Wall {
 	private Coordinate coordinate;
-	private char value;
-	private int priority = 0;
 
-	public Goal(int x, int y, char val) {
+	public Wall(int x, int y) {
 		this.coordinate = new Coordinate(x,y);
-		this.value = val;
 	}
 
 	public int getX() {
@@ -16,9 +13,5 @@ public class Goal {
 
 	public int getY() {
 		return this.coordinate.getY();
-	}
-
-	public char getValue() {
-		return this.value;
 	}
 }
