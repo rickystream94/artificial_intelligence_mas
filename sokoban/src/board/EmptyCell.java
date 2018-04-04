@@ -2,20 +2,20 @@ package board;
 
 import java.util.Objects;
 
-public class Wall extends SokobanObject {
+public class EmptyCell extends SokobanObject {
 
-    public Wall(int row, int col, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public EmptyCell(int row, int col, SokobanObjectType type) {
+        super(row, col, type);
     }
 
     @Override
     public boolean equals(Object o) {
 
         if (o == this) return true;
-        if (!(o instanceof Wall)) {
+        if (!(o instanceof EmptyCell)) {
             return false;
         }
-        Wall other = (Wall) o;
+        EmptyCell other = (EmptyCell) o;
         return Objects.equals(super.getCoordinate(), other.getCoordinate());
     }
 }

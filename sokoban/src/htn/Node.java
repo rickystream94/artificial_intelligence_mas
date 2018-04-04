@@ -1,4 +1,4 @@
-package algorithm;
+package htn;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -8,13 +8,13 @@ import java.util.Objects;
 import java.util.Collections;
 import java.util.Random;
 
-import algorithm.Command.type;
+import htn.Command.type;
 import board.*;
 
 public class Node {
 	private static final Random RND = new Random(1);
 
-	private SokobanMap map;
+	private Level map;
 	private HashMap<Coordinate, Box> boxes;
 
 	private List<Agent> agents;
@@ -36,11 +36,11 @@ public class Node {
 		this(node.getMap(),node);
 	}
 
-	public Node(SokobanMap map) {
+	public Node(Level map) {
 		this(map, null);
 	}
 
-	public Node(SokobanMap map, Node node) {
+	public Node(Level map, Node node) {
 		this.boxes = new HashMap<Coordinate,Box>();
 		this.agents = new ArrayList<Agent>();
 
@@ -55,7 +55,7 @@ public class Node {
 		this.agent = null;
 	}
 
-	public SokobanMap getMap() {
+	public Level getMap() {
 		return this.map;
 	}
 
@@ -107,7 +107,7 @@ public class Node {
 		for(Box box : this.boxes.values()) {
 			for(Goal goal : this.map.getGoals()) {
 				if(goal.getX() == box.getX() && goal.getY() == box.getY() 
-					&& Character.toLowerCase(box.getValue()) != goal.getValue()) {
+					&& Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) {
 					return false; 
 				}
 			}

@@ -1,4 +1,4 @@
-package algorithm;
+package htn;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;

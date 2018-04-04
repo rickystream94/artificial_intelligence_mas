@@ -3,51 +3,49 @@ package board;
 import java.util.Objects;
 
 public class Coordinate {
-	private int x;
-	private int y;
+    private int row;
+    private int col;
 
-	public Coordinate(int x, int y) {
-		this.x = x;
-		this.y = y;
-	}
+    public Coordinate(int row, int col) {
+        this.row = row;
+        this.col = col;
+    }
 
-	public Coordinate(Coordinate other) {
-		this.x = other.x;
-		this.y = other.y;
-	}
+    public Coordinate(Coordinate other) {
+        this.row = other.row;
+        this.col = other.col;
+    }
 
-	public int getX() {
-		return this.x;
-	}
+    public int getRow() {
+        return this.row;
+    }
 
-	public int getY() {
-		return this.y;
-	}
+    public int getCol() {
+        return this.col;
+    }
 
-	public void setX(int x) {
-		this.x = x;
-	}
+    public void setRow(int row) {
+        this.row = row;
+    }
 
-	public void setY(int x) {
-		this.y = y;
-	}
+    public void setCol(int col) {
+        this.col = col;
+    }
 
-	@Override
-	public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
 
-		if (o == this) return true;
-		if (!(o instanceof Coordinate)) {
-			return false;
-		}
-		Coordinate other = (Coordinate) o;
-		return 
-			this.x == other.x &&
-			this.y == other.y;
-	}
+        if (o == this) return true;
+        if (!(o instanceof Coordinate)) {
+            return false;
+        }
+        Coordinate other = (Coordinate) o;
+        return this.row == other.row && this.col == other.col;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.x, this.y);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.row, this.col);
+    }
 
 }

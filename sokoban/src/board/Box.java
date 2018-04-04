@@ -2,60 +2,33 @@ package board;
 
 import java.util.Objects;
 
-public class Box {
-	private Coordinate coordinate;
-	private char value;
-	private String color;
+public class Box extends SokobanObject {
 
-	public Box(int x, int y, char val, String color) {
-		this.coordinate = new Coordinate(x,y);
-		this.value = val;
-		this.color = color;
-	}
+    private char boxType;
+    private String color;
 
-	public Coordinate getCoordinate() {
-		return this.coordinate;
-	}
+    public Box(int row, int col, char boxType, String color, SokobanObjectType objectType) {
+        super(row, col, objectType);
+        this.boxType = boxType;
+        this.color = color;
+    }
 
-	public int getX() {
-		return this.coordinate.getX();
-	}
+    public String getColor() {
+        return this.color;
+    }
 
-	public int getY() {
-		return this.coordinate.getY();
-	}
+    public char getBoxType() {
+        return this.boxType;
+    }
 
-	public String getColor() {
-		return this.color;
-	}
+    @Override
+    public boolean equals(Object o) {
 
-	public char getValue() {
-		return this.value;
-	}
-
-	public void setColor(String color) {
-		this.color = color;
-	}
-
-	public void setCoordinate(int x, int y) {
-		this.coordinate.setX(x);
-		this.coordinate.setY(y);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-
-		if (o == this) return true;
-		if (!(o instanceof Box)) {
-			return false;
-		}
-		Box other = (Box) o;
-		return 
-			Objects.equals(this.coordinate, other.coordinate);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.coordinate);
-	}
+        if (o == this) return true;
+        if (!(o instanceof Box)) {
+            return false;
+        }
+        Box other = (Box) o;
+        return Objects.equals(super.getCoordinate(), other.getCoordinate());
+    }
 }

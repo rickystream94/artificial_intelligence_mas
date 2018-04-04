@@ -1,29 +1,15 @@
 package board;
 
-import board.Coordinate;
+public class Goal extends SokobanObject {
 
-public class Goal {
-	private Coordinate coordinate;
-	private char value;
+    private char goalType;
 
-	public Goal(int x, int y, char val) {
-		this.coordinate = new Coordinate(x,y);
-		this.value = val;
-	}
+    public Goal(int row, int col, char goalType, SokobanObjectType objectType) {
+        super(row, col, objectType);
+        this.goalType = goalType;
+    }
 
-	public int getX() {
-		return this.coordinate.getX();
-	}
-
-	public int getY() {
-		return this.coordinate.getY();
-	}
-
-	public Coordinate getCoordinate() {
-		return this.coordinate;
-	}
-
-	public char getValue() {
-		return this.value;
-	}
+    public char getGoalType() {
+        return this.goalType;
+    }
 }

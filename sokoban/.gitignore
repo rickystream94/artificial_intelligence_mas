@@ -54,8 +54,7 @@ fabric.properties
 *.xml
 *.class
 *.txt
-environment/levels/
-environment/sampleclients/
+src/environment/
 
 # Makefiles
 Makefile

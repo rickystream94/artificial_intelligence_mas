@@ -1,40 +1,21 @@
 package board;
 
-import board.Coordinate;
+public class Agent extends SokobanObject {
 
-public class Agent {
-	private Coordinate coordinate;
-	private char value;
-	private String color;
+    private char agentType;
+    private String color;
 
-	public Agent(int x, int y, char val, String color) {
-		this.coordinate = new Coordinate(x,y);
-		this.value = val;
-		this.color = color;
-	}
+    public Agent(int row, int col, char agentType, String color, SokobanObjectType objectType) {
+        super(row, col, objectType);
+        this.agentType = agentType;
+        this.color = color;
+    }
 
-	public int getX() {
-		return this.coordinate.getX();
-	}
+    public String getColor() {
+        return this.color;
+    }
 
-	public int getY() {
-		return this.coordinate.getY();
-	}
-
-	public String getColor() {
-		return this.color;
-	}
-
-	public char getValue() {
-		return this.value;
-	}
-
-	public void setColor(String color) {
-		this.color = color;
-	}
-
-	public void setCoordinate(int x, int y) {
-		this.coordinate.setX(x);
-		this.coordinate.setY(y);
-	}
+    public char getAgentType() {
+        return this.agentType;
+    }
 }
