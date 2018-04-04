@@ -1,9 +1,6 @@
 package board;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 
 public class Level {
 
@@ -60,5 +57,37 @@ public class Level {
 
     public int getWidth() {
         return width;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        char[][] board = new char[height][width];
+
+        for (char[] row : board)
+            Arrays.fill(row, ' ');
+
+        for (Wall wall : walls)
+            board[wall.getCoordinate().getRow()][wall.getCoordinate().getCol()] = '+';
+
+        for (Box box : boxes)
+            board[box.getCoordinate().getRow()][box.getCoordinate().getCol()] = box.getBoxType();
+
+        for (Agent agent : agents)
+            board[agent.getCoordinate().getRow()][agent.getCoordinate().getCol()] = agent.getAgentId();
+
+        for (Goal goal : goals)
+            board[goal.getCoordinate().getRow()][goal.getCoordinate().getCol()] = goal.getGoalType();
+
+        s.append(String.format("Dimensions: (%d,%d)\n", height, width));
+
+        for (char[] row : board) {
+            for (char cell : row) {
+                s.append(cell);
+            }
+            s.append('\n');
+        }
+
+        return s.toString();
     }
 }

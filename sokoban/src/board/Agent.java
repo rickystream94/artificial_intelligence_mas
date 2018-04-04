@@ -2,12 +2,12 @@ package board;
 
 public class Agent extends SokobanObject {
 
-    private char agentType;
+    private char agentId;
     private Color color;
 
-    public Agent(int row, int col, char agentType, Color color, SokobanObjectType objectType) {
+    public Agent(int row, int col, char agentId, Color color, SokobanObjectType objectType) {
         super(row, col, objectType);
-        this.agentType = agentType;
+        this.agentId = agentId;
         this.color = color;
     }
 
@@ -15,7 +15,7 @@ public class Agent extends SokobanObject {
         return this.color;
     }
 
-    public char getAgentType() {
-        return this.agentType;
+    public char getAgentId() {
+        return this.agentId;
     }
 }

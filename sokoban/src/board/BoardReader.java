@@ -1,32 +1,15 @@
 package board;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
-import htn.Node;
 import logging.ConsoleLogger;
-import utils.FibonacciHeap;
-import htn.Strategy;
 
-public class LevelService {
+public class BoardReader {
 
-    private static final Logger LOGGER = ConsoleLogger.getLogger(LevelService.class.getSimpleName());
-
-    private Level level;
-    private FibonacciHeap<Goal> subGoals;
-
-    private BufferedReader in;
-
-    public LevelService(InputStream inputStream) throws IOException {
-        this.in = new BufferedReader(new InputStreamReader(inputStream));
-        this.subGoals = new FibonacciHeap<Goal>();
-
-        this.level = readLevel();
-    }
+    private static final Logger LOGGER = ConsoleLogger.getLogger(BoardReader.class.getSimpleName());
 
     /*
     public LinkedList<Node> search(Strategy strategy, Node initialState) {
@@ -53,7 +36,9 @@ public class LevelService {
     }
     */
 
-    private Level readLevel() throws IOException {
+    public static Level readLevel(BufferedReader reader) throws IOException {
+        ConsoleLogger.logInfo(LOGGER, "Parsing level from Server...");
+
         Map<Character, Color> objectColors;
         String line, color;
         int width = 0, height = 0;
@@ -66,7 +51,7 @@ public class LevelService {
         objectColors = new HashMap<>();
 
         // Read lines specifying colors
-        while ((line = in.readLine()).matches("^[a-z]+:\\s*[0-9A-Z](,\\s*[0-9A-Z])*\\s*$")) {
+        while ((line = reader.readLine()).matches("^[a-z]+:\\s*[0-9A-Z](,\\s*[0-9A-Z])*\\s*$")) {
             line = line.replaceAll("\\s", "");
             color = line.split(":")[0];
 
@@ -117,48 +102,11 @@ public class LevelService {
                 width = cell;
             height++;
 
-            line = in.readLine();
+            line = reader.readLine();
         }
+
+        ConsoleLogger.logInfo(LOGGER, "Done reading level from Server");
 
         return new Level(width, height, goals, boxes, agents, walls, emptyCells);
     }
-
-    @Override
-    public String toString() {
-        StringBuilder s = new StringBuilder();
-        List<Agent> agents = this.level.getAgents();
-        List<Goal> goals = Level.getGoals();
-        List<Box> boxes = this.level.getBoxes();
-        List<Wall> walls = Level.getWalls();
-        int height = this.level.getHeight();
-        int width = this.level.getWidth();
-        char[][] board = new char[height][width];
-
-        for (char[] row : board)
-            Arrays.fill(row, ' ');
-
-        for (Wall wall : walls)
-            board[wall.getCoordinate().getRow()][wall.getCoordinate().getCol()] = '+';
-
-        for (Box box : boxes)
-            board[box.getCoordinate().getRow()][box.getCoordinate().getCol()] = box.getBoxType();
-
-        for (Agent agent : agents)
-            board[agent.getCoordinate().getRow()][agent.getCoordinate().getCol()] = agent.getAgentType();
-
-        for (Goal goal : goals)
-            board[goal.getCoordinate().getRow()][goal.getCoordinate().getCol()] = goal.getGoalType();
-
-        s.append(String.format("Dimensions: (%d,%d)\n", height, width));
-
-        for (char[] row : board) {
-            for (char cell : row) {
-                s.append(cell);
-            }
-            s.append('\n');
-        }
-
-        return s.toString();
-    }
-
 }
