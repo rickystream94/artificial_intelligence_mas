@@ -1,24 +1,21 @@
-package environment;
+package algorithm;
 
-import java.util.List; 
-import java.util.Arrays; 
-import java.util.ArrayList; 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.LinkedList; 
-import java.util.HashMap; 
-import java.util.HashSet; 
-import java.util.Set; 
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Collections;
 import java.util.Random;
 
-import algorithm.Command;
 import algorithm.Command.type;
+import board.*;
 
 public class Node {
 	private static final Random RND = new Random(1);
 
 	private SokobanMap map;
-	private HashMap<Coordinate,Box> boxes;
+	private HashMap<Coordinate, Box> boxes;
 
 	private List<Agent> agents;
 

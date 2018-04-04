@@ -1,7 +1,7 @@
 package main;
 
 import java.io.*;
-import environment.World;
+import board.World;
 
 public class Main {
 

@@ -1,4 +1,6 @@
-package environment;
+package board;
+
+import board.Coordinate;
 
 public class Goal {
 	private Coordinate coordinate;

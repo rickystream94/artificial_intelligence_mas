@@ -1,4 +1,6 @@
-package environment;
+package board;
+
+import board.Coordinate;
 
 public class Agent {
 	private Coordinate coordinate;

@@ -1,17 +1,18 @@
-package environment;
+package board;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.util.Map; 
-import java.util.HashMap; 
-import java.util.HashSet; 
-import java.util.Set; 
-import java.util.List; 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Arrays; 
 import java.util.ArrayList; 
-import java.util.LinkedList; 
+import java.util.LinkedList;
+
+import algorithm.Node;
+import board.*;
 import utils.FibonacciHeap;
 import algorithm.Strategy;
 
@@ -62,8 +63,8 @@ public class World {
 		String line, color;
 		List<Goal> goals;
 		List<Agent> agents;
-		HashMap<Coordinate,Box> boxes;
-		HashMap<Coordinate,Wall> walls;
+		HashMap<Coordinate, Box> boxes;
+		HashMap<Coordinate, Wall> walls;
 		int width, heigth;
 
 		boxes = this.node.getBoxes();

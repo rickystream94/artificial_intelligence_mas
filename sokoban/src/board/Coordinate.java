@@ -1,4 +1,4 @@
-package environment;
+package board;
 
 import java.util.Objects;
 

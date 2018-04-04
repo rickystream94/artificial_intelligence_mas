@@ -4,9 +4,6 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Stack;
 
-import utils.FibonacciHeap;
-import environment.Node;
-
 public abstract class Strategy {
 	private HashSet<Node> explored;
 	private final long startTime;
