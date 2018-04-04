@@ -1,16 +1,22 @@
 package main;
 
 import java.io.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Logger;
 
 import board.LevelService;
+import logging.ConsoleLogger;
+import logging.VerySimpleFormatter;
 
 public class ClientMain {
 
+    private static final Logger LOGGER = ConsoleLogger.getLogger(ClientMain.class.getSimpleName());
+
     public static void main(String[] args) throws IOException {
         //try {
-        System.err.println("Hello from Hell. I am sending this using the error output stream");
-        LevelService w = new LevelService(System.in);
-        System.err.println(w);
+        ConsoleLogger.logInfo(LOGGER, "Hello from Hell. I am sending this using the error output stream");
+        LevelService levelService = new LevelService(System.in);
+        ConsoleLogger.logInfo(LOGGER, levelService.toString());
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {

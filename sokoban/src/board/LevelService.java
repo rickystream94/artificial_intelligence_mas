@@ -5,12 +5,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.util.*;
+import java.util.logging.Logger;
 
 import htn.Node;
+import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 import htn.Strategy;
 
 public class LevelService {
+
+    private static final Logger LOGGER = ConsoleLogger.getLogger(LevelService.class.getSimpleName());
 
     private Level level;
     private FibonacciHeap<Goal> subGoals;
@@ -49,7 +53,6 @@ public class LevelService {
     }
     */
 
-    @SuppressWarnings("Duplicates")
     private Level readLevel() throws IOException {
         Map<Character, Color> objectColors;
         String line, color;
