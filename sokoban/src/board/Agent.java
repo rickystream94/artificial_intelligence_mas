@@ -3,15 +3,15 @@ package board;
 public class Agent extends SokobanObject {
 
     private char agentType;
-    private String color;
+    private Color color;
 
-    public Agent(int row, int col, char agentType, String color, SokobanObjectType objectType) {
+    public Agent(int row, int col, char agentType, Color color, SokobanObjectType objectType) {
         super(row, col, objectType);
         this.agentType = agentType;
         this.color = color;
     }
 
-    public String getColor() {
+    public Color getColor() {
         return this.color;
     }
 

@@ -5,15 +5,15 @@ import java.util.Objects;
 public class Box extends SokobanObject {
 
     private char boxType;
-    private String color;
+    private Color color;
 
-    public Box(int row, int col, char boxType, String color, SokobanObjectType objectType) {
+    public Box(int row, int col, char boxType, Color color, SokobanObjectType objectType) {
         super(row, col, objectType);
         this.boxType = boxType;
         this.color = color;
     }
 
-    public String getColor() {
+    public Color getColor() {
         return this.color;
     }
 

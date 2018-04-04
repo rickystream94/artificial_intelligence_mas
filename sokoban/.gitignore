@@ -54,7 +54,8 @@ fabric.properties
 *.xml
 *.class
 *.txt
-src/environment/
+environment/
+META-INF/
 
 # Makefiles
 Makefile

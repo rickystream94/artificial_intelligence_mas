@@ -4,19 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.*;
 
 import htn.Node;
 import utils.FibonacciHeap;
 import htn.Strategy;
 
-/**
- * This class is in charge of handling the communication between the client and the server, hence reading server messages and sending joint actions
- */
 public class LevelService {
 
     private Level level;
@@ -26,12 +19,12 @@ public class LevelService {
 
     public LevelService(InputStream inputStream) throws IOException {
         this.in = new BufferedReader(new InputStreamReader(inputStream));
-        this.level = new Level();
         this.subGoals = new FibonacciHeap<Goal>();
 
-        readLevel();
+        this.level = readLevel();
     }
 
+    /*
     public LinkedList<Node> search(Strategy strategy, Node initialState) {
         strategy.addToFrontier(initialState);
         while (true) {
@@ -54,12 +47,18 @@ public class LevelService {
             }
         }
     }
+    */
 
     @SuppressWarnings("Duplicates")
-    private void readLevel() throws IOException {
-        Map<Character, String> objectColors;
+    private Level readLevel() throws IOException {
+        Map<Character, Color> objectColors;
         String line, color;
         int width = 0, height = 0;
+        List<Goal> goals = new ArrayList<>();
+        List<Wall> walls = new ArrayList<>();
+        List<Agent> agents = new ArrayList<>();
+        List<Box> boxes = new ArrayList<>();
+        Set<EmptyCell> emptyCells = new HashSet<>();
 
         objectColors = new HashMap<>();
 
@@ -69,7 +68,7 @@ public class LevelService {
             color = line.split(":")[0];
 
             for (String objectId : line.split(":")[1].split(","))
-                objectColors.put(objectId.charAt(0), color);
+                objectColors.put(objectId.charAt(0), Color.getColor(color));
         }
 
         // Read lines specifying level layout
@@ -80,35 +79,35 @@ public class LevelService {
                 char id = line.charAt(cell);
                 SokobanObject sokobanObject;
                 boolean isObjectColorDefined = objectColors.size() > 0 && objectColors.containsKey(id);
-                String objectColor = isObjectColorDefined ? objectColors.get(id).toUpperCase() : Colors.BLUE.toString();
+                Color objectColor = isObjectColorDefined ? objectColors.get(id) : Color.BLUE;
 
                 // Object in current cell is an Agent
                 if ('0' <= id && id <= '9') {
                     sokobanObject = new Agent(height, cell, id, objectColor, SokobanObjectType.AGENT);
-                    this.level.addAgent((Agent) sokobanObject);
+                    agents.add((Agent) sokobanObject);
                 }
 
                 // Object in current cell is a Goal
                 else if ('a' <= id && id <= 'z') {
                     sokobanObject = new Goal(height, cell, id, SokobanObjectType.GOAL);
-                    this.level.addGoal((Goal) sokobanObject);
+                    goals.add((Goal) sokobanObject);
                 }
 
                 // Object in current cell is a Box
                 else if ('A' <= id && id <= 'Z') {
                     sokobanObject = new Box(height, cell, id, objectColor, SokobanObjectType.BOX);
-                    this.level.addBox((Box) sokobanObject);
+                    boxes.add((Box) sokobanObject);
                 }
 
                 // Object in current cell is a Wall
                 else if (id == '+') {
                     sokobanObject = new Wall(height, cell, SokobanObjectType.WALL);
-                    this.level.addWall((Wall) sokobanObject);
+                    walls.add((Wall) sokobanObject);
                 }
 
                 // Object in current cell is an EmptyCell
                 else {
-                    this.level.addEmptyCell(new Coordinate(height, cell));
+                    emptyCells.add(new EmptyCell(height, cell, SokobanObjectType.EMPTY));
                 }
             }
             if (cell > width)
@@ -118,8 +117,7 @@ public class LevelService {
             line = in.readLine();
         }
 
-        Level.setHeight(height);
-        Level.setWidth(width);
+        return new Level(width, height, goals, boxes, agents, walls, emptyCells);
     }
 
     @Override

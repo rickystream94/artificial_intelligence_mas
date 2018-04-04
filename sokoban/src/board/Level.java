@@ -15,12 +15,14 @@ public class Level {
     private List<Box> boxes;
     private Set<EmptyCell> emptyCells;
 
-    public Level() {
-        goals = new ArrayList<>();
-        walls = new ArrayList<>();
-        this.agents = new ArrayList<>();
-        this.boxes = new ArrayList<>();
-        this.emptyCells = new HashSet<>();
+    public Level(int width, int height, List<Goal> goals, List<Box> boxes, List<Agent> agents, List<Wall> walls, Set<EmptyCell> emptyCells) {
+        Level.width = width;
+        Level.height = height;
+        Level.goals = new ArrayList<>(goals);
+        Level.walls = new ArrayList<>(walls);
+        this.agents = new ArrayList<>(agents);
+        this.boxes = new ArrayList<>(boxes);
+        this.emptyCells = new HashSet<>(emptyCells);
     }
 
     public static List<Goal> getGoals() {
@@ -37,22 +39,6 @@ public class Level {
 
     public List<Box> getBoxes() {
         return boxes;
-    }
-
-    public void addAgent(Agent agent) {
-        this.agents.add(agent);
-    }
-
-    public void addBox(Box box) {
-        this.boxes.add(box);
-    }
-
-    public void addGoal(Goal goal) {
-        Level.goals.add(goal);
-    }
-
-    public void addWall(Wall wall) {
-        Level.walls.add(wall);
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {
@@ -74,13 +60,5 @@ public class Level {
 
     public int getWidth() {
         return width;
-    }
-
-    public static void setWidth(int width) {
-        Level.width = width;
-    }
-
-    public static void setHeight(int height) {
-        Level.height = height;
     }
 }
