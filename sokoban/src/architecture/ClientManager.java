@@ -48,10 +48,10 @@ public class ClientManager {
 
         // Instantiate and launch ActionSenderThread
         this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);
-        this.actionSenderThread.run();
+        new Thread(this.actionSenderThread).start();
 
         // Instantiate and launch agent threads
-        this.levelManager.getLevel().getAgents().forEach(agent -> new AgentThread(agent).run());
+        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent)).start());
     }
 
     public LevelManager getLevelManager() {
