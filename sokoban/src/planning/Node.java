@@ -1,16 +1,4 @@
-package htn;
-
-import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Collections;
-import java.util.Random;
-
-import exceptions.NotImplementedException;
-import htn.Command.type;
-import board.*;
+package planning;
 
 public class Node {
     /*

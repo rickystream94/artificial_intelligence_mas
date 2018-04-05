@@ -13,6 +13,6 @@ public class ClientMain {
 
     public static void main(String[] args) throws IOException {
         ConsoleLogger.logInfo(LOGGER, "Launching Sokoban Client Manager");
-        new ClientManager().run();
+        ClientManager.getInstance().init();
     }
 }

@@ -1,10 +1,14 @@
 package architecture;
 
+import planning.PrimitiveAction;
 import logging.ConsoleLogger;
+import planning.PrimitiveActionComparator;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -15,35 +19,44 @@ public class ActionSenderThread implements Runnable {
     private static final Logger LOGGER = ConsoleLogger.getLogger(ActionSenderThread.class.getSimpleName());
 
     private int numberOfAgents;
-    private BlockingQueue<AgentAction> agentsActionsOrdered;
-    private BufferedReader serverInputMessages;
-    private BufferedWriter serverOutputMessages;
-    private BlockingQueue<AgentAction> agentActionsCollector;
+    private BlockingQueue<PrimitiveAction> primitiveActionsCollector;
+    private BlockingQueue<PrimitiveAction> primitiveActionsOrdered;
+    private BufferedReader serverInMessages;
+    private BufferedWriter serverOutMessages;
 
-    public ActionSenderThread(int numberOfAgents, BufferedReader serverInputMessages, BufferedWriter serverOutputMessages) {
+    public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
-        this.agentActionsCollector = new ArrayBlockingQueue<>(numberOfAgents);
-        this.agentsActionsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new AgentActionComparator());
-        this.serverInputMessages = serverInputMessages;
-        this.serverOutputMessages = serverOutputMessages;
+        this.primitiveActionsCollector = new ArrayBlockingQueue<>(numberOfAgents);
+        this.primitiveActionsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new PrimitiveActionComparator());
+        this.serverInMessages = serverInMessages;
+        this.serverOutMessages = serverOutMessages;
     }
 
     @Override
     public void run() {
+        StringJoiner jointAction;
+        int polledActions;
+
+        // Each loop iteration represents a turn
+        // By the end of the current iteration, a single joint action is sent to the server
         while (true) {
-            StringBuilder jointAction = new StringBuilder();
-            while (!this.agentsActionsOrdered.isEmpty()) {
+            jointAction = new StringJoiner(",", "[", "]");
+            polledActions = 0;
+            while (polledActions != this.numberOfAgents) {
                 try {
                     // take() will wait until an element becomes available in the queue
-                    AgentAction agentAction = this.agentsActionsOrdered.take();
-                    //TODO: build joint action and send it to server
+                    PrimitiveAction agentAction = this.primitiveActionsOrdered.take();
+                    jointAction.add(agentAction.toString());
+                    polledActions++;
                 } catch (InterruptedException e) {
                     ConsoleLogger.logError(LOGGER, e.getMessage());
                 }
             }
-            // Send joint action to server
+            // At this point, every agent has put its action in the queue
+            // Send joint action to server and process response
             try {
-                sendToServer(jointAction.toString());
+                String response = sendToServer(jointAction.toString());
+                processResponse(response);
             } catch (IOException e) {
                 ConsoleLogger.logError(LOGGER, e.getMessage());
                 System.exit(1);
@@ -51,21 +64,34 @@ public class ActionSenderThread implements Runnable {
         }
     }
 
-    public synchronized void addAgentAction(AgentAction action) {
-        this.agentActionsCollector.add(action);
+    public void addPrimitiveAction(PrimitiveAction action) {
+        this.primitiveActionsCollector.add(action);
 
-        if (this.agentActionsCollector.size() == numberOfAgents) {
+        if (this.primitiveActionsCollector.size() == numberOfAgents) {
             // Drain elements to priority queue (they will be automatically sorted by agentID once inserted)
-            this.agentActionsCollector.drainTo(this.agentsActionsOrdered);
+            this.primitiveActionsCollector.drainTo(this.primitiveActionsOrdered);
         }
     }
 
-    private void sendToServer(String jointAction) throws IOException {
-        this.serverOutputMessages.write(jointAction);
-        this.serverOutputMessages.flush();
+    /**
+     * Sends a joint action to the server and returns the corresponding response
+     *
+     * @param jointAction the joint action to be sent
+     * @return response from the server
+     * @throws IOException
+     */
+    private String sendToServer(String jointAction) throws IOException {
+        this.serverOutMessages.write(jointAction);
+        this.serverOutMessages.flush();
 
-        String response = this.serverInputMessages.readLine();
+        return this.serverInMessages.readLine();
+    }
 
-        // TODO: process response
+    private void processResponse(String response) {
+        String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
+        Boolean[] responses = Arrays.stream(stringResponses).map(Boolean::parseBoolean).toArray(Boolean[]::new);
+
+        // TODO: perform changes to the level with the support of LevelManager
+        LevelManager levelManager = ClientManager.getInstance().getLevelManager();
     }
 }

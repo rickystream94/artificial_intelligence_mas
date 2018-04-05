@@ -9,36 +9,60 @@ import utils.FibonacciHeap;
 import java.io.*;
 import java.util.logging.Logger;
 
-public class ClientManager implements Runnable {
+public class ClientManager {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(ClientManager.class.getSimpleName());
 
-    private BufferedReader serverInputMessages;
-    private BufferedWriter serverOutputMessages;
     private FibonacciHeap<Goal> subGoals;
     private LevelManager levelManager;
     private ActionSenderThread actionSenderThread;
+    private int numberOfAgents;
+    private static ClientManager instance;
 
-    @Override
-    public void run() {
-        this.serverInputMessages = new BufferedReader(new InputStreamReader(System.in));
-        this.serverOutputMessages = new BufferedWriter(new OutputStreamWriter(System.out));
+    private ClientManager() {
+    }
+
+    public static ClientManager getInstance() {
+        if (instance == null)
+            instance = new ClientManager();
+        return instance;
+    }
+
+    public void init() {
+        BufferedReader serverInMessages = new BufferedReader(new InputStreamReader(System.in));
+        BufferedWriter serverOutMessages = new BufferedWriter(new OutputStreamWriter(System.out));
         this.subGoals = new FibonacciHeap<>();
 
         // Read and create level
         Level level = null;
         try {
-            level = BoardReader.readLevel(serverInputMessages);
+            level = BoardReader.readLevel(serverInMessages);
         } catch (IOException e) {
             ConsoleLogger.logError(LOGGER, e.getMessage());
             System.exit(1);
         }
 
         // Instantiate LevelManager
-        this.levelManager = LevelManager.getInstance(level);
+        this.levelManager = new LevelManager(level);
+        this.numberOfAgents = this.levelManager.getLevel().getAgents().size();
 
-        // Instantiate ActionSenderThread
-        this.actionSenderThread = new ActionSenderThread(this.levelManager.getLevel().getAgents().size(), serverInputMessages, serverOutputMessages);
+        // Instantiate and launch ActionSenderThread
+        this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);
         this.actionSenderThread.run();
+
+        // Instantiate and launch agent threads
+        this.levelManager.getLevel().getAgents().forEach(agent -> new AgentThread(agent).run());
+    }
+
+    public LevelManager getLevelManager() {
+        return this.levelManager;
+    }
+
+    public int getNumberOfAgents() {
+        return this.numberOfAgents;
+    }
+
+    public ActionSenderThread getActionSenderThread() {
+        return this.actionSenderThread;
     }
 }

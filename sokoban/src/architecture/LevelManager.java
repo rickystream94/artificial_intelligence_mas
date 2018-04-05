@@ -12,17 +12,10 @@ import java.util.logging.Logger;
 public class LevelManager {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(LevelManager.class.getSimpleName());
-    private static LevelManager instance;
     private Level level;
 
-    private LevelManager(Level level) {
+    public LevelManager(Level level) {
         this.level = level;
-    }
-
-    public static LevelManager getInstance(Level level) {
-        if (instance == null)
-            instance = new LevelManager(level);
-        return instance;
     }
 
     /***
