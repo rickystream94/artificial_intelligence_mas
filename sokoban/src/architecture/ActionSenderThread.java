@@ -1,8 +1,8 @@
 package architecture;
 
-import planning.PrimitiveAction;
+import board.Agent;
+import planning.actions.PrimitiveTask;
 import logging.ConsoleLogger;
-import planning.PrimitiveActionComparator;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,15 +19,15 @@ public class ActionSenderThread implements Runnable {
     private static final Logger LOGGER = ConsoleLogger.getLogger(ActionSenderThread.class.getSimpleName());
 
     private int numberOfAgents;
-    private BlockingQueue<PrimitiveAction> primitiveActionsCollector;
-    private BlockingQueue<PrimitiveAction> primitiveActionsOrdered;
+    private BlockingQueue<SendActionEvent> eventsCollector;
+    private BlockingQueue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
 
     public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
-        this.primitiveActionsCollector = new ArrayBlockingQueue<>(numberOfAgents);
-        this.primitiveActionsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new PrimitiveActionComparator());
+        this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
+        this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
     }
@@ -45,8 +45,8 @@ public class ActionSenderThread implements Runnable {
             while (polledActions != this.numberOfAgents) {
                 try {
                     // take() will wait until an element becomes available in the queue
-                    PrimitiveAction agentAction = this.primitiveActionsOrdered.take();
-                    jointAction.add(agentAction.toString());
+                    SendActionEvent sendActionEvent = this.eventsOrdered.take();
+                    jointAction.add(sendActionEvent.getAction().toString());
                     polledActions++;
                 } catch (InterruptedException e) {
                     ConsoleLogger.logError(LOGGER, e.getMessage());
@@ -64,12 +64,12 @@ public class ActionSenderThread implements Runnable {
         }
     }
 
-    public void addPrimitiveAction(PrimitiveAction action) {
-        this.primitiveActionsCollector.add(action);
+    public void addPrimitiveAction(PrimitiveTask action, Agent agent) {
+        this.eventsCollector.add(new SendActionEvent(action, agent));
 
-        if (this.primitiveActionsCollector.size() == numberOfAgents) {
+        if (this.eventsCollector.size() == numberOfAgents) {
             // Drain elements to priority queue (they will be automatically sorted by agentID once inserted)
-            this.primitiveActionsCollector.drainTo(this.primitiveActionsOrdered);
+            this.eventsCollector.drainTo(this.eventsOrdered);
         }
     }
 

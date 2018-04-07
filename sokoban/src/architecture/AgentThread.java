@@ -19,7 +19,7 @@ public class AgentThread implements Runnable {
         while (true) {
             // TODO: does stuff (thinks, creates plan, communicates with ActionSenderThread...)
             try {
-                Thread.sleep(500);
+                Thread.sleep(3000);
                 ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
             } catch (InterruptedException e) {
                 e.printStackTrace();

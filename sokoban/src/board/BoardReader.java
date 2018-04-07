@@ -12,7 +12,7 @@ public class BoardReader {
     private static final Logger LOGGER = ConsoleLogger.getLogger(BoardReader.class.getSimpleName());
 
     /*
-    public LinkedList<Node> search(Strategy strategy, Node initialState) {
+    public LinkedList<HTNNode> search(Strategy strategy, HTNNode initialState) {
         strategy.addToFrontier(initialState);
         while (true) {
 
@@ -20,14 +20,14 @@ public class BoardReader {
                 return null;
             }
 
-            Node leafNode = strategy.getAndRemoveLeaf();
+            HTNNode leafNode = strategy.getAndRemoveLeaf();
 
             if (leafNode.isGoalState()) {
                 return leafNode.extractPlan();
             }
 
             strategy.addToExplored(leafNode);
-            for (Node n : leafNode.getExpandedNodes()) {
+            for (HTNNode n : leafNode.getExpandedNodes()) {
                 if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
                     strategy.addToFrontier(n);
                 }

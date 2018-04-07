@@ -5,19 +5,19 @@ import java.util.HashSet;
 import java.util.Stack;
 
 public abstract class Strategy {
-	private HashSet<Node> explored;
+	private HashSet<HTNNode> explored;
 	private final long startTime;
 
 	public Strategy() {
-		this.explored = new HashSet<Node>();
+		this.explored = new HashSet<HTNNode>();
 		this.startTime = System.currentTimeMillis();
 	}
 
-	public void addToExplored(Node n) {
+	public void addToExplored(HTNNode n) {
 		this.explored.add(n);
 	}
 
-	public boolean isExplored(Node n) {
+	public boolean isExplored(HTNNode n) {
 		return this.explored.contains(n);
 	}
 
@@ -33,11 +33,11 @@ public abstract class Strategy {
 		return (System.currentTimeMillis() - this.startTime) / 1000f;
 	}
 
-	public abstract Node getAndRemoveLeaf();
+	public abstract HTNNode getAndRemoveLeaf();
 
-	public abstract void addToFrontier(Node n);
+	public abstract void addToFrontier(HTNNode n);
 
-	public abstract boolean inFrontier(Node n);
+	public abstract boolean inFrontier(HTNNode n);
 
 	public abstract int countFrontier();
 
@@ -47,24 +47,24 @@ public abstract class Strategy {
 	public abstract String toString();
 
 	public static class StrategyBFS extends Strategy {
-		private ArrayDeque<Node> frontier;
-		private HashSet<Node> frontierSet;
+		private ArrayDeque<HTNNode> frontier;
+		private HashSet<HTNNode> frontierSet;
 
 		public StrategyBFS() {
 			super();
-			frontier = new ArrayDeque<Node>();
-			frontierSet = new HashSet<Node>();
+			frontier = new ArrayDeque<HTNNode>();
+			frontierSet = new HashSet<HTNNode>();
 		}
 
 		@Override
-		public Node getAndRemoveLeaf() {
-			Node n = frontier.pollFirst();
+		public HTNNode getAndRemoveLeaf() {
+			HTNNode n = frontier.pollFirst();
 			frontierSet.remove(n);
 			return n;
 		}
 
 		@Override
-		public void addToFrontier(Node n) {
+		public void addToFrontier(HTNNode n) {
 			frontier.addLast(n);
 			frontierSet.add(n);
 		}
@@ -80,7 +80,7 @@ public abstract class Strategy {
 		}
 
 		@Override
-		public boolean inFrontier(Node n) {
+		public boolean inFrontier(HTNNode n) {
 			return frontierSet.contains(n);
 		}
 
@@ -91,24 +91,24 @@ public abstract class Strategy {
 	}
 
 	public static class StrategyDFS extends Strategy {
-		private Stack<Node> frontier;
-		private HashSet<Node> frontierSet;
+		private Stack<HTNNode> frontier;
+		private HashSet<HTNNode> frontierSet;
 
 		public StrategyDFS() {
 			super();
-			frontier = new Stack<Node>();
-			frontierSet = new HashSet<Node>();
+			frontier = new Stack<HTNNode>();
+			frontierSet = new HashSet<HTNNode>();
 		}
 
 		@Override
-		public Node getAndRemoveLeaf() {
-			Node n = frontier.pop();
+		public HTNNode getAndRemoveLeaf() {
+			HTNNode n = frontier.pop();
 			frontierSet.remove(n);
 			return n;
 		}
 
 		@Override
-		public void addToFrontier(Node n) {
+		public void addToFrontier(HTNNode n) {
 			frontier.push(n);
 			frontierSet.add(n);
 		}
@@ -124,7 +124,7 @@ public abstract class Strategy {
 		}
 
 		@Override
-		public boolean inFrontier(Node n) {
+		public boolean inFrontier(HTNNode n) {
 			return frontierSet.contains(n);
 		}
 

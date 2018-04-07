@@ -32,6 +32,10 @@ public class Coordinate {
         this.col = col;
     }
 
+    public boolean isNeighbour(Coordinate other) {
+        return Math.abs((this.row - other.row) + (this.col - other.col)) == 1;
+    }
+
     @Override
     public boolean equals(Object o) {
 
