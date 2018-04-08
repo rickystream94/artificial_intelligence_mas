@@ -1,9 +1,11 @@
 package planning;
 
-import planning.actions.AbstractTask;
+import planning.actions.Task;
 
-import java.util.List;
+import java.util.Queue;
 
-public interface Plan<T extends AbstractTask> {
-    List<? extends T> getActions();
+public interface Plan<T extends Task> {
+    Queue<? extends T> getTasks();
+
+    void addTask(T task);
 }

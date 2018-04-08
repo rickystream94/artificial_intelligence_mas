@@ -1,5 +1,5 @@
 package planning.actions;
 
-public enum ActionType {
+public enum PrimitiveTaskType {
     Move, Push, Pull, NoOp
 }
