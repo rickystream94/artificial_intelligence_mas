@@ -6,13 +6,13 @@ import java.util.*;
 
 public class HTNPlanner {
     private Deque<Task> tasksToProcess;
-    private WorldState currentWorldState;
+    private HTNWorldState currentWorldState;
     private Deque<HTNDecompositionRecord> decompositionHistory;
     private PrimitivePlan finalPlan;
     private int planningStep;
     private Set<Refinement> refinementsBlacklist;
 
-    public HTNPlanner(WorldState currentWorldState, CompoundTask rootTask) {
+    public HTNPlanner(HTNWorldState currentWorldState, CompoundTask rootTask) {
         this.currentWorldState = currentWorldState;
         this.tasksToProcess = new ArrayDeque<>();
         this.decompositionHistory = new ArrayDeque<>();
@@ -63,7 +63,7 @@ public class HTNPlanner {
      * @param refinement chosen refinement
      */
     private void recordDecompositionOfTask(Refinement refinement) {
-        this.decompositionHistory.push(new HTNDecompositionRecord(refinement, new PrimitivePlan(this.finalPlan), ((ArrayDeque<Task>) this.tasksToProcess).clone(), new WorldState(this.currentWorldState)));
+        this.decompositionHistory.push(new HTNDecompositionRecord(refinement, new PrimitivePlan(this.finalPlan), ((ArrayDeque<Task>) this.tasksToProcess).clone(), new HTNWorldState(this.currentWorldState)));
     }
 
     /**
@@ -80,7 +80,7 @@ public class HTNPlanner {
         this.tasksToProcess.push(refinement.getOwningCompoundTask());
         this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
-        // Blacklist refinement (avoid infinite loops)
+        // Blacklist refinement (avoid choosing same refinement --> infinite loops)
         this.refinementsBlacklist.add(refinement);
     }
 }

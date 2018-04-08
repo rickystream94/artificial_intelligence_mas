@@ -1,7 +1,5 @@
 package planning.actions;
 
-import planning.PrimitivePlan;
-
 import java.util.LinkedList;
 import java.util.Objects;
 
@@ -18,7 +16,7 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
 
         for (Direction d1 : Direction.values()) {
             for (Direction d2 : Direction.values()) {
-                if (!PrimitiveTask.isOpposite(d1, d2)) {
+                if (!Direction.isOpposite(d1, d2)) {
                     primitiveTasks.add(new PrimitiveTask(PrimitiveTaskType.Push, d1, d2));
                 }
             }
@@ -55,34 +53,6 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         this.actionType = actionType;
         dir1 = d1;
         dir2 = d2;
-    }
-
-    private static boolean isOpposite(Direction d1, Direction d2) {
-        return d1.ordinal() + d2.ordinal() == 3;
-    }
-
-    public static int dirToRowChange(Direction d) {
-        // South is down one row (1), north is up one row (-1).
-        switch (d) {
-            case S:
-                return 1;
-            case N:
-                return -1;
-            default:
-                return 0;
-        }
-    }
-
-    public static int dirToColChange(Direction d) {
-        // East is right one column (1), west is left one column (-1).
-        switch (d) {
-            case E:
-                return 1;
-            case W:
-                return -1;
-            default:
-                return 0;
-        }
     }
 
     public Effect getEffect() {

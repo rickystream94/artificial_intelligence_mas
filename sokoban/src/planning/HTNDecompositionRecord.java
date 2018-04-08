@@ -10,9 +10,9 @@ public class HTNDecompositionRecord {
     private Refinement refinement;
     private PrimitivePlan finalPlan;
     private Deque<Task> tasksToProcess;
-    private WorldState worldState;
+    private HTNWorldState worldState;
 
-    public HTNDecompositionRecord(Refinement refinement, PrimitivePlan finalPlan, Deque<Task> tasksToProcess, WorldState worldState) {
+    public HTNDecompositionRecord(Refinement refinement, PrimitivePlan finalPlan, Deque<Task> tasksToProcess, HTNWorldState worldState) {
         this.refinement = refinement;
         this.finalPlan = finalPlan;
         this.tasksToProcess = tasksToProcess;
@@ -31,7 +31,7 @@ public class HTNDecompositionRecord {
         return tasksToProcess;
     }
 
-    public WorldState getWorldState() {
+    public HTNWorldState getWorldState() {
         return worldState;
     }
 }
