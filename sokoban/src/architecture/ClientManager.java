@@ -52,6 +52,11 @@ public class ClientManager {
 
         // Instantiate and launch agent threads
         this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent)).start());
+
+        /* TODO: next step --> intentions generation:
+         1) prioritizing boxes (which boxes each agent gets assigned, based on the existing goals?
+         2) minimum-cost box-to-goal assignment (which box goes to which goal?)
+         */
     }
 
     public LevelManager getLevelManager() {

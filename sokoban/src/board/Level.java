@@ -1,6 +1,7 @@
 package board;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Level {
 
@@ -16,14 +17,26 @@ public class Level {
     private Map<Coordinate, Agent> agentsMap;
     private Map<Coordinate, Box> boxesMap;
 
+    /**
+     * All data structures are thread-safe to guarantee concurrent access from the agent threads
+     *
+     * @param width      board width
+     * @param height     board height
+     * @param goals      list of goals
+     * @param boxes      list of boxes
+     * @param agents     list of agents
+     * @param walls      list of walls
+     * @param emptyCells list of empty cells
+     */
     public Level(int width, int height, List<Goal> goals, List<Box> boxes, List<Agent> agents, List<Wall> walls, Set<EmptyCell> emptyCells) {
         Level.width = width;
         Level.height = height;
-        Level.goalsMap = new HashMap<>();
-        Level.wallsMap = new HashMap<>();
-        this.agentsMap = new HashMap<>();
-        this.boxesMap = new HashMap<>();
-        this.emptyCells = new HashSet<>(emptyCells);
+        Level.goalsMap = new ConcurrentHashMap<>();
+        Level.wallsMap = new ConcurrentHashMap<>();
+        this.agentsMap = new ConcurrentHashMap<>();
+        this.boxesMap = new ConcurrentHashMap<>();
+        this.emptyCells = ConcurrentHashMap.newKeySet();
+        this.emptyCells.addAll(emptyCells);
 
         // Build coordinate hash maps
         agents.forEach(agent -> this.agentsMap.put(agent.getCoordinate(), agent));
