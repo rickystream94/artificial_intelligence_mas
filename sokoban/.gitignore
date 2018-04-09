@@ -49,11 +49,12 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-# Only source code!
-*.iml
-*.xml
+# Custom excluded files/folders!
 *.class
 *.txt
+.idea/misc.xml
+environment/
+META-INF/
 
 # Makefiles
 Makefile
