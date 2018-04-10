@@ -1,5 +1,8 @@
 package architecture;
 
+import board.Box;
+import board.Coordinate;
+import board.Goal;
 import board.Level;
 import exceptions.NotImplementedException;
 import logging.ConsoleLogger;
@@ -21,11 +24,19 @@ public class LevelManager {
     /***
      * Checks that all boxes are placed in the corresponding goals
      * @return true if level is solved, false otherwise
-     * @throws NotImplementedException
      */
-    public boolean isLevelSolved() throws NotImplementedException {
-        throw new NotImplementedException();
-        // TODO: to be implemented
+    public boolean isLevelSolved() {
+        for (Box box : this.level.getBoxes()) {
+            for (Goal goal : Level.getGoals()) {
+                Coordinate boxPosition = box.getCoordinate();
+                Coordinate goalPosition = goal.getCoordinate();
+                if (goalPosition.getRow() == boxPosition.getRow() && goalPosition.getCol() == boxPosition.getCol()
+                        && Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public Level getLevel() {

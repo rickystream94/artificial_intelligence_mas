@@ -79,31 +79,6 @@ public class HTNNode {
         return plan;
     }
 
-    public boolean isGoalState() {
-        for (Box box : this.level.getBoxes()) {
-            for (Goal goal : Level.getGoals()) {
-                Coordinate boxPosition = box.getCoordinate();
-                Coordinate goalPosition = goal.getCoordinate();
-                if (goalPosition.getRow() == boxPosition.getRow() && goalPosition.getCol() == boxPosition.getCol()
-                        && Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private boolean cellIsFree(int row, int col) {
-        Coordinate coordinate = new Coordinate(row, col);
-        return this.level.isCellEmpty(coordinate);
-    }
-
-    private boolean boxAt(int row, int col) {
-        Coordinate coordinate = new Coordinate(row, col);
-        Box box = this.boxes.get(coordinate);
-        return box != null;
-    }
-
     public ArrayList<HTNNode> getExpandedNodes() {
         ArrayList<HTNNode> expandedNodes = new ArrayList<HTNNode>(PrimitiveTask.every.length);
         for (PrimitiveTask c : PrimitiveTask.every) {

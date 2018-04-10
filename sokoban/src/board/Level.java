@@ -1,41 +1,64 @@
 package board;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Level {
 
+    /*
+     * All static components won't change throughout the program
+     */
     private static int width;
     private static int height;
-    private static List<Goal> goals;
-    private static List<Wall> walls;
-    private List<Agent> agents;
-    private List<Box> boxes;
-    private Set<EmptyCell> emptyCells;
+    private static Map<Coordinate, Goal> goalsMap;
+    private static Map<Coordinate, Wall> wallsMap;
 
+    private Set<EmptyCell> emptyCells;
+    private Map<Coordinate, Agent> agentsMap;
+    private Map<Coordinate, Box> boxesMap;
+
+    /**
+     * All data structures are thread-safe to guarantee concurrent access from the agent threads
+     *
+     * @param width      board width
+     * @param height     board height
+     * @param goals      list of goals
+     * @param boxes      list of boxes
+     * @param agents     list of agents
+     * @param walls      list of walls
+     * @param emptyCells list of empty cells
+     */
     public Level(int width, int height, List<Goal> goals, List<Box> boxes, List<Agent> agents, List<Wall> walls, Set<EmptyCell> emptyCells) {
         Level.width = width;
         Level.height = height;
-        Level.goals = new ArrayList<>(goals);
-        Level.walls = new ArrayList<>(walls);
-        this.agents = new ArrayList<>(agents);
-        this.boxes = new ArrayList<>(boxes);
-        this.emptyCells = new HashSet<>(emptyCells);
+        Level.goalsMap = new ConcurrentHashMap<>();
+        Level.wallsMap = new ConcurrentHashMap<>();
+        this.agentsMap = new ConcurrentHashMap<>();
+        this.boxesMap = new ConcurrentHashMap<>();
+        this.emptyCells = ConcurrentHashMap.newKeySet();
+        this.emptyCells.addAll(emptyCells);
+
+        // Build coordinate hash maps
+        agents.forEach(agent -> this.agentsMap.put(agent.getCoordinate(), agent));
+        boxes.forEach(box -> this.boxesMap.put(box.getCoordinate(), box));
+        goals.forEach(goal -> Level.goalsMap.put(goal.getCoordinate(), goal));
+        walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
     }
 
     public static List<Goal> getGoals() {
-        return Level.goals;
+        return new ArrayList<>(Level.goalsMap.values());
     }
 
     public static List<Wall> getWalls() {
-        return Level.walls;
+        return new ArrayList<>(Level.wallsMap.values());
     }
 
     public List<Agent> getAgents() {
-        return agents;
+        return new ArrayList<>(this.agentsMap.values());
     }
 
     public List<Box> getBoxes() {
-        return boxes;
+        return new ArrayList<>(this.boxesMap.values());
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {
@@ -52,11 +75,11 @@ public class Level {
     }
 
     public int getHeight() {
-        return height;
+        return Level.height;
     }
 
     public int getWidth() {
-        return width;
+        return Level.width;
     }
 
     @Override
@@ -67,16 +90,16 @@ public class Level {
         for (char[] row : board)
             Arrays.fill(row, ' ');
 
-        for (Wall wall : walls)
+        for (Wall wall : Level.wallsMap.values())
             board[wall.getCoordinate().getRow()][wall.getCoordinate().getCol()] = '+';
 
-        for (Box box : boxes)
+        for (Box box : this.boxesMap.values())
             board[box.getCoordinate().getRow()][box.getCoordinate().getCol()] = box.getBoxType();
 
-        for (Agent agent : agents)
+        for (Agent agent : this.agentsMap.values())
             board[agent.getCoordinate().getRow()][agent.getCoordinate().getCol()] = agent.getAgentId();
 
-        for (Goal goal : goals)
+        for (Goal goal : Level.goalsMap.values())
             board[goal.getCoordinate().getRow()][goal.getCoordinate().getCol()] = goal.getGoalType();
 
         s.append(String.format("Dimensions: (%d,%d)\n", height, width));
