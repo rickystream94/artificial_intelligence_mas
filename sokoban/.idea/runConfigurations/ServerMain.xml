@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ServerMain" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="main.ServerMain" />
+    <module name="sokoban" />
+    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/out/production/sokoban" />
+    <method />
+  </configuration>
+</component>
