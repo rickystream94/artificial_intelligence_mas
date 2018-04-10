@@ -54,7 +54,6 @@ fabric.properties
 *.txt
 .idea/misc.xml
 environment/
-META-INF/
 
 # Makefiles
 Makefile
