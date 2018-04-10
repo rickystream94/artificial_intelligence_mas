@@ -34,6 +34,7 @@ public class HTNPlanner {
                 // Compound task --> Needs to be refined!
                 CompoundTask compoundTask = (CompoundTask) currentTask;
                 Refinement refinement = compoundTask.findSatisfiedMethod(this.currentWorldState, planningStep);
+                // TODO: findSatisfiedMethod should know about the blacklist!
                 if (refinement != null && !refinementsBlacklist.contains(refinement)) {
                     recordDecompositionOfTask(refinement);
 
