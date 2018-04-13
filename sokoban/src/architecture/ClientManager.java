@@ -18,6 +18,7 @@ public class ClientManager {
     private ActionSenderThread actionSenderThread;
     private int numberOfAgents;
     private static ClientManager instance;
+    private BDIManager bdiManager;
 
     private ClientManager() {
     }
@@ -57,6 +58,8 @@ public class ClientManager {
          1) prioritizing boxes (which boxes each agent gets assigned, based on the existing goals?
          2) minimum-cost box-to-goal assignment (which box goes to which goal?)
          */
+        this.bdiManager = new BDIManager(level);
+        this.bdiManager.GenerateActionsByAgent();
     }
 
     public LevelManager getLevelManager() {

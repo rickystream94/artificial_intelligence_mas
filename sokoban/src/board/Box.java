@@ -31,4 +31,10 @@ public class Box extends SokobanObject {
         Box other = (Box) o;
         return Objects.equals(super.getCoordinate(), other.getCoordinate());
     }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(super.hashCode(), boxType, color);
+    }
 }

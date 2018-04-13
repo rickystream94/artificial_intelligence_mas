@@ -45,9 +45,7 @@ public class Level {
         walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
     }
 
-    public static List<Goal> getGoals() {
-        return new ArrayList<>(Level.goalsMap.values());
-    }
+    public static List<Goal> getGoals() { return new ArrayList<>(Level.goalsMap.values()); }
 
     public static List<Wall> getWalls() {
         return new ArrayList<>(Level.wallsMap.values());

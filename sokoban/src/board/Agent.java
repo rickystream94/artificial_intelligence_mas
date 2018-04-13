@@ -1,5 +1,7 @@
 package board;
 
+import java.util.Objects;
+
 public class Agent extends SokobanObject {
 
     private char agentId;
@@ -17,5 +19,20 @@ public class Agent extends SokobanObject {
 
     public char getAgentId() {
         return this.agentId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Agent agent = (Agent) o;
+        return agentId == agent.agentId &&
+                color == agent.color;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(super.hashCode(), agentId, color);
     }
 }
