@@ -15,6 +15,7 @@ import java.util.Objects;
  * This class is in charge of tracking the state of relevant elements during HTN planning.
  */
 public class HTNWorldState {
+
     private Coordinate agentPosition;
     private Coordinate boxPosition;
     private LevelManager levelManager;
@@ -90,7 +91,7 @@ public class HTNWorldState {
         there might be different needs...
          */
         Coordinate targetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
-        return Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(targetPosition));
+        return !Level.isWall(targetPosition);
     }
 
     /**
@@ -105,7 +106,7 @@ public class HTNWorldState {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.boxPosition, dir2);
         boolean isMet = this.boxPosition.equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
-        isMet = isMet && Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(boxTargetPosition)); // 2nd Precond
+        isMet = isMet && !Level.isWall(boxTargetPosition); // 2nd Precond
         return isMet;
     }
 
@@ -120,8 +121,16 @@ public class HTNWorldState {
     private boolean checkPullPreconditions(Direction dir1, Direction dir2) {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.boxPosition, Objects.requireNonNull(Direction.getOpposite(dir2)));
-        boolean isMet = Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(agentTargetPosition)); // 1st Precond
+        boolean isMet = Level.isWall(agentTargetPosition); // 1st Precond
         isMet = isMet && this.agentPosition.equals(boxTargetPosition); // 2nd Precond
         return isMet;
+    }
+
+    public Coordinate getAgentPosition() {
+        return this.agentPosition;
+    }
+
+    public Coordinate getBoxPosition() {
+        return this.boxPosition;
     }
 }

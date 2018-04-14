@@ -1,5 +1,7 @@
 package planning.actions;
 
+import board.Coordinate;
+
 import java.util.LinkedList;
 import java.util.Objects;
 
@@ -55,14 +57,14 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         dir2 = d2;
     }
 
-    public Effect getEffect() {
+    public Effect getEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
         switch (this.actionType) {
             case Move:
-                return getMoveEffect();
+                return getMoveEffect(currAgentPosition);
             case Push:
-                return getPushEffect();
+                return getPushEffect(currAgentPosition, currBoxPosition);
             case Pull:
-                return getPullEffect();
+                return getPullEffect(currAgentPosition, currBoxPosition);
             case NoOp:
                 return null;
             default:
@@ -70,19 +72,21 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         }
     }
 
-    private Effect getPullEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getPullEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        Coordinate newBoxPosition = Direction.getPositionByDirection(currBoxPosition, Objects.requireNonNull(Direction.getOpposite(dir2)));
+        return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    private Effect getPushEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getPushEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        Coordinate newBoxPosition = Direction.getPositionByDirection(currBoxPosition, dir2);
+        return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    private Effect getMoveEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getMoveEffect(Coordinate currAgentPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        return new Effect(newAgentPosition);
     }
 
     public Direction getDir1() {

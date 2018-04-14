@@ -49,8 +49,8 @@ public class Level {
         return new ArrayList<>(Level.goalsMap.values());
     }
 
-    public static List<Wall> getWalls() {
-        return new ArrayList<>(Level.wallsMap.values());
+    public static boolean isWall(Coordinate coordinate) {
+        return Level.wallsMap.containsKey(coordinate);
     }
 
     public List<Agent> getAgents() {
