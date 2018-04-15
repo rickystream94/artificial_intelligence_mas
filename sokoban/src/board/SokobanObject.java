@@ -21,6 +21,10 @@ public abstract class SokobanObject {
         this.coordinate.setCol(col);
     }
 
+    public void setCoordinate(Coordinate coordinate) {
+        this.coordinate = coordinate;
+    }
+
     public String getObjectType() {
         return objectType.toString();
     }

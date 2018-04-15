@@ -1,10 +1,10 @@
 package planning.actions;
 
 import planning.HTNWorldState;
+import planning.HighLevelPlan;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class SolveGoalTask extends CompoundTask {
@@ -14,16 +14,24 @@ public class SolveGoalTask extends CompoundTask {
     }
 
     @Override
-    protected Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
+    public Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
         // Only 1 refinement, no need of PriorityQueue
         Queue<Refinement> foundRefinements = new ArrayDeque<>();
-        List<Task> subTasks = new ArrayList<>();
+        LinkedList<Task> subTasks = new LinkedList<>();
 
-        // If agent hasn't reached the box yet
-        if (!currentWorldState.agentCanMoveBox())
-            subTasks.add(new GoToLocationTask());
-        subTasks.add(new MoveBoxToLocationTask());
-        foundRefinements.add(new Refinement(this, subTasks, planningStep));
+        if (isAchieved(currentWorldState)) {
+            foundRefinements.add(new Refinement(this, planningStep));
+        } else {
+            subTasks.add(new GoToLocationTask(currentWorldState.getBoxPosition()));
+            subTasks.add(new MoveBoxToLocationTask(currentWorldState.getGoalPosition()));
+            HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
+            foundRefinements.add(new Refinement(this, highLevelPlan, planningStep));
+        }
         return foundRefinements;
+    }
+
+    @Override
+    public boolean isAchieved(HTNWorldState currentWorldState) {
+        return currentWorldState.getBoxPosition().equals(currentWorldState.getGoalPosition());
     }
 }

@@ -1,21 +1,28 @@
 package planning.actions;
 
-import java.util.List;
+import planning.HighLevelPlan;
+
 import java.util.Objects;
 
 public class Refinement {
 
-    private List<Task> subTasks;
+    private HighLevelPlan subTasks;
     private CompoundTask owningCompoundTask;
     private int planningStep;
 
-    public Refinement(CompoundTask compoundTask, List<Task> subTasks, int planningStep) {
+    public Refinement(CompoundTask compoundTask, HighLevelPlan subTasks, int planningStep) {
         this.owningCompoundTask = compoundTask;
         this.subTasks = subTasks;
         this.planningStep = planningStep;
     }
 
-    public List<Task> getSubTasks() {
+    public Refinement(CompoundTask compoundTask, int planningStep) {
+        this.owningCompoundTask = compoundTask;
+        this.subTasks = new HighLevelPlan();
+        this.planningStep = planningStep;
+    }
+
+    public HighLevelPlan getHighLevelPlan() {
         return this.subTasks;
     }
 

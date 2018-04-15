@@ -2,39 +2,10 @@ package planning.actions;
 
 import board.Coordinate;
 
-import java.util.LinkedList;
 import java.util.Objects;
 
 public class PrimitiveTask implements Task<PrimitiveTaskType> {
 
-    static {
-        LinkedList<PrimitiveTask> primitiveTasks = new LinkedList<>();
-
-        primitiveTasks.add(new PrimitiveTask()); // NoOp
-
-        for (Direction d : Direction.values()) {
-            primitiveTasks.add(new PrimitiveTask(d)); // Move
-        }
-
-        for (Direction d1 : Direction.values()) {
-            for (Direction d2 : Direction.values()) {
-                if (!Direction.isOpposite(d1, d2)) {
-                    primitiveTasks.add(new PrimitiveTask(PrimitiveTaskType.Push, d1, d2));
-                }
-            }
-        }
-        for (Direction d1 : Direction.values()) {
-            for (Direction d2 : Direction.values()) {
-                if (d1 != d2) {
-                    primitiveTasks.add(new PrimitiveTask(PrimitiveTaskType.Pull, d1, d2));
-                }
-            }
-        }
-
-        every = primitiveTasks.toArray(new PrimitiveTask[0]);
-    }
-
-    public static final PrimitiveTask[] every;
     private PrimitiveTaskType actionType;
     private Direction dir1;
     private Direction dir2;
