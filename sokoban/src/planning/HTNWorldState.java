@@ -18,6 +18,7 @@ public class HTNWorldState {
 
     private Coordinate agentPosition;
     private Coordinate boxPosition;
+    private Coordinate goalPosition;
     private LevelManager levelManager;
 
     /**
@@ -26,8 +27,10 @@ public class HTNWorldState {
      *
      * @param agentPosition current agent's position to track
      * @param boxPosition   current box's position to track
+     * @param goalPosition
      */
-    public HTNWorldState(Coordinate agentPosition, Coordinate boxPosition) {
+    public HTNWorldState(Coordinate agentPosition, Coordinate boxPosition, Coordinate goalPosition) {
+        this.goalPosition = goalPosition;
         this.levelManager = ClientManager.getInstance().getLevelManager();
         this.agentPosition = agentPosition;
         this.boxPosition = boxPosition;
@@ -132,5 +135,13 @@ public class HTNWorldState {
 
     public Coordinate getBoxPosition() {
         return this.boxPosition;
+    }
+
+    public Coordinate getGoalPosition() {
+        return this.goalPosition;
+    }
+
+    public boolean agentCanMoveBox() {
+        return this.agentPosition.isNeighbour(this.boxPosition);
     }
 }

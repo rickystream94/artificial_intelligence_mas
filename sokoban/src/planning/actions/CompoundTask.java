@@ -2,16 +2,14 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 
-public class CompoundTask implements Task<CompoundTaskType> {
+public abstract class CompoundTask implements Task<CompoundTaskType> {
 
-    private CompoundTaskType taskType;
-
-    public CompoundTask(CompoundTaskType taskType) {
-        this.taskType = taskType;
-    }
+    protected CompoundTaskType taskType;
 
     /**
      * The current compound task should be refined in a list of 2 or more sub-tasks. It should avoid choosing already blacklisted refinements.
@@ -22,14 +20,36 @@ public class CompoundTask implements Task<CompoundTaskType> {
      * @return a new refinement if any that satisfies the preconditions exists, null otherwise.
      */
     public Refinement findSatisfiedMethod(HTNWorldState currentWorldState, Set<Refinement> refinementsBlacklist, int planningStep) {
-        /*do {
-            Refinement refinement = ...
+        Queue<Refinement> foundRefinements;
+        List<Task> subTasks;
+        Refinement refinement;
+        CompoundTask compoundTask = null;
+
+        // First step: refine task
+        switch (taskType) {
+            case SolveGoal:
+                compoundTask = new SolveGoalTask();
+                break;
+            case GoToLocation:
+                compoundTask = new GoToLocationTask();
+                break;
+            case MoveBoxToLocation:
+                compoundTask = new MoveBoxToLocationTask();
+                break;
+            default:
+                break;
+        }
+        foundRefinements = compoundTask.refineTask(currentWorldState, refinementsBlacklist, planningStep);
+
+        // Second step: avoid blacklisted refinements (if no valid refinements are found returns null!)
+        do {
+            refinement = foundRefinements.poll();
         }
         while (!refinementsBlacklist.contains(refinement));
-        return refinement;*/
-        // TODO: to implement --> this is a crucial method, it should probably implement a heuristic check such that the best method is chosen if more preconditions are met (best-first)
-        return null;
+        return refinement;
     }
+
+    protected abstract Queue<Refinement> refineTask(HTNWorldState currentWorldState, Set<Refinement> refinementsBlacklist, int planningStep);
 
     @Override
     public CompoundTaskType getType() {
