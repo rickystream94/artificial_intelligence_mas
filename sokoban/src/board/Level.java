@@ -37,7 +37,6 @@ public class Level {
         this.boxesMap = new ConcurrentHashMap<>();
         this.emptyCells = ConcurrentHashMap.newKeySet();
         this.emptyCells.addAll(emptyCells);
-        // TODO: goal cells should be registered initially as empty cells!
 
         // Build coordinate hash maps
         agents.forEach(agent -> this.agentsMap.put(agent.getCoordinate(), agent));
