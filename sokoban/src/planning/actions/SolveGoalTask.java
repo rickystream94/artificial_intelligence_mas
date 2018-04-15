@@ -2,7 +2,10 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 
 public class SolveGoalTask extends CompoundTask {
 
@@ -11,7 +14,7 @@ public class SolveGoalTask extends CompoundTask {
     }
 
     @Override
-    protected Queue<Refinement> refineTask(HTNWorldState currentWorldState, Set<Refinement> refinementsBlacklist, int planningStep) {
+    protected Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
         // Only 1 refinement, no need of PriorityQueue
         Queue<Refinement> foundRefinements = new ArrayDeque<>();
         List<Task> subTasks = new ArrayList<>();

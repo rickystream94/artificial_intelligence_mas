@@ -39,7 +39,7 @@ public abstract class CompoundTask implements Task<CompoundTaskType> {
             default:
                 break;
         }
-        foundRefinements = compoundTask.refineTask(currentWorldState, refinementsBlacklist, planningStep);
+        foundRefinements = compoundTask.refineTask(currentWorldState, planningStep);
 
         // Second step: avoid blacklisted refinements (if no valid refinements are found returns null!)
         do {
@@ -49,7 +49,7 @@ public abstract class CompoundTask implements Task<CompoundTaskType> {
         return refinement;
     }
 
-    protected abstract Queue<Refinement> refineTask(HTNWorldState currentWorldState, Set<Refinement> refinementsBlacklist, int planningStep);
+    protected abstract Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep);
 
     @Override
     public CompoundTaskType getType() {

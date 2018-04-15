@@ -2,7 +2,10 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 public class GoToLocationTask extends CompoundTask {
 
@@ -11,7 +14,7 @@ public class GoToLocationTask extends CompoundTask {
     }
 
     @Override
-    protected Queue<Refinement> refineTask(HTNWorldState currentWorldState, Set<Refinement> refinementsBlacklist, int planningStep) {
+    protected Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
         Queue<Refinement> foundRefinements = new PriorityQueue<>();
         List<Task> subTasks = new ArrayList<>();
 
