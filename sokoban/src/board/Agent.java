@@ -35,4 +35,12 @@ public class Agent extends SokobanObject {
 
         return Objects.hash(super.hashCode(), agentId, color);
     }
+
+    @Override
+    public String toString() {
+        return "Agent{" +
+                "agentId=" + agentId +
+                ", color=" + color +
+                '}';
+    }
 }

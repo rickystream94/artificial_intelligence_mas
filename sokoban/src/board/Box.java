@@ -37,4 +37,12 @@ public class Box extends SokobanObject {
 
         return Objects.hash(super.hashCode(), boxType, color);
     }
+
+    @Override
+    public String toString() {
+        return "Box{" +
+                "boxType=" + boxType +
+                ", color=" + color +
+                '}';
+    }
 }

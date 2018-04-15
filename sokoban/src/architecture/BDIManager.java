@@ -16,16 +16,16 @@ public class BDIManager {
 
     public BDIManager(Level level) {
         this.level = level;
-        actionsByAgent = new HashMap<>();
+        this.actionsByAgent = new HashMap<>();
     }
 
     public void GenerateActionsByAgent() {
-        HashSet<Agent> agents = new HashSet<>(level.getAgents());
-        HashSet<Goal> goals = new HashSet<>(level.getGoals());
-        HashSet<Box> boxes = new HashSet<>(level.getBoxes());
+        HashSet<Agent> agents = new HashSet<>(this.level.getAgents());
+        HashSet<Goal> goals = new HashSet<>(this.level.getGoals());
+        HashSet<Box> boxes = new HashSet<>(this.level.getBoxes());
         AbstractMap<Agent,List<Box>> agentsAndBoxMap = new HashMap<>();
         AbstractMap<Box,List<Goal>> boxesAndGoalsMap = new HashMap<>();
-        AbstractMap<Agent, FibonacciHeap<Pair<Box, Goal>>> actionsByAgent = new HashMap<>();
+        AbstractMap<Pair<Box, Goal>,Pair<Agent, Double>> actionsByAgent = new HashMap<>();
 
         for (Agent agent : agents) {
             for (Box box : boxes) {
@@ -58,42 +58,33 @@ public class BDIManager {
                 List<Goal> goalsForBox = boxesAndGoalsMap.get(box);
                 if(goalsForBox == null) continue;
                 for (Goal goal : goalsForBox) {
-                    double dist = ManhattanDistance(box.getCoordinate(),goal.getCoordinate());
-                    dist += ManhattanDistance(agent.getCoordinate(),box.getCoordinate());
-                    FibonacciHeap<Pair<Box, Goal>> actionsByAgentHeap = actionsByAgent.get(agent);
-                    if(actionsByAgentHeap == null) {
-                        actionsByAgentHeap = new FibonacciHeap<>();
-                        this.actionsByAgent.put(agent,actionsByAgentHeap);
+                    double dist = getActionCost(agent, box, goal);
+
+                    Pair<Box, Goal> action = new Pair<>(box, goal);
+                    Pair<Agent, Double> responsible = actionsByAgent.get(action);
+
+                    if(responsible == null) {
+                        actionsByAgent.put(action,new Pair<>(agent, dist));
                     }
-                    actionsByAgentHeap.enqueue(new Pair<>(box, goal), dist);
+                    else {
+                        double cost = responsible.getValue();
+                        if(cost > dist) {
+                            actionsByAgent.put(action,new Pair<>(agent, dist));
+                        }
+                    }
                 }
             }
         }
 
-        for(Map.Entry<Agent, FibonacciHeap<Pair<Box, Goal>>> entry : actionsByAgent.entrySet()) {
-            Agent agent = entry.getKey();
-            FibonacciHeap<Pair<Box, Goal>> actionsByAgentHeap = entry.getValue();
-            Entry<Pair<Box, Goal>> actionEntry = actionsByAgentHeap.dequeueMin();
-            if (actionEntry == null) continue;
-            Pair<Box, Goal> action = actionEntry.getValue();
-            for (Map.Entry<Agent, FibonacciHeap<Pair<Box, Goal>>> entryOther : actionsByAgent.entrySet()) {
-                Agent agentOther = entryOther.getKey();
-                FibonacciHeap<Pair<Box, Goal>> actionsByAgentHeapOther = entryOther.getValue();
-                if(agent.equals(agentOther)) continue;
-
-                FibonacciHeap<Pair<Box, Goal>> actionsByAgentHeapOtherCopy = new FibonacciHeap<>();
-
-                while(true) {
-                    Entry<Pair<Box, Goal>> actionEntryOther = actionsByAgentHeapOther.dequeueMin();
-                    if (actionEntryOther == null) break;
-                    Pair<Box, Goal> actionOther = actionEntryOther.getValue();
-                    if(actionOther.equals(action)) {
-
-                    }
-
-                    actionsByAgentHeapOtherCopy.enqueue(actionEntryOther.getValue(),actionEntryOther.getPriority());
-                }
+        for (Map.Entry<Pair<Box, Goal>,Pair<Agent, Double>> entry: actionsByAgent.entrySet()){
+            Agent agent = entry.getValue().getKey();
+            Double cost = entry.getValue().getValue();
+            FibonacciHeap<Pair<Box, Goal>> actions = this.actionsByAgent.get(agent);
+            if(actions == null) {
+                actions = new FibonacciHeap<>();
+                this.actionsByAgent.put(agent,actions);
             }
+            actions.enqueue(entry.getKey(),cost);
         }
     }
 
@@ -110,8 +101,38 @@ public class BDIManager {
         return null;
     }
 
-    //TODO Create a Heuristic Class
-    public double ManhattanDistance(Coordinate c0, Coordinate c1) {
+    /**
+     *
+     * This function fucks up the FibonacciHeap
+     *
+     */
+    private void printActions() {
+        for(Map.Entry<Agent, FibonacciHeap<Pair<Box, Goal>>> entry : this.actionsByAgent.entrySet()) {
+            Agent agent = entry.getKey();
+            FibonacciHeap<Pair<Box, Goal>> actions = entry.getValue();
+
+            while(!actions.isEmpty()) {
+                Entry<Pair<Box, Goal>> actionEntry = actions.dequeueMin();
+
+                double cost = actionEntry.getPriority();
+                Pair<Box, Goal> action = actionEntry.getValue();
+                if(action == null) continue;
+
+                Goal goal = action.getValue();
+                Box box = action.getKey();
+
+                System.err.println(box + " " + goal + " " + agent + " " + cost);
+            }
+        }
+    }
+
+    private double getActionCost(Agent agent, Box box, Goal goal) {
+        double dist = ManhattanDistance(box.getCoordinate(),goal.getCoordinate());
+        dist += ManhattanDistance(agent.getCoordinate(),box.getCoordinate());
+        return dist;
+    }
+
+    private double ManhattanDistance(Coordinate c0, Coordinate c1) {
         return Math.abs(c1.getCol() - c0.getCol()) + Math.abs(c1.getRow() - c0.getRow());
     }
 
