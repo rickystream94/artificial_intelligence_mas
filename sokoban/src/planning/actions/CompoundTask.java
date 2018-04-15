@@ -2,7 +2,6 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
-import java.util.Objects;
 import java.util.Queue;
 
 public abstract class CompoundTask implements Task<CompoundTaskType> {
@@ -19,17 +18,8 @@ public abstract class CompoundTask implements Task<CompoundTaskType> {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other == this)
-            return true;
-        if (!(other instanceof CompoundTask))
-            return false;
-        CompoundTask task = (CompoundTask) other;
-        return this.taskType == task.taskType;
-    }
+    public abstract boolean equals(Object other);
 
     @Override
-    public int hashCode() {
-        return Objects.hashCode(this.taskType);
-    }
+    public abstract int hashCode();
 }

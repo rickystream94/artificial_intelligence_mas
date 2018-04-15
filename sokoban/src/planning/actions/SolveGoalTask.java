@@ -5,6 +5,7 @@ import planning.HighLevelPlan;
 
 import java.util.ArrayDeque;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 
 public class SolveGoalTask extends CompoundTask {
@@ -33,5 +34,27 @@ public class SolveGoalTask extends CompoundTask {
     @Override
     public boolean isAchieved(HTNWorldState currentWorldState) {
         return currentWorldState.getBoxPosition().equals(currentWorldState.getGoalPosition());
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == this)
+            return true;
+        if (!(other instanceof SolveGoalTask))
+            return false;
+        SolveGoalTask task = (SolveGoalTask) other;
+        return this.taskType == task.taskType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.taskType);
+    }
+
+    @Override
+    public int calculateApproximation(HTNWorldState worldState) {
+        // TODO: since this is the root compound task that, in planning, would exist only once, the implementation of this method
+        // should provide a heuristic cost for prioritizing DESIRES
+        return 0;
     }
 }

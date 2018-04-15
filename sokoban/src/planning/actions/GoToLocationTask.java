@@ -5,6 +5,7 @@ import planning.HTNWorldState;
 import planning.HighLevelPlan;
 
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -43,5 +44,26 @@ public class GoToLocationTask extends CompoundTask {
     @Override
     public boolean isAchieved(HTNWorldState currentWorldState) {
         return currentWorldState.getAgentPosition().isNeighbour(this.destination);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == this)
+            return true;
+        if (!(other instanceof GoToLocationTask))
+            return false;
+        GoToLocationTask task = (GoToLocationTask) other;
+        return this.taskType == task.taskType && this.destination == task.destination;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.taskType, this.destination);
+    }
+
+    @Override
+    public int calculateApproximation(HTNWorldState worldState) {
+        // TODO: should it include more cost components?
+        return Coordinate.manhattanDistance(worldState.getAgentPosition(), this.destination);
     }
 }

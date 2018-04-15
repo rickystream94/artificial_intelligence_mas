@@ -1,5 +1,6 @@
 package planning.actions;
 
+import planning.HTNWorldState;
 import planning.HighLevelPlan;
 
 import java.util.Objects;
@@ -47,5 +48,19 @@ public class Refinement {
     @Override
     public int hashCode() {
         return Objects.hash(this.planningStep, this.subTasks, this.owningCompoundTask);
+    }
+
+    /**
+     * This method calculates the cost of choosing the current refinement (heuristic value)
+     * This function corresponds to the h() function in terms of heuristic
+     *
+     * @param worldState A representation of the current world state
+     * @return An integer number representing the cost of the current refinement
+     */
+    public int computeCost(HTNWorldState worldState) {
+        return this.subTasks.getTasks()
+                .stream()
+                .mapToInt(task -> task.calculateApproximation(worldState))
+                .sum();
     }
 }

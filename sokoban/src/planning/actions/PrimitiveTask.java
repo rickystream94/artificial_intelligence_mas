@@ -1,6 +1,7 @@
 package planning.actions;
 
 import board.Coordinate;
+import planning.HTNWorldState;
 
 import java.util.Objects;
 
@@ -78,6 +79,20 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         if (this.actionType == PrimitiveTaskType.Move)
             return this.actionType.toString() + "(" + dir1 + ")";
         return this.actionType.toString() + "(" + dir1 + "," + dir2 + ")";
+    }
+
+    @Override
+    public int calculateApproximation(HTNWorldState worldState) {
+        int cost = 0;
+
+        // Apply effect of primitive action to the copy of the world state
+        worldState.applyEffect(getEffect(worldState.getAgentPosition(), worldState.getBoxPosition()));
+
+        // Manhattan Distance from box to goal
+        cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getGoalPosition());
+
+        // TODO: should include more cost components besides manhattan distance (e.g. presence of walls? Clear path to goal?)
+        return cost;
     }
 
     @Override

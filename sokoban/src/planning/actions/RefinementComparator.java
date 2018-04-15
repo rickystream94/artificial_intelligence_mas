@@ -14,7 +14,6 @@ public class RefinementComparator implements Comparator<Refinement> {
 
     @Override
     public int compare(Refinement r1, Refinement r2) {
-        // TODO heuristic calculation comparison
-        return 0;
+        return r1.computeCost(new HTNWorldState(this.worldState)) - r2.computeCost(new HTNWorldState(this.worldState));
     }
 }

@@ -59,4 +59,25 @@ public class MoveBoxToLocationTask extends CompoundTask {
     public boolean isAchieved(HTNWorldState currentWorldState) {
         return currentWorldState.getBoxPosition().equals(boxDestination);
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == this)
+            return true;
+        if (!(other instanceof MoveBoxToLocationTask))
+            return false;
+        MoveBoxToLocationTask task = (MoveBoxToLocationTask) other;
+        return this.taskType == task.taskType && this.boxDestination == task.boxDestination;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.taskType, this.boxDestination);
+    }
+
+    @Override
+    public int calculateApproximation(HTNWorldState worldState) {
+        // TODO: should it include more cost components?
+        return Coordinate.manhattanDistance(worldState.getBoxPosition(), this.boxDestination);
+    }
 }
