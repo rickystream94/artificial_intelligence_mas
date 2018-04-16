@@ -2,13 +2,13 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
-import java.util.Queue;
+import java.util.List;
 
 public abstract class CompoundTask implements Task<CompoundTaskType> {
 
     protected CompoundTaskType taskType;
 
-    public abstract Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep);
+    public abstract List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep);
 
     public abstract boolean isAchieved(HTNWorldState currentWorldState);
 

@@ -3,10 +3,10 @@ package planning.actions;
 import planning.HTNWorldState;
 import planning.HighLevelPlan;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 
 public class SolveGoalTask extends CompoundTask {
 
@@ -15,9 +15,8 @@ public class SolveGoalTask extends CompoundTask {
     }
 
     @Override
-    public Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
-        // Only 1 refinement, no need of PriorityQueue
-        Queue<Refinement> foundRefinements = new ArrayDeque<>();
+    public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
+        List<Refinement> foundRefinements = new ArrayList<>();
         LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {

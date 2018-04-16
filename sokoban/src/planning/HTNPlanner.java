@@ -1,23 +1,27 @@
 package planning;
 
+import exceptions.NoValidRefinementsException;
 import planning.actions.*;
+import planning.strategy.Strategy;
+import planning.strategy.StrategyBestFirst;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 
 public class HTNPlanner {
-    private Deque<Task> tasksToProcess;
+
     private HTNWorldState currentWorldState;
     private Deque<HTNDecompositionRecord> decompositionHistory;
     private PrimitivePlan finalPlan;
     private int planningStep;
-    private Set<Refinement> refinementsBlacklist;
+    private Strategy strategy;
 
-    public HTNPlanner(HTNWorldState currentWorldState, CompoundTask rootTask) {
+    public HTNPlanner(HTNWorldState currentWorldState, Task rootTask) {
         this.currentWorldState = currentWorldState;
-        this.tasksToProcess = new ArrayDeque<>();
         this.decompositionHistory = new ArrayDeque<>();
-        this.refinementsBlacklist = new HashSet<>();
-        this.tasksToProcess.push(rootTask);
+        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), rootTask);
     }
 
     /**
@@ -26,30 +30,34 @@ public class HTNPlanner {
      * @return the final primitive plan
      */
     public PrimitivePlan findPlan() {
+        // TODO: and implement exploredStateSet!
         this.finalPlan = new PrimitivePlan();
         this.planningStep = 0;
-        while (!this.tasksToProcess.isEmpty()) {
-            Task currentTask = this.tasksToProcess.pop();
-            if (Arrays.stream(CompoundTaskType.values()).anyMatch(x -> x.equals(currentTask.getType()))) {
+        this.strategy.addToExploredStates(this.currentWorldState);
+
+        while (!this.strategy.hasMoreTasksToProcess()) { // TODO: OR is purpose of the intention achieved
+            Task currentTask = this.strategy.getNextTaskToProcess();
+            if (isCompoundTask(currentTask)) {
                 // Compound task --> Needs to be refined!
                 CompoundTask compoundTask = (CompoundTask) currentTask;
-                Refinement refinement = this.currentWorldState.findSatisfiedMethod(compoundTask, this.refinementsBlacklist, this.planningStep);
-                if (refinement != null) {
+                List<Refinement> foundRefinements = compoundTask.getSatisfiedRefinements(this.currentWorldState, planningStep);
+                try {
+                    Refinement refinement = this.strategy.chooseRefinement(foundRefinements);
                     recordDecompositionOfTask(refinement);
 
                     // Sub-tasks are reversed because, in order to maintain the correct order when processing them, the first one added to the stack should be the last one to be processed
                     HighLevelPlan highLevelPlan = refinement.getHighLevelPlan();
-                    highLevelPlan.getTasks().descendingIterator().forEachRemaining(subTask -> this.tasksToProcess.push(subTask));
-                } else
+                    highLevelPlan.getTasks().descendingIterator().forEachRemaining(subTask -> this.strategy.addTaskToProcess(subTask));
+                } catch (NoValidRefinementsException e) {
                     restoreToLastDecomposedTask();
+                }
             } else {
-                // TODO: probably the step of checking the preconditions is redundant (already performed in the specific refineTask method)
-                // In case no preconditions are met, we would get a null refinement which would still trigger restoreToLastDecomposedTask()
                 // Primitive task --> Can be added to final plan
                 PrimitiveTask primitiveTask = (PrimitiveTask) currentTask;
-                if (this.currentWorldState.preconditionsMet(primitiveTask)) {
-                    Effect effect = primitiveTask.getEffect(currentWorldState.getAgentPosition(), currentWorldState.getBoxPosition());
-                    this.currentWorldState.applyEffect(effect);
+                Effect effect = primitiveTask.getEffect(currentWorldState.getAgentPosition(), currentWorldState.getBoxPosition());
+                this.currentWorldState.applyEffect(effect);
+                if (!this.strategy.isStateExplored(this.currentWorldState)) {
+                    this.strategy.addToExploredStates(this.currentWorldState);
                     this.finalPlan.addTask(primitiveTask);
                 } else
                     restoreToLastDecomposedTask();
@@ -65,24 +73,28 @@ public class HTNPlanner {
      * @param refinement chosen refinement
      */
     private void recordDecompositionOfTask(Refinement refinement) {
-        this.decompositionHistory.push(new HTNDecompositionRecord(refinement, new PrimitivePlan(this.finalPlan), ((ArrayDeque<Task>) this.tasksToProcess).clone(), new HTNWorldState(this.currentWorldState)));
+        this.decompositionHistory.push(new HTNDecompositionRecord(refinement, new PrimitivePlan(this.finalPlan), ((ArrayDeque<Task>) this.strategy.getTasksToProcess()).clone(), new HTNWorldState(this.currentWorldState)));
     }
 
     /**
-     * Function used to backtrack when a compound task cannot be decomposed or a primitive action's preconditions are not met
+     * Function used to backtrack when a compound task cannot be decomposed or a primitive action leads to an already explored state
      */
     private void restoreToLastDecomposedTask() {
         HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
 
         // Restore
-        this.tasksToProcess = lastSoundPlanningState.getTasksToProcess();
+        this.strategy.setTasksToProcess(lastSoundPlanningState.getTasksToProcess());
         this.finalPlan = lastSoundPlanningState.getFinalPlan();
         this.currentWorldState = lastSoundPlanningState.getWorldState();
         Refinement refinement = lastSoundPlanningState.getRefinement();
-        this.tasksToProcess.push(refinement.getOwningCompoundTask());
+        this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
         this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
         // Blacklist refinement (avoid choosing same refinement --> infinite loops)
-        this.refinementsBlacklist.add(refinement);
+        this.strategy.addRefinementToBlacklist(refinement);
+    }
+
+    private boolean isCompoundTask(Task task) {
+        return Arrays.stream(CompoundTaskType.values()).anyMatch(x -> x.equals(task.getType()));
     }
 }

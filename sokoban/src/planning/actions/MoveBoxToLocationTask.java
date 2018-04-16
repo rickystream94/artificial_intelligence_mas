@@ -4,10 +4,10 @@ import board.Coordinate;
 import planning.HTNWorldState;
 import planning.HighLevelPlan;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.Queue;
 
 public class MoveBoxToLocationTask extends CompoundTask {
 
@@ -19,8 +19,8 @@ public class MoveBoxToLocationTask extends CompoundTask {
     }
 
     @Override
-    public Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
-        Queue<Refinement> foundRefinements = new PriorityQueue<>(new RefinementComparator(currentWorldState));
+    public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
+        List<Refinement> foundRefinements = new ArrayList<>();
         LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {
@@ -33,6 +33,8 @@ public class MoveBoxToLocationTask extends CompoundTask {
                 PrimitiveTask pushTask;
                 if (!Direction.isOpposite(dir, Objects.requireNonNull(dirTowardsBox))) {
                     pushTask = new PrimitiveTask(PrimitiveTaskType.Push, dirTowardsBox, dir);
+                    if (!currentWorldState.preconditionsMet(pushTask))
+                        continue;
                     subTasks.add(pushTask);
                     subTasks.add(this);
                     HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
@@ -45,6 +47,8 @@ public class MoveBoxToLocationTask extends CompoundTask {
                 PrimitiveTask pullTask;
                 if (dir != dirTowardsBox) {
                     pullTask = new PrimitiveTask(PrimitiveTaskType.Pull, dir, dirTowardsBox);
+                    if (!currentWorldState.preconditionsMet(pullTask))
+                        continue;
                     subTasks.add(pullTask);
                     subTasks.add(this);
                     HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);

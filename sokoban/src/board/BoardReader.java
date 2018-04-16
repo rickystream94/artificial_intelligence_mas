@@ -11,31 +11,6 @@ public class BoardReader {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(BoardReader.class.getSimpleName());
 
-    /*
-    public LinkedList<HTNNode> search(Strategy strategy, HTNNode initialState) {
-        strategy.addToFrontier(initialState);
-        while (true) {
-
-            if (strategy.frontierIsEmpty()) {
-                return null;
-            }
-
-            HTNNode leafNode = strategy.getAndRemoveLeaf();
-
-            if (leafNode.isGoalState()) {
-                return leafNode.extractPlan();
-            }
-
-            strategy.addToExplored(leafNode);
-            for (HTNNode n : leafNode.getExpandedNodes()) {
-                if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-                    strategy.addToFrontier(n);
-                }
-            }
-        }
-    }
-    */
-
     public static Level readLevel(BufferedReader reader) throws IOException {
         ConsoleLogger.logInfo(LOGGER, "Parsing level from Server...");
 
