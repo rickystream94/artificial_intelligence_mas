@@ -2,20 +2,15 @@ package planning.actions;
 
 import planning.HTNWorldState;
 
-import java.util.Objects;
+import java.util.Queue;
 
-public class CompoundTask implements Task<CompoundTaskType> {
+public abstract class CompoundTask implements Task<CompoundTaskType> {
 
-    private CompoundTaskType taskType;
+    protected CompoundTaskType taskType;
 
-    public CompoundTask(CompoundTaskType taskType) {
-        this.taskType = taskType;
-    }
+    public abstract Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep);
 
-    public Refinement findSatisfiedMethod(HTNWorldState currentWorldState, int planningStep) {
-        return null;
-        // TODO: to implement --> this is a crucial method, it should probably implement a heuristic check such that the best method is chosen if more preconditions are met (best-first)
-    }
+    public abstract boolean isAchieved(HTNWorldState currentWorldState);
 
     @Override
     public CompoundTaskType getType() {
@@ -23,17 +18,8 @@ public class CompoundTask implements Task<CompoundTaskType> {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other == this)
-            return true;
-        if (!(other instanceof CompoundTask))
-            return false;
-        CompoundTask task = (CompoundTask) other;
-        return this.taskType == task.taskType;
-    }
+    public abstract boolean equals(Object other);
 
     @Override
-    public int hashCode() {
-        return Objects.hashCode(this.taskType);
-    }
+    public abstract int hashCode();
 }

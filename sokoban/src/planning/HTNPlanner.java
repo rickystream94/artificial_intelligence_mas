@@ -33,27 +33,28 @@ public class HTNPlanner {
             if (Arrays.stream(CompoundTaskType.values()).anyMatch(x -> x.equals(currentTask.getType()))) {
                 // Compound task --> Needs to be refined!
                 CompoundTask compoundTask = (CompoundTask) currentTask;
-                Refinement refinement = compoundTask.findSatisfiedMethod(this.currentWorldState, planningStep);
-                // TODO: findSatisfiedMethod should know about the blacklist!
-                if (refinement != null && !refinementsBlacklist.contains(refinement)) {
+                Refinement refinement = this.currentWorldState.findSatisfiedMethod(compoundTask, this.refinementsBlacklist, this.planningStep);
+                if (refinement != null) {
                     recordDecompositionOfTask(refinement);
 
                     // Sub-tasks are reversed because, in order to maintain the correct order when processing them, the first one added to the stack should be the last one to be processed
-                    List<Task> subTasks = refinement.getSubTasks();
-                    Collections.reverse(subTasks);
-                    subTasks.forEach(subTask -> this.tasksToProcess.push(subTask));
+                    HighLevelPlan highLevelPlan = refinement.getHighLevelPlan();
+                    highLevelPlan.getTasks().descendingIterator().forEachRemaining(subTask -> this.tasksToProcess.push(subTask));
                 } else
                     restoreToLastDecomposedTask();
             } else {
+                // TODO: probably the step of checking the preconditions is redundant (already performed in the specific refineTask method)
+                // In case no preconditions are met, we would get a null refinement which would still trigger restoreToLastDecomposedTask()
                 // Primitive task --> Can be added to final plan
                 PrimitiveTask primitiveTask = (PrimitiveTask) currentTask;
                 if (this.currentWorldState.preconditionsMet(primitiveTask)) {
-                    this.currentWorldState.applyEffect(primitiveTask.getEffect());
+                    Effect effect = primitiveTask.getEffect(currentWorldState.getAgentPosition(), currentWorldState.getBoxPosition());
+                    this.currentWorldState.applyEffect(effect);
                     this.finalPlan.addTask(primitiveTask);
                 } else
                     restoreToLastDecomposedTask();
             }
-            planningStep++;
+            this.planningStep++;
         }
         return this.finalPlan;
     }

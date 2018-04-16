@@ -1,38 +1,12 @@
 package planning.actions;
 
-import java.util.LinkedList;
+import board.Coordinate;
+import planning.HTNWorldState;
+
 import java.util.Objects;
 
 public class PrimitiveTask implements Task<PrimitiveTaskType> {
 
-    static {
-        LinkedList<PrimitiveTask> primitiveTasks = new LinkedList<>();
-
-        primitiveTasks.add(new PrimitiveTask()); // NoOp
-
-        for (Direction d : Direction.values()) {
-            primitiveTasks.add(new PrimitiveTask(d)); // Move
-        }
-
-        for (Direction d1 : Direction.values()) {
-            for (Direction d2 : Direction.values()) {
-                if (!Direction.isOpposite(d1, d2)) {
-                    primitiveTasks.add(new PrimitiveTask(PrimitiveTaskType.Push, d1, d2));
-                }
-            }
-        }
-        for (Direction d1 : Direction.values()) {
-            for (Direction d2 : Direction.values()) {
-                if (d1 != d2) {
-                    primitiveTasks.add(new PrimitiveTask(PrimitiveTaskType.Pull, d1, d2));
-                }
-            }
-        }
-
-        every = primitiveTasks.toArray(new PrimitiveTask[0]);
-    }
-
-    public static final PrimitiveTask[] every;
     private PrimitiveTaskType actionType;
     private Direction dir1;
     private Direction dir2;
@@ -55,14 +29,14 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         dir2 = d2;
     }
 
-    public Effect getEffect() {
+    public Effect getEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
         switch (this.actionType) {
             case Move:
-                return getMoveEffect();
+                return getMoveEffect(currAgentPosition);
             case Push:
-                return getPushEffect();
+                return getPushEffect(currAgentPosition, currBoxPosition);
             case Pull:
-                return getPullEffect();
+                return getPullEffect(currAgentPosition, currBoxPosition);
             case NoOp:
                 return null;
             default:
@@ -70,19 +44,21 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         }
     }
 
-    private Effect getPullEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getPullEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        Coordinate newBoxPosition = Direction.getPositionByDirection(currBoxPosition, Objects.requireNonNull(Direction.getOpposite(dir2)));
+        return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    private Effect getPushEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getPushEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        Coordinate newBoxPosition = Direction.getPositionByDirection(currBoxPosition, dir2);
+        return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    private Effect getMoveEffect() {
-        // TODO: to implement
-        return null;
+    private Effect getMoveEffect(Coordinate currAgentPosition) {
+        Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
+        return new Effect(newAgentPosition);
     }
 
     public Direction getDir1() {
@@ -103,6 +79,20 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         if (this.actionType == PrimitiveTaskType.Move)
             return this.actionType.toString() + "(" + dir1 + ")";
         return this.actionType.toString() + "(" + dir1 + "," + dir2 + ")";
+    }
+
+    @Override
+    public int calculateApproximation(HTNWorldState worldState) {
+        int cost = 0;
+
+        // Apply effect of primitive action to the copy of the world state
+        worldState.applyEffect(getEffect(worldState.getAgentPosition(), worldState.getBoxPosition()));
+
+        // Manhattan Distance from box to goal
+        cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getGoalPosition());
+
+        // TODO: should include more cost components besides manhattan distance (e.g. presence of walls? Clear path to goal?)
+        return cost;
     }
 
     @Override

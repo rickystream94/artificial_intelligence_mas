@@ -2,34 +2,36 @@ package planning;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
-import board.Coordinate;
-import board.Level;
-import planning.actions.Direction;
-import planning.actions.Effect;
-import planning.actions.PrimitiveTask;
-import planning.actions.PrimitiveTaskType;
+import board.*;
+import planning.actions.*;
 
 import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * This class is in charge of tracking the state of relevant elements during HTN planning.
  */
 public class HTNWorldState {
-    private Coordinate agentPosition;
-    private Coordinate boxPosition;
+
+    private Agent agent;
+    private Box box;
+    private Goal goal;
     private LevelManager levelManager;
 
     /**
      * This constructor assumes that the color constraints between agent and box are satisfied
      * (Caller must verify this condition before instantiating a HTNWorldState)
      *
-     * @param agentPosition current agent's position to track
-     * @param boxPosition   current box's position to track
+     * @param agent current agent to track
+     * @param box   current box to track
+     * @param goal  current goal to track
      */
-    public HTNWorldState(Coordinate agentPosition, Coordinate boxPosition) {
+    public HTNWorldState(Agent agent, Box box, Goal goal) {
+        this.agent = agent;
+        this.box = box;
+        this.goal = goal;
         this.levelManager = ClientManager.getInstance().getLevelManager();
-        this.agentPosition = agentPosition;
-        this.boxPosition = boxPosition;
     }
 
     /**
@@ -39,16 +41,17 @@ public class HTNWorldState {
      */
     public HTNWorldState(HTNWorldState other) {
         this.levelManager = other.levelManager;
-        this.agentPosition = other.agentPosition;
-        this.boxPosition = other.boxPosition;
+        this.agent = other.agent;
+        this.box = other.box;
+        this.goal = other.goal;
     }
 
 
     public void applyEffect(Effect effect) {
-        this.agentPosition = effect.getNewAgentPosition();
+        this.agent.setCoordinate(effect.getNewAgentPosition());
         Coordinate newBoxPosition = effect.getNewBoxPosition();
         if (newBoxPosition != null)
-            this.boxPosition = newBoxPosition;
+            this.box.setCoordinate(newBoxPosition);
     }
 
     public boolean preconditionsMet(PrimitiveTask task) {
@@ -74,7 +77,7 @@ public class HTNWorldState {
      * @return true if all preconditions are met
      */
     private boolean checkMovePreconditions(Direction dir1) {
-        /* TODO
+        /* TODO: possibility of improvements
         Intuitively, one might claim this return statement makes the trick:
         return this.levelManager.getLevel().isCellEmpty(targetPosition);
         The problem lies in the way the empty cells are (correctly!) stored: the Level instance contains information
@@ -89,8 +92,8 @@ public class HTNWorldState {
         Currently, a relaxation where only walls are considered. But according to different situations,
         there might be different needs...
          */
-        Coordinate targetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
-        return Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(targetPosition));
+        Coordinate targetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
+        return !Level.isWall(targetPosition);
     }
 
     /**
@@ -102,10 +105,10 @@ public class HTNWorldState {
      * @return
      */
     private boolean checkPushPreconditions(Direction dir1, Direction dir2) {
-        Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
-        Coordinate boxTargetPosition = Direction.getPositionByDirection(this.boxPosition, dir2);
-        boolean isMet = this.boxPosition.equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
-        isMet = isMet && Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(boxTargetPosition)); // 2nd Precond
+        Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
+        Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), dir2);
+        boolean isMet = this.box.getCoordinate().equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
+        isMet = isMet && !Level.isWall(boxTargetPosition); // 2nd Precond
         return isMet;
     }
 
@@ -118,10 +121,43 @@ public class HTNWorldState {
      * @return
      */
     private boolean checkPullPreconditions(Direction dir1, Direction dir2) {
-        Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agentPosition, dir1);
-        Coordinate boxTargetPosition = Direction.getPositionByDirection(this.boxPosition, Objects.requireNonNull(Direction.getOpposite(dir2)));
-        boolean isMet = Level.getWalls().stream().noneMatch(wall -> wall.getCoordinate().equals(agentTargetPosition)); // 1st Precond
-        isMet = isMet && this.agentPosition.equals(boxTargetPosition); // 2nd Precond
+        Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
+        Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), Objects.requireNonNull(Direction.getOpposite(dir2)));
+        boolean isMet = Level.isWall(agentTargetPosition); // 1st Precond
+        isMet = isMet && this.agent.getCoordinate().equals(boxTargetPosition); // 2nd Precond
         return isMet;
+    }
+
+    public Coordinate getAgentPosition() {
+        return this.agent.getCoordinate();
+    }
+
+    public Coordinate getBoxPosition() {
+        return this.agent.getCoordinate();
+    }
+
+    public Coordinate getGoalPosition() {
+        return this.goal.getCoordinate();
+    }
+
+    /**
+     * The current compound task should be refined in a list of 2 or more sub-tasks. It should avoid choosing already blacklisted refinements.
+     *
+     * @param compoundTask         Compound task to be refined
+     * @param refinementsBlacklist Set of already blacklisted refinements
+     * @param planningStep         Current planning step
+     * @return A new refinement if any that satisfies the preconditions exists, null otherwise.
+     */
+    public Refinement findSatisfiedMethod(CompoundTask compoundTask, Set<Refinement> refinementsBlacklist, int planningStep) {
+        // First step: refine task
+        Queue<Refinement> foundRefinements = compoundTask.refineTask(this, planningStep);
+
+        // Second step: avoid blacklisted refinements (if no valid refinements are found returns null!)
+        Refinement refinement;
+        do {
+            refinement = foundRefinements.poll();
+        }
+        while (!refinementsBlacklist.contains(refinement));
+        return refinement;
     }
 }

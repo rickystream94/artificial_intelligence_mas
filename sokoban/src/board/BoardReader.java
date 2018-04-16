@@ -1,11 +1,11 @@
 package board;
 
+import logging.ConsoleLogger;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
-
-import logging.ConsoleLogger;
 
 public class BoardReader {
 
@@ -79,6 +79,7 @@ public class BoardReader {
                 else if ('a' <= id && id <= 'z') {
                     sokobanObject = new Goal(height, cell, id, SokobanObjectType.GOAL);
                     goals.add((Goal) sokobanObject);
+                    emptyCells.add(new EmptyCell(height, cell, SokobanObjectType.EMPTY)); // Goals are empty cells!
                 }
 
                 // Object in current cell is a Box

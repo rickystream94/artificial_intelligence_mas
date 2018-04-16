@@ -52,4 +52,8 @@ public class Coordinate {
         return Objects.hash(this.row, this.col);
     }
 
+    public static int manhattanDistance(Coordinate c1, Coordinate c2) {
+        return Math.abs((c1.getRow() - c2.getRow()) + (c1.getCol() - c2.getCol()));
+    }
+
 }
