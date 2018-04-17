@@ -89,8 +89,4 @@ public class ClientManager {
     public int getNumberOfAgents() {
         return this.numberOfAgents;
     }
-
-    public ActionSenderThread getActionSenderThread() {
-        return this.actionSenderThread;
-    }
 }
