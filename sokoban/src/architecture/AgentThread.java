@@ -3,8 +3,15 @@ package architecture;
 import architecture.bdi.Desire;
 import board.Agent;
 import logging.ConsoleLogger;
+import planning.HTNPlanner;
+import planning.HTNWorldState;
+import planning.PrimitivePlan;
+import planning.actions.CompoundTask;
+import planning.actions.PrimitiveTask;
+import planning.actions.SolveGoalTask;
 import utils.FibonacciHeap;
 
+import java.util.Queue;
 import java.util.logging.Logger;
 
 public class AgentThread implements Runnable {
@@ -26,9 +33,22 @@ public class AgentThread implements Runnable {
             // 2) Create intention as SolveGoalTask and pass it to the planner
             // 3) Get output of planner --> PrimitivePlan and send it to ActionSenderThread
             try {
-                Thread.sleep(3000);
-                ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
-            } catch (InterruptedException e) {
+                while(!this.desires.isEmpty()) {
+                    Desire desire = this.desires.dequeueMin().getValue();
+                    HTNWorldState worldState = new HTNWorldState(this.agent,desire.getBox(),desire.getGoal());
+                    CompoundTask intention = new SolveGoalTask();
+                    HTNPlanner planner = new HTNPlanner(worldState,intention);
+                    PrimitivePlan plan = planner.findPlan();
+                    Queue<PrimitiveTask> tasks = plan.getTasks();
+
+                    while(!tasks.isEmpty()){
+                        ActionSenderThread actionSenderThread = ActionSenderThread.getInstance();
+                        actionSenderThread.addPrimitiveAction(tasks.remove(),this.agent);
+                    }
+                }
+                //Thread.sleep(3000);
+                //ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
