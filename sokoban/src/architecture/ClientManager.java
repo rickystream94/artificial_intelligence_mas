@@ -1,20 +1,21 @@
 package architecture;
 
 import architecture.bdi.BDIManager;
+import architecture.bdi.Desire;
+import board.Agent;
 import board.BoardReader;
-import board.Goal;
 import board.Level;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
 import java.io.*;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class ClientManager {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(ClientManager.class.getSimpleName());
 
-    private FibonacciHeap<Goal> subGoals;
     private LevelManager levelManager;
     private ActionSenderThread actionSenderThread;
     private int numberOfAgents;
@@ -33,7 +34,6 @@ public class ClientManager {
     public void init() {
         BufferedReader serverInMessages = new BufferedReader(new InputStreamReader(System.in));
         BufferedWriter serverOutMessages = new BufferedWriter(new OutputStreamWriter(System.out));
-        this.subGoals = new FibonacciHeap<>();
 
         // Read and create level
         Level level = null;
@@ -75,10 +75,10 @@ public class ClientManager {
         Intentions are generated for each agent control loop iteration --> deliberation step
          */
         this.bdiManager = new BDIManager();
-        this.bdiManager.generateActionsByAgent();
+        Map<Agent, FibonacciHeap<Desire>> desires = this.bdiManager.generateDesires();
 
         // Instantiate and launch agent threads
-        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent, desires)).start());
+        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent, desires.get(agent))).start());
     }
 
     public LevelManager getLevelManager() {
