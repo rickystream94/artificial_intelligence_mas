@@ -23,13 +23,23 @@ public class ActionSenderThread implements Runnable {
     private BlockingQueue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
+    private static ActionSenderThread instance;
 
-    public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
+    private ActionSenderThread() {
+    }
+
+    public void init(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
         this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
         this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
+    }
+
+    public static ActionSenderThread getInstance() {
+        if (instance == null)
+            instance = new ActionSenderThread();
+        return instance;
     }
 
     @Override

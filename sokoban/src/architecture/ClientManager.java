@@ -16,7 +16,6 @@ public class ClientManager {
 
     private FibonacciHeap<Goal> subGoals;
     private LevelManager levelManager;
-    private ActionSenderThread actionSenderThread;
     private int numberOfAgents;
     private static ClientManager instance;
     private BDIManager bdiManager;
@@ -49,8 +48,10 @@ public class ClientManager {
         this.numberOfAgents = this.levelManager.getLevel().getAgents().size();
 
         // Instantiate and launch ActionSenderThread
-        this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);
-        new Thread(this.actionSenderThread).start();
+        ActionSenderThread actionSenderThread = ActionSenderThread.getInstance();
+        actionSenderThread.init(this.numberOfAgents, serverInMessages, serverOutMessages);
+
+        new Thread(actionSenderThread).start();
 
         /* TODO: next step --> goal desires generation:
         Distinction between DESIRES and INTENTIONS generation:
