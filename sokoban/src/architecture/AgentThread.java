@@ -12,6 +12,8 @@ import planning.actions.SolveGoalTask;
 import utils.FibonacciHeap;
 
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 public class AgentThread implements Runnable {
@@ -20,16 +22,18 @@ public class AgentThread implements Runnable {
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
+    private BlockingQueue<ResponseEvent> responseEvents;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
         this.desires = desires;
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
+        this.responseEvents = new ArrayBlockingQueue<>(1);
     }
 
     @Override
     public void run() {
-        while (true) {
+        while (true) { // TODO: or better, while(isLevelSolved())
             /* TODO: ** INTENTIONS AND DESIRES **
         Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
         An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
@@ -63,9 +67,19 @@ public class AgentThread implements Runnable {
         Queue<PrimitiveTask> tasks = plan.getTasks();
         do {
             this.actionSenderThread.addPrimitiveAction(tasks.remove(), this.agent);
-            // TODO: implement publisher & subscriber pattern! All agent threads should wait for a "response event" from
-            // ActionSenderThread saying "here's the response!". Until they receive the event, they should not keep pushing actions!
-            // e.g. something like waitForResponse();
+            boolean success = false;
+            try {
+                ResponseEvent responseEvent = this.responseEvents.take();
+                success = responseEvent.getResponseFromServer();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            // TODO: based on the value of success, decide what to do next --> keep on sending actions or break? ...
         } while (!tasks.isEmpty());
+    }
+
+    public void sendServerResponse(ResponseEvent responseEvent) {
+        assert responseEvent.getAgentId() == this.agent.getAgentId();
+        this.responseEvents.add(responseEvent);
     }
 }

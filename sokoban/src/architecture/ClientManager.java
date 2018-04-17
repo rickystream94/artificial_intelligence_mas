@@ -58,10 +58,12 @@ public class ClientManager {
         this.bdiManager = new BDIManager();
         Map<Agent, FibonacciHeap<Desire>> desires = this.bdiManager.generateDesires();
 
-        // Instantiate agent threads, add them as subscribers to ActionSenderThread (Publisher) and launch them
+        // Instantiate agent threads, register them to the EventBus (Publisher) and launch them
         List<AgentThread> agentThreads = this.levelManager.getLevel().getAgents().stream().map(agent -> new AgentThread(agent, desires.get(agent))).collect(Collectors.toList());
-        this.actionSenderThread.addSubscribers(agentThreads);
-        agentThreads.forEach(agentThread -> new Thread(agentThread).start());
+        agentThreads.forEach(agentThread -> {
+            EventBus.getDefault().register(agentThread);
+            new Thread(agentThread).start();
+        });
     }
 
     public LevelManager getLevelManager() {
