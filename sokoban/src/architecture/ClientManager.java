@@ -1,5 +1,6 @@
 package architecture;
 
+import architecture.bdi.BDIManager;
 import board.BoardReader;
 import board.Goal;
 import board.Level;
@@ -51,9 +52,6 @@ public class ClientManager {
         this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);
         new Thread(this.actionSenderThread).start();
 
-        // Instantiate and launch agent threads
-        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent)).start());
-
         /* TODO: next step --> goal desires generation:
         Distinction between DESIRES and INTENTIONS generation:
 
@@ -78,6 +76,9 @@ public class ClientManager {
          */
         this.bdiManager = new BDIManager();
         this.bdiManager.generateActionsByAgent();
+
+        // Instantiate and launch agent threads
+        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent, desires)).start());
     }
 
     public LevelManager getLevelManager() {

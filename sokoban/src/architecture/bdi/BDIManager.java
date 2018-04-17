@@ -1,32 +1,31 @@
-package architecture;
+package architecture.bdi;
 
+import architecture.ClientManager;
 import board.*;
+import javafx.util.Pair;
 import planning.actions.CompoundTask;
-import server.action.Action;
 import utils.FibonacciHeap;
 import utils.FibonacciHeap.Entry;
-import javafx.util.Pair;
 
 import java.util.*;
 
 public class BDIManager {
 
-    private AbstractMap<Agent, FibonacciHeap<Pair<Box, Goal>>> actionsByAgent;
-
     public BDIManager() {
-        this.actionsByAgent = new HashMap<>();
     }
 
     public void generateActionsByAgent() {
+        Map<Agent, FibonacciHeap<Desire>> actionsByAgent = new HashMap<>();
         Level level = ClientManager.getInstance().getLevelManager().getLevel();
 
         HashSet<Agent> agents = new HashSet<>(level.getAgents());
-        HashSet<Goal> goals = new HashSet<>(level.getGoals());
+        HashSet<Goal> goals = new HashSet<>(Level.getGoals());
         HashSet<Box> boxes = new HashSet<>(level.getBoxes());
-        AbstractMap<Agent,List<Box>> agentAndBoxesMap = new HashMap<>();
-        AbstractMap<Box,List<Goal>> boxAndGoalsMap = new HashMap<>();
-        AbstractMap<Pair<Box, Goal>,Pair<Agent, Double>> actionsByAgent = new HashMap<>();
+        Map<Agent, List<Box>> agentAndBoxesMap = new HashMap<>();
+        Map<Box, List<Goal>> boxAndGoalsMap = new HashMap<>();
+        Map<Pair<Box, Goal>, Pair<Agent, Double>> actionsByAgent = new HashMap<>();
 
+        // Map each agent with its potentially assignable boxes
         for (Agent agent : agents) {
             for (Box box : boxes) {
                 if(box.getColor() != agent.getColor()) continue;
@@ -36,6 +35,7 @@ public class BDIManager {
             }
         }
 
+        // Map each box with its potentially assignable goals
         for (Box box : boxes) {
             for (Goal goal : goals) {
                 if(Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) continue;
@@ -45,9 +45,8 @@ public class BDIManager {
             }
         }
 
-        for(Map.Entry<Agent,List<Box>> entry : agentAndBoxesMap.entrySet()) {
-            Agent agent = entry.getKey();
-            List<Box> boxesForAgent = entry.getValue();
+        for (Agent agent : agentAndBoxesMap.keySet()) {
+            List<Box> boxesForAgent = agentAndBoxesMap.get(agent);
             for (Box box: boxesForAgent) {
                 if(!boxAndGoalsMap.containsKey(box)) continue;
                 List<Goal> goalsForBox = boxAndGoalsMap.get(box);
