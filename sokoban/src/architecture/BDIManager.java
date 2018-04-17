@@ -11,62 +11,54 @@ import java.util.*;
 
 public class BDIManager {
 
-    private Level level;
     private AbstractMap<Agent, FibonacciHeap<Pair<Box, Goal>>> actionsByAgent;
 
-    public BDIManager(Level level) {
-        this.level = level;
+    public BDIManager() {
         this.actionsByAgent = new HashMap<>();
     }
 
-    public void GenerateActionsByAgent() {
-        HashSet<Agent> agents = new HashSet<>(this.level.getAgents());
-        HashSet<Goal> goals = new HashSet<>(this.level.getGoals());
-        HashSet<Box> boxes = new HashSet<>(this.level.getBoxes());
-        AbstractMap<Agent,List<Box>> agentsAndBoxMap = new HashMap<>();
-        AbstractMap<Box,List<Goal>> boxesAndGoalsMap = new HashMap<>();
+    public void generateActionsByAgent() {
+        Level level = ClientManager.getInstance().getLevelManager().getLevel();
+
+        HashSet<Agent> agents = new HashSet<>(level.getAgents());
+        HashSet<Goal> goals = new HashSet<>(level.getGoals());
+        HashSet<Box> boxes = new HashSet<>(level.getBoxes());
+        AbstractMap<Agent,List<Box>> agentAndBoxesMap = new HashMap<>();
+        AbstractMap<Box,List<Goal>> boxAndGoalsMap = new HashMap<>();
         AbstractMap<Pair<Box, Goal>,Pair<Agent, Double>> actionsByAgent = new HashMap<>();
 
         for (Agent agent : agents) {
             for (Box box : boxes) {
                 if(box.getColor() != agent.getColor()) continue;
-                List<Box> boxesForAgent = agentsAndBoxMap.get(agent);
-                if(boxesForAgent == null) {
-                    boxesForAgent = new ArrayList<>();
-                    agentsAndBoxMap.put(agent,boxesForAgent);
-                }
-                boxesForAgent.add(box);
+                if(!agentAndBoxesMap.containsKey(agent))
+                    agentAndBoxesMap.put(agent,new ArrayList<>());
+                agentAndBoxesMap.get(agent).add(box);
             }
         }
 
         for (Box box : boxes) {
             for (Goal goal : goals) {
                 if(Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) continue;
-                List<Goal> goalsForBox = boxesAndGoalsMap.get(box);
-                if(goalsForBox == null) {
-                    goalsForBox = new ArrayList<>();
-                    boxesAndGoalsMap.put(box,goalsForBox);
-                }
-                goalsForBox.add(goal);
+                if(!boxAndGoalsMap.containsKey(box))
+                    boxAndGoalsMap.put(box,new ArrayList<>());
+                boxAndGoalsMap.get(box).add(goal);
             }
         }
 
-        for(Map.Entry<Agent,List<Box>> entry : agentsAndBoxMap.entrySet()) {
+        for(Map.Entry<Agent,List<Box>> entry : agentAndBoxesMap.entrySet()) {
             Agent agent = entry.getKey();
             List<Box> boxesForAgent = entry.getValue();
             for (Box box: boxesForAgent) {
-                List<Goal> goalsForBox = boxesAndGoalsMap.get(box);
-                if(goalsForBox == null) continue;
+                if(!boxAndGoalsMap.containsKey(box)) continue;
+                List<Goal> goalsForBox = boxAndGoalsMap.get(box);
                 for (Goal goal : goalsForBox) {
                     double dist = getActionCost(agent, box, goal);
-
                     Pair<Box, Goal> action = new Pair<>(box, goal);
-                    Pair<Agent, Double> responsible = actionsByAgent.get(action);
-
-                    if(responsible == null) {
+                    if(!actionsByAgent.containsKey(action)) {
                         actionsByAgent.put(action,new Pair<>(agent, dist));
                     }
                     else {
+                        Pair<Agent, Double> responsible = actionsByAgent.get(action);
                         double cost = responsible.getValue();
                         if(cost > dist) {
                             actionsByAgent.put(action,new Pair<>(agent, dist));
@@ -79,12 +71,10 @@ public class BDIManager {
         for (Map.Entry<Pair<Box, Goal>,Pair<Agent, Double>> entry: actionsByAgent.entrySet()){
             Agent agent = entry.getValue().getKey();
             Double cost = entry.getValue().getValue();
+            if(!this.actionsByAgent.containsKey(agent))
+                this.actionsByAgent.put(agent, new FibonacciHeap<>());
             FibonacciHeap<Pair<Box, Goal>> actions = this.actionsByAgent.get(agent);
-            if(actions == null) {
-                actions = new FibonacciHeap<>();
-                this.actionsByAgent.put(agent,actions);
-            }
-            actions.enqueue(entry.getKey(),cost);
+            actions.enqueue(entry.getKey(), cost);
         }
     }
 
@@ -135,5 +125,4 @@ public class BDIManager {
     private double ManhattanDistance(Coordinate c0, Coordinate c1) {
         return Math.abs(c1.getCol() - c0.getCol()) + Math.abs(c1.getRow() - c0.getRow());
     }
-
 }

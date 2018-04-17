@@ -32,7 +32,6 @@ public class Agent extends SokobanObject {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(super.hashCode(), agentId, color);
     }
 
