@@ -18,6 +18,7 @@ public class ClientManager {
     private ActionSenderThread actionSenderThread;
     private int numberOfAgents;
     private static ClientManager instance;
+    private BDIManager bdiManager;
 
     private ClientManager() {
     }
@@ -75,6 +76,8 @@ public class ClientManager {
         (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
         Intentions are generated for each agent control loop iteration --> deliberation step
          */
+        this.bdiManager = new BDIManager();
+        this.bdiManager.generateActionsByAgent();
     }
 
     public LevelManager getLevelManager() {

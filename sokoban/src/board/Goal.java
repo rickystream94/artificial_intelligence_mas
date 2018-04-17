@@ -12,4 +12,11 @@ public class Goal extends SokobanObject {
     public char getGoalType() {
         return this.goalType;
     }
+
+    @Override
+    public String toString() {
+        return "Goal{" +
+                "goalType=" + goalType +
+                '}';
+    }
 }
