@@ -1,5 +1,7 @@
 package board;
 
+import java.util.Objects;
+
 public class Goal extends SokobanObject {
 
     private char goalType;
@@ -11,6 +13,22 @@ public class Goal extends SokobanObject {
 
     public char getGoalType() {
         return this.goalType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Goal goal = (Goal) o;
+        return super.equals(o) &&
+                goalType == goal.goalType;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(super.hashCode(),goalType);
     }
 
     @Override

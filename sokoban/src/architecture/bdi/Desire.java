@@ -3,6 +3,8 @@ package architecture.bdi;
 import board.Box;
 import board.Goal;
 
+import java.util.Objects;
+
 public class Desire {
     private Box box;
     private Goal goal;
@@ -18,5 +20,20 @@ public class Desire {
 
     public Goal getGoal() {
         return goal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Desire desire = (Desire) o;
+        return Objects.equals(box, desire.box) &&
+                Objects.equals(goal, desire.goal);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(box, goal);
     }
 }

@@ -23,13 +23,12 @@ public class Box extends SokobanObject {
 
     @Override
     public boolean equals(Object o) {
-
-        if (o == this) return true;
-        if (!(o instanceof Box)) {
-            return false;
-        }
-        Box other = (Box) o;
-        return Objects.equals(super.getCoordinate(), other.getCoordinate());
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Box box = (Box) o;
+        return super.equals(o) &&
+                boxType == box.boxType &&
+                color == box.color;
     }
 
     @Override
