@@ -17,11 +17,11 @@ public class SolveGoalTask extends CompoundTask {
     @Override
     public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
         List<Refinement> foundRefinements = new ArrayList<>();
-        LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
+            LinkedList<Task> subTasks = new LinkedList<>();
             subTasks.add(new GoToLocationTask(currentWorldState.getBoxPosition()));
             subTasks.add(new MoveBoxToLocationTask(currentWorldState.getGoalPosition()));
             HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
@@ -37,10 +37,9 @@ public class SolveGoalTask extends CompoundTask {
 
     @Override
     public boolean equals(Object other) {
-        if (other == this)
-            return true;
-        if (!(other instanceof SolveGoalTask))
-            return false;
+        if (other == this) return true;
+        if (!super.equals(other)) return false;
+        if (!(other instanceof SolveGoalTask)) return false;
         SolveGoalTask task = (SolveGoalTask) other;
         return this.taskType == task.taskType;
     }

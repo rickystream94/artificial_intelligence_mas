@@ -9,8 +9,10 @@ import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
 import java.io.*;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ClientManager {
 
@@ -20,6 +22,7 @@ public class ClientManager {
     private int numberOfAgents;
     private static ClientManager instance;
     private BDIManager bdiManager;
+    private ActionSenderThread actionSenderThread;
 
     private ClientManager() {
     }
@@ -48,38 +51,17 @@ public class ClientManager {
         this.numberOfAgents = this.levelManager.getLevel().getAgents().size();
 
         // Instantiate and launch ActionSenderThread
-        ActionSenderThread actionSenderThread = ActionSenderThread.getInstance();
-        actionSenderThread.init(this.numberOfAgents, serverInMessages, serverOutMessages);
-
+        this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);
         new Thread(actionSenderThread).start();
 
-        /* TODO: next step --> goal desires generation:
-        Distinction between DESIRES and INTENTIONS generation:
-
-        ** DESIRES (centralized, triggered by ClientManager before AgentThreads start) **
-        The centralized desires generation generates the GOAL DESIRES:
-        a goal desire represents a (sub)mission of an agent: they store information about which box goes to which goal
-        First step --> Box-Goal assignment (random? simple heuristic? ...) --> Desire object generated
-        Second step --> Match between such desires with the agent(s)
-        We distinguish between two situations:
-        1) Number of agents of same color == 1 --> all goal desires assigned to the same agent
-        2) Number of agents of same color > 1 --> (ideally) optimized desire/agent matching, such that the following criteria are satisfied:
-            - Each agent will have to achieve an (almost) equal number of desires (e.g. 3 agents, 3 desires --> 1 desire each. Attention: 1+ agents might be left out, if Num_agents>>>Num_desires!)
-            - (OPTIONAL) Each agent is assigned desire(s) such that the overall cost to achieve them is minimized
-            (this is a non-trivial assignment problem, admitting scenarios with multiple jobs (desires) per agent.
-            Since this optimization is not crucial, the trivial implementation of the desire/agent matching is a RANDOM matching
-
-        ** INTENTIONS (step inside agent control loop) **
-        Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
-        An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
-        (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
-        Intentions are generated for each agent control loop iteration --> deliberation step
-         */
+        // Instantiate BDI Manager and computes desires
         this.bdiManager = new BDIManager();
         Map<Agent, FibonacciHeap<Desire>> desires = this.bdiManager.generateDesires();
 
-        // Instantiate and launch agent threads
-        this.levelManager.getLevel().getAgents().forEach(agent -> new Thread(new AgentThread(agent, desires.get(agent))).start());
+        // Instantiate agent threads, add them as subscribers to ActionSenderThread (Publisher) and launch them
+        List<AgentThread> agentThreads = this.levelManager.getLevel().getAgents().stream().map(agent -> new AgentThread(agent, desires.get(agent))).collect(Collectors.toList());
+        this.actionSenderThread.addSubscribers(agentThreads);
+        agentThreads.forEach(agentThread -> new Thread(agentThread).start());
     }
 
     public LevelManager getLevelManager() {
@@ -88,5 +70,9 @@ public class ClientManager {
 
     public int getNumberOfAgents() {
         return this.numberOfAgents;
+    }
+
+    public ActionSenderThread getActionSenderThread() {
+        return actionSenderThread;
     }
 }

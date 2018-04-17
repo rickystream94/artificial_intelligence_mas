@@ -39,7 +39,7 @@ public class HighLevelPlan implements Plan<Task> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof HighLevelPlan)) return false;
         HighLevelPlan that = (HighLevelPlan) o;
         return Objects.equals(tasks, that.tasks);
     }

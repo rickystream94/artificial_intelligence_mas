@@ -21,12 +21,12 @@ public class GoToLocationTask extends CompoundTask {
     @Override
     public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
         List<Refinement> foundRefinements = new ArrayList<>();
-        LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {
             // Add empty refinement
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
+            LinkedList<Task> subTasks = new LinkedList<>();
             // Generate all possible moves (optimize by excluding illegal moves)
             for (Direction dir : Direction.values()) {
                 PrimitiveTask moveTask = new PrimitiveTask(dir);
@@ -48,10 +48,9 @@ public class GoToLocationTask extends CompoundTask {
 
     @Override
     public boolean equals(Object other) {
-        if (other == this)
-            return true;
-        if (!(other instanceof GoToLocationTask))
-            return false;
+        if (other == this) return true;
+        if (!super.equals(other)) return false;
+        if (!(other instanceof GoToLocationTask)) return false;
         GoToLocationTask task = (GoToLocationTask) other;
         return this.taskType == task.taskType && this.destination == task.destination;
     }

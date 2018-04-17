@@ -21,7 +21,7 @@ public abstract class CompoundTask implements Task<CompoundTaskType> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof CompoundTask)) return false;
         CompoundTask that = (CompoundTask) o;
         return taskType == that.taskType;
     }

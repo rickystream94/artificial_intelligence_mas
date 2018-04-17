@@ -24,16 +24,14 @@ public class Box extends SokobanObject {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        if (!(o instanceof Box)) return false;
         Box box = (Box) o;
-        return super.equals(o) &&
-                boxType == box.boxType &&
-                color == box.color;
+        return this.boxType == box.boxType && this.color == box.color;
     }
 
     @Override
     public int hashCode() {
-
         return Objects.hash(super.hashCode(), boxType, color);
     }
 

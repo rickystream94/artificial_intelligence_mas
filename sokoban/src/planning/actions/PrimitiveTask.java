@@ -107,7 +107,6 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(actionType, dir1, dir2);
     }
 }

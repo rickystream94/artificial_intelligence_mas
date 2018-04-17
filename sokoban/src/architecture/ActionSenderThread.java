@@ -1,13 +1,14 @@
 package architecture;
 
 import board.Agent;
-import planning.actions.PrimitiveTask;
 import logging.ConsoleLogger;
+import planning.actions.PrimitiveTask;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -23,23 +24,14 @@ public class ActionSenderThread implements Runnable {
     private BlockingQueue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
-    private static ActionSenderThread instance;
+    private List<AgentThread> subscribers;
 
-    private ActionSenderThread() {
-    }
-
-    public void init(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
+    ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
         this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
         this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
-    }
-
-    public static ActionSenderThread getInstance() {
-        if (instance == null)
-            instance = new ActionSenderThread();
-        return instance;
     }
 
     @Override
@@ -83,6 +75,10 @@ public class ActionSenderThread implements Runnable {
         }
     }
 
+    public void addSubscribers(List<AgentThread> subscribers) {
+        this.subscribers = subscribers;
+    }
+
     /**
      * Sends a joint action to the server and returns the corresponding response
      *
@@ -101,7 +97,10 @@ public class ActionSenderThread implements Runnable {
         String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
         Boolean[] responses = Arrays.stream(stringResponses).map(Boolean::parseBoolean).toArray(Boolean[]::new);
 
-        // TODO: perform changes to the level with the support of LevelManager
         LevelManager levelManager = ClientManager.getInstance().getLevelManager();
+        // TODO: perform changes to the level with the support of LevelManager (need to implement relevant methods)
+
+        // TODO: send response event to AgentThreads (with publisher/subscriber pattern!)
+        // something like publishResponseEvent() (hint: a response event should ideally contain the boolean value stored in the above "responses" array!
     }
 }

@@ -5,6 +5,7 @@ import planning.actions.Task;
 import java.util.Objects;
 
 public class Intention {
+
     private Task task;
 
     public Intention(Task task) {
@@ -18,9 +19,9 @@ public class Intention {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof Intention)) return false;
         Intention intention = (Intention) o;
-        return Objects.equals(task, intention.task);
+        return task.equals(intention.task);
     }
 
     @Override
