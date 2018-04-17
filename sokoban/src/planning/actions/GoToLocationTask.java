@@ -4,10 +4,10 @@ import board.Coordinate;
 import planning.HTNWorldState;
 import planning.HighLevelPlan;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.Queue;
 
 public class GoToLocationTask extends CompoundTask {
 
@@ -19,8 +19,8 @@ public class GoToLocationTask extends CompoundTask {
     }
 
     @Override
-    public Queue<Refinement> refineTask(HTNWorldState currentWorldState, int planningStep) {
-        Queue<Refinement> foundRefinements = new PriorityQueue<>(new RefinementComparator(currentWorldState));
+    public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
+        List<Refinement> foundRefinements = new ArrayList<>();
         LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {

@@ -3,11 +3,12 @@ package planning;
 import architecture.ClientManager;
 import architecture.LevelManager;
 import board.*;
-import planning.actions.*;
+import planning.actions.Direction;
+import planning.actions.Effect;
+import planning.actions.PrimitiveTask;
+import planning.actions.PrimitiveTaskType;
 
 import java.util.Objects;
-import java.util.Queue;
-import java.util.Set;
 
 /**
  * This class is in charge of tracking the state of relevant elements during HTN planning.
@@ -91,6 +92,7 @@ public class HTNWorldState {
         but only the walls (static entities)
         Currently, a relaxation where only walls are considered. But according to different situations,
         there might be different needs...
+        (e.g. we might want to consider all the boxes of the same color when there are more agents of same color)
          */
         Coordinate targetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
         return !Level.isWall(targetPosition);
@@ -140,24 +142,15 @@ public class HTNWorldState {
         return this.goal.getCoordinate();
     }
 
-    /**
-     * The current compound task should be refined in a list of 2 or more sub-tasks. It should avoid choosing already blacklisted refinements.
-     *
-     * @param compoundTask         Compound task to be refined
-     * @param refinementsBlacklist Set of already blacklisted refinements
-     * @param planningStep         Current planning step
-     * @return A new refinement if any that satisfies the preconditions exists, null otherwise.
-     */
-    public Refinement findSatisfiedMethod(CompoundTask compoundTask, Set<Refinement> refinementsBlacklist, int planningStep) {
-        // First step: refine task
-        Queue<Refinement> foundRefinements = compoundTask.refineTask(this, planningStep);
-
-        // Second step: avoid blacklisted refinements (if no valid refinements are found returns null!)
-        Refinement refinement;
-        do {
-            refinement = foundRefinements.poll();
-        }
-        while (!refinementsBlacklist.contains(refinement));
-        return refinement;
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof HTNWorldState))
+            return false;
+        HTNWorldState s = (HTNWorldState) o;
+        return this.agent.getCoordinate().equals(s.agent.getCoordinate()) &&
+                this.box.getCoordinate().equals(s.box.getCoordinate()) &&
+                this.goal.getCoordinate().equals(s.goal.getCoordinate());
     }
 }
