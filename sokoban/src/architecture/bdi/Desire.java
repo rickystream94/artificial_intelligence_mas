@@ -12,5 +12,11 @@ public class Desire {
         this.goal = goal;
     }
 
+    public Box getBox() {
+        return box;
+    }
 
+    public Goal getGoal() {
+        return goal;
+    }
 }
