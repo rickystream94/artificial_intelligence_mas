@@ -18,6 +18,7 @@ public class PrimitivePlan implements Plan<PrimitiveTask> {
 
     /**
      * Copy constructor
+     *
      * @param other
      */
     public PrimitivePlan(PrimitivePlan other) {

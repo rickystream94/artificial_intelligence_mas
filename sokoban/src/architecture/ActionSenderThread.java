@@ -1,18 +1,20 @@
 package architecture;
 
 import board.Agent;
-import planning.actions.PrimitiveTask;
 import logging.ConsoleLogger;
+import planning.actions.PrimitiveTask;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ActionSenderThread implements Runnable {
 
@@ -24,7 +26,7 @@ public class ActionSenderThread implements Runnable {
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
 
-    public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
+    ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
         this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
         this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
@@ -88,10 +90,16 @@ public class ActionSenderThread implements Runnable {
     }
 
     private void processResponse(String response) {
+        // Create list of ResponseEvent such that each element maps the agent id with the correct response
         String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
-        Boolean[] responses = Arrays.stream(stringResponses).map(Boolean::parseBoolean).toArray(Boolean[]::new);
+        List<ResponseEvent> responseEvents = IntStream.range(0, stringResponses.length)
+                .mapToObj(i -> new ResponseEvent((char) i, Boolean.parseBoolean(stringResponses[i])))
+                .collect(Collectors.toList());
 
-        // TODO: perform changes to the level with the support of LevelManager
         LevelManager levelManager = ClientManager.getInstance().getLevelManager();
+        // TODO: perform changes to the level with the support of LevelManager (need to implement relevant methods)
+
+        // Dispatch results from server to agent threads
+        EventBus.getDefault().dispatch(responseEvents);
     }
 }

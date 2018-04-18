@@ -24,7 +24,8 @@ public class Agent extends SokobanObject {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        if (!(o instanceof Agent)) return false;
         Agent agent = (Agent) o;
         return agentId == agent.agentId &&
                 color == agent.color;

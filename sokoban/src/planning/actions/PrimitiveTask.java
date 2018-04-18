@@ -96,17 +96,17 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other)
-            return true;
-        if (!(other instanceof PrimitiveTask))
-            return false;
-        PrimitiveTask task = (PrimitiveTask) other;
-        return this.dir1 == task.dir1 && this.dir2 == task.dir2 && this.actionType == task.actionType;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PrimitiveTask that = (PrimitiveTask) o;
+        return actionType == that.actionType &&
+                dir1 == that.dir1 &&
+                dir2 == that.dir2;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.actionType, this.dir1, this.dir2);
+        return Objects.hash(actionType, dir1, dir2);
     }
 }

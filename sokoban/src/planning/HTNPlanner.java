@@ -1,5 +1,6 @@
 package planning;
 
+import architecture.bdi.Intention;
 import exceptions.NoValidRefinementsException;
 import planning.actions.*;
 import planning.strategy.Strategy;
@@ -18,10 +19,10 @@ public class HTNPlanner {
     private int planningStep;
     private Strategy strategy;
 
-    public HTNPlanner(HTNWorldState currentWorldState, Task rootTask) {
+    public HTNPlanner(HTNWorldState currentWorldState, Intention intention) {
         this.currentWorldState = currentWorldState;
         this.decompositionHistory = new ArrayDeque<>();
-        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), rootTask);
+        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), intention.getTask());
     }
 
     /**
@@ -30,7 +31,6 @@ public class HTNPlanner {
      * @return the final primitive plan
      */
     public PrimitivePlan findPlan() {
-        // TODO: and implement exploredStateSet!
         this.finalPlan = new PrimitivePlan();
         this.planningStep = 0;
         this.strategy.addToExploredStates(this.currentWorldState);

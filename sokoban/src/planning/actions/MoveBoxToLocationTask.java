@@ -21,11 +21,11 @@ public class MoveBoxToLocationTask extends CompoundTask {
     @Override
     public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
         List<Refinement> foundRefinements = new ArrayList<>();
-        LinkedList<Task> subTasks = new LinkedList<>();
 
         if (isAchieved(currentWorldState)) {
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
+            LinkedList<Task> subTasks = new LinkedList<>();
             Direction dirTowardsBox = Direction.getDirection(currentWorldState.getAgentPosition(), currentWorldState.getBoxPosition());
 
             // Push refinements
@@ -66,10 +66,9 @@ public class MoveBoxToLocationTask extends CompoundTask {
 
     @Override
     public boolean equals(Object other) {
-        if (other == this)
-            return true;
-        if (!(other instanceof MoveBoxToLocationTask))
-            return false;
+        if (other == this) return true;
+        if (!super.equals(other)) return false;
+        if (!(other instanceof MoveBoxToLocationTask)) return false;
         MoveBoxToLocationTask task = (MoveBoxToLocationTask) other;
         return this.taskType == task.taskType && this.boxDestination == task.boxDestination;
     }
