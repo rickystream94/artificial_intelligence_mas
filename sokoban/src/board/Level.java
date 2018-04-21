@@ -55,9 +55,13 @@ public class Level {
         return new ArrayList<>(this.agentsMap.values());
     }
 
+    public Map<Coordinate,Agent> getAgentsMap() { return this.agentsMap; }
+
     public List<Box> getBoxes() {
         return new ArrayList<>(this.boxesMap.values());
     }
+
+    public Map<Coordinate,Box> getBoxesMap() { return this.boxesMap; }
 
     public boolean isCellEmpty(Coordinate coordinate) {
         EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
