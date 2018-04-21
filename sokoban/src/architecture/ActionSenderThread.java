@@ -97,6 +97,9 @@ public class ActionSenderThread implements Runnable {
                 .collect(Collectors.toList());
 
         LevelManager levelManager = ClientManager.getInstance().getLevelManager();
+        for (ResponseEvent responseEvent: responseEvents) {
+
+        }
         // TODO: perform changes to the level with the support of LevelManager (need to implement relevant methods)
 
         // Dispatch results from server to agent threads
