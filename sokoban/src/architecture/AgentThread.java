@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
+    private static int MAGIC_NUMBER = 3;
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
@@ -71,12 +72,22 @@ public class AgentThread implements Runnable {
 
     private void executePlan(PrimitivePlan plan) {
         Queue<PrimitiveTask> tasks = plan.getTasks();
+        int threshold = 0;
         do {
-            this.actionSenderThread.addPrimitiveAction(tasks.remove(), this.agent);
+            if(threshold == MAGIC_NUMBER){
+                //TODO The agent is stuck, we need to replan? Ask for help?
+            }
+            this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             boolean success = false;
             try {
                 ResponseEvent responseEvent = this.responseEvents.take();
                 success = responseEvent.getResponseFromServer();
+                if(success) {
+                    tasks.remove();
+                    threshold = 0;
+                } else {
+                    threshold++;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
