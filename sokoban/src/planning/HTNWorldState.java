@@ -78,7 +78,7 @@ public class HTNWorldState {
      * @return true if all preconditions are met
      */
     private boolean checkMovePreconditions(Direction dir1) {
-        /* TODO: possibility of improvements
+        /* TODO: possibility of improvements --> RELAXATION MODE
         Intuitively, one might claim this return statement makes the trick:
         return this.levelManager.getLevel().isCellEmpty(targetPosition);
         The problem lies in the way the empty cells are (correctly!) stored: the Level instance contains information

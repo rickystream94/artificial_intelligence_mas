@@ -1,16 +1,14 @@
 package architecture;
 
 import architecture.bdi.Desire;
-import architecture.bdi.Intention;
 import board.Agent;
 import logging.ConsoleLogger;
-import planning.HTNPlanner;
-import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
-import planning.actions.SolveGoalTask;
 import utils.FibonacciHeap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -23,6 +21,7 @@ public class AgentThread implements Runnable {
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
+    // TODO We need a field to set the agent status: busy/available
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -39,7 +38,14 @@ public class AgentThread implements Runnable {
         An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
         (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
         Intentions are generated for each agent control loop iteration --> deliberation step */
+            ConsoleLogger.logInfo(LOGGER, this.toString());
             try {
+                Thread.sleep(5000);
+                continue;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            /* try {
                 while (!this.desires.isEmpty()) {
                     // Get next desire
                     Desire desire = this.desires.dequeueMin().getValue();
@@ -59,7 +65,7 @@ public class AgentThread implements Runnable {
                 //ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }*/
         }
     }
 
@@ -81,5 +87,19 @@ public class AgentThread implements Runnable {
     public void sendServerResponse(ResponseEvent responseEvent) {
         assert responseEvent.getAgentId() == this.agent.getAgentId();
         this.responseEvents.add(responseEvent);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        List<FibonacciHeap.Entry<Desire>> entries = new ArrayList<>();
+        sb.append(String.format("Hi, I'm agent %c with desires:\n", this.agent.getAgentId()));
+        while (!this.desires.isEmpty()) {
+            FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
+            sb.append(entry.getValue().toString()).append("\n");
+            entries.add(entry);
+        }
+        entries.forEach(entry -> this.desires.enqueue(entry.getValue(), entry.getPriority()));
+        return sb.toString();
     }
 }
