@@ -125,7 +125,7 @@ public class HTNWorldState {
     private boolean checkPullPreconditions(Direction dir1, Direction dir2) {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), Objects.requireNonNull(Direction.getOpposite(dir2)));
-        boolean isMet = Level.isWall(agentTargetPosition); // 1st Precond
+        boolean isMet = !Level.isWall(agentTargetPosition); // 1st Precond
         isMet = isMet && this.agent.getCoordinate().equals(boxTargetPosition); // 2nd Precond
         return isMet;
     }

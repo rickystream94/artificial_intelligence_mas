@@ -42,7 +42,7 @@ public class Goal extends SokobanObject {
     @Override
     public String toString() {
         return "Goal{" +
-                "goalType=" + goalType +
+                "goalType=" + goalType + ", " + this.getCoordinate() +
                 '}';
     }
 }

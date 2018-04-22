@@ -52,6 +52,7 @@ public class AgentThread implements Runnable {
                     // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
                     Desire desire = this.desires.dequeueMin().getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
+                    ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal());
