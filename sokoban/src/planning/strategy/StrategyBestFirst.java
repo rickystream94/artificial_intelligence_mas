@@ -1,7 +1,9 @@
 package planning.strategy;
 
 import exceptions.NoValidRefinementsException;
+import planning.HTNWorldState;
 import planning.actions.Refinement;
+import planning.actions.RefinementComparator;
 import planning.actions.Task;
 
 import java.util.Comparator;
@@ -11,31 +13,34 @@ import java.util.Queue;
 
 public class StrategyBestFirst extends Strategy {
 
-    private Queue<Refinement> refinements;
+    private Comparator<Refinement> refinementComparator;
 
     public StrategyBestFirst(Comparator<Refinement> refinementComparator, Task rootTask) {
         super(rootTask);
-        this.refinements = new PriorityQueue<>(refinementComparator);
+        this.refinementComparator = refinementComparator;
     }
 
     @Override
     public Refinement chooseRefinement(List<Refinement> possibleRefinements) throws NoValidRefinementsException {
         // Sort the refinements by priority
-        this.refinements.addAll(possibleRefinements);
+        Queue<Refinement> refinements = new PriorityQueue<>(this.refinementComparator);
+        refinements.addAll(possibleRefinements);
 
         // Avoid blacklisted refinements (if no valid refinements are found returns null!)
         Refinement chosenRefinement;
         do {
-            chosenRefinement = this.refinements.poll();
+            chosenRefinement = refinements.poll();
         }
         while (this.refinementsBlacklist.contains(chosenRefinement));
-
-        // Clear queue
-        this.refinements.clear();
 
         if (chosenRefinement == null)
             throw new NoValidRefinementsException();
 
         return chosenRefinement;
+    }
+
+    @Override
+    public void updateStatus(HTNWorldState worldState) {
+        this.refinementComparator = new RefinementComparator(worldState);
     }
 }

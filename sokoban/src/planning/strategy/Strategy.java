@@ -53,4 +53,6 @@ public abstract class Strategy {
     }
 
     public abstract Refinement chooseRefinement(List<Refinement> possibleRefinements) throws NoValidRefinementsException;
+
+    public abstract void updateStatus(HTNWorldState worldState);
 }

@@ -95,6 +95,7 @@ public class HTNPlanner {
         this.currentWorldState = lastSoundPlanningState.getWorldState();
         Refinement refinement = lastSoundPlanningState.getRefinement();
         this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
+        this.strategy.updateStatus(this.currentWorldState);
         this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
         // Blacklist refinement (avoid choosing same refinement --> infinite loops)
