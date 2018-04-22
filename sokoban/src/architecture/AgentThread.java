@@ -3,6 +3,7 @@ package architecture;
 import architecture.bdi.Desire;
 import architecture.bdi.Intention;
 import board.Agent;
+import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
@@ -50,6 +51,13 @@ public class AgentThread implements Runnable {
                 while (!this.desires.isEmpty()) {
                     // Get next desire
                     // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
+                    // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
+                    // that should move a blocking box somewhere close to the edges to free the way for the targeted box
+                    // TODO: desires re-prioritization to be performed and invoked during planning! e.g. if we haven't achieved our goal
+                    // after 5/10 primitive actions return the final plan, re-calculate the priorities and re-evaluate the desires:
+                    // there might be some desires now that have less priority than before and the agent will commit to them first
+                    // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
+                    // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
                     Desire desire = this.desires.dequeueMin().getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
@@ -65,6 +73,13 @@ public class AgentThread implements Runnable {
                     PrimitivePlan plan = planner.findPlan();
                     executePlan(plan);
                 }
+
+                // Agent has no more desires --> send NoOP actions
+                this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+                getServerResponse();
+            } catch (PlanNotFoundException e) {
+                ConsoleLogger.logError(LOGGER, e.getMessage());
+                System.exit(1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -80,9 +95,7 @@ public class AgentThread implements Runnable {
             }
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
-                ResponseEvent responseEvent = this.responseEvents.take();
-                boolean success = responseEvent.isActionSuccessful();
-                if (success) {
+                if (getServerResponse()) {
                     tasks.remove();
                     actionAttempts = 0;
                 } else {
@@ -97,6 +110,11 @@ public class AgentThread implements Runnable {
     public void sendServerResponse(ResponseEvent responseEvent) {
         assert responseEvent.getAgentId() == this.agent.getAgentId();
         this.responseEvents.add(responseEvent);
+    }
+
+    public boolean getServerResponse() throws InterruptedException {
+        ResponseEvent responseEvent = this.responseEvents.take();
+        return responseEvent.isActionSuccessful();
     }
 
     public Agent getAgent() {

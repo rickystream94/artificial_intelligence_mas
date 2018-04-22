@@ -103,7 +103,7 @@ public class ActionSenderThread implements Runnable {
 
     private void processResponse(String response) {
         // Create list of ResponseEvent such that each element maps the agent id with the correct response
-        String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
+        String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(", ");
         List<ResponseEvent> responseEvents = IntStream.range(0, stringResponses.length)
                 .mapToObj(i -> new ResponseEvent(Character.forDigit(i, 10), Boolean.parseBoolean(stringResponses[i])))
                 .collect(Collectors.toList());

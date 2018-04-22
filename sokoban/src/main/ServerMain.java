@@ -47,7 +47,6 @@ public class ServerMain {
 
         // Launch server
         System.out.println(String.format("Client command: %s", clientCommand));
-        in.close();
         Runner.main(serverArgs);
     }
 }

@@ -78,6 +78,8 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
     public String toString() {
         if (this.actionType == PrimitiveTaskType.Move)
             return this.actionType.toString() + "(" + dir1 + ")";
+        else if (this.actionType == PrimitiveTaskType.NoOp)
+            return this.actionType.toString();
         return this.actionType.toString() + "(" + dir1 + "," + dir2 + ")";
     }
 

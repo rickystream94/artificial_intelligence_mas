@@ -22,7 +22,7 @@ public class PrimitivePlan implements Plan<PrimitiveTask> {
      * @param other
      */
     public PrimitivePlan(PrimitivePlan other) {
-        this.tasks = other.tasks;
+        this.tasks = new LinkedList<>(other.tasks);
     }
 
     @Override
