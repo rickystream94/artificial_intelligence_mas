@@ -90,12 +90,15 @@ public class HTNWorldState {
         it might be occupied as well as it might not!)
         What's the solution? --> RELAXING THE PROBLEM! e.g. don't consider the other agents/boxes (dynamic entities),
         but only the walls (static entities)
-        Currently, a relaxation where only walls are considered. But according to different situations,
-        there might be different needs...
-        (e.g. we might want to consider all the boxes of the same color when there are more agents of same color)
+        Currently, a relaxation where only walls and boxes of same color is considered. But according to different situations,
+        there might be different needs... (e.g. considering all boxes of same color when level is SINGLE AGENT --> deterministic)
          */
         Coordinate targetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
-        return !Level.isWall(targetPosition);
+        boolean isMet = !Level.isWall(targetPosition);
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(targetPosition));
+        return isMet;
     }
 
     /**
@@ -111,6 +114,9 @@ public class HTNWorldState {
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), dir2);
         boolean isMet = this.box.getCoordinate().equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
         isMet = isMet && !Level.isWall(boxTargetPosition); // 2nd Precond
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(boxTargetPosition));
         return isMet;
     }
 
@@ -127,6 +133,9 @@ public class HTNWorldState {
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), Objects.requireNonNull(Direction.getOpposite(dir2)));
         boolean isMet = !Level.isWall(agentTargetPosition); // 1st Precond
         isMet = isMet && this.agent.getCoordinate().equals(boxTargetPosition); // 2nd Precond
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(agentTargetPosition));
         return isMet;
     }
 
