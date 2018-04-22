@@ -89,10 +89,8 @@ public class ActionSenderThread implements Runnable {
      * @throws IOException
      */
     private String sendToServer(String jointAction) throws IOException {
-        //this.serverOutMessages.write(jointAction);
-        //this.serverOutMessages.flush();
-        System.out.println(jointAction);
-        System.out.flush();
+        this.serverOutMessages.write(jointAction + "\n");
+        this.serverOutMessages.flush();
 
         String response;
         do {
