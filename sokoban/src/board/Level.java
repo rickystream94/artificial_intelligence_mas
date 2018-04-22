@@ -45,7 +45,9 @@ public class Level {
         walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
     }
 
-    public static List<Goal> getGoals() { return new ArrayList<>(Level.goalsMap.values()); }
+    public static List<Goal> getGoals() {
+        return new ArrayList<>(Level.goalsMap.values());
+    }
 
     public static boolean isWall(Coordinate coordinate) {
         return Level.wallsMap.containsKey(coordinate);
@@ -55,13 +57,17 @@ public class Level {
         return new ArrayList<>(this.agentsMap.values());
     }
 
-    public Map<Coordinate,Agent> getAgentsMap() { return this.agentsMap; }
+    public Map<Coordinate, Agent> getAgentsMap() {
+        return this.agentsMap;
+    }
 
     public List<Box> getBoxes() {
         return new ArrayList<>(this.boxesMap.values());
     }
 
-    public Map<Coordinate,Box> getBoxesMap() { return this.boxesMap; }
+    public Map<Coordinate, Box> getBoxesMap() {
+        return this.boxesMap;
+    }
 
     public boolean isCellEmpty(Coordinate coordinate) {
         EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);

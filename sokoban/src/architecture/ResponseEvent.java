@@ -10,7 +10,7 @@ public class ResponseEvent {
         this.agentId = agentId;
     }
 
-    public boolean getResponseFromServer() {
+    public boolean isActionSuccessful() {
         return responseFromServer;
     }
 

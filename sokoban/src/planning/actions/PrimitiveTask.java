@@ -29,10 +29,6 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         dir2 = d2;
     }
 
-    public Effect getEffect(Coordinate currAgentPosition) {
-        return getEffect(currAgentPosition,null);
-    }
-
     public Effect getEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
         switch (this.actionType) {
             case Move:
@@ -60,7 +56,7 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    public Effect getMoveEffect(Coordinate currAgentPosition) {
+    private Effect getMoveEffect(Coordinate currAgentPosition) {
         Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
         return new Effect(newAgentPosition);
     }

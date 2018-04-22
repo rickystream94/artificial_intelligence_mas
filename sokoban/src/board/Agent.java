@@ -6,11 +6,23 @@ public class Agent extends SokobanObject {
 
     private char agentId;
     private Color color;
+    private Box currentTargetBox;
 
     public Agent(int row, int col, char agentId, Color color, SokobanObjectType objectType) {
         super(row, col, objectType);
         this.agentId = agentId;
         this.color = color;
+    }
+
+    /**
+     * Copy constructor
+     *
+     * @param agent other agent to copy
+     */
+    public Agent(Agent agent) {
+        super(agent.getCoordinate().getRow(), agent.getCoordinate().getCol(), agent.getObjectType());
+        this.agentId = agent.agentId;
+        this.color = agent.color;
     }
 
     public Color getColor() {
@@ -19,6 +31,14 @@ public class Agent extends SokobanObject {
 
     public char getAgentId() {
         return this.agentId;
+    }
+
+    public Box getCurrentTargetBox() {
+        return currentTargetBox;
+    }
+
+    public void setCurrentTargetBox(Box currentTargetBox) {
+        this.currentTargetBox = currentTargetBox;
     }
 
     @Override

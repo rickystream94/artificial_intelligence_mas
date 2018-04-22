@@ -2,13 +2,11 @@ package architecture;
 
 import board.Agent;
 import logging.ConsoleLogger;
-import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
@@ -28,7 +26,7 @@ public class ActionSenderThread implements Runnable {
     private BlockingQueue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
-    private HashMap<Character,SendActionEvent> currentActions;
+    private HashMap<Character, SendActionEvent> currentActions;
 
     ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
@@ -54,8 +52,7 @@ public class ActionSenderThread implements Runnable {
                     // take() will wait until an element becomes available in the queue
                     SendActionEvent sendActionEvent = this.eventsOrdered.take();
                     jointAction.add(sendActionEvent.getAction().toString());
-                    this.currentActions.put(sendActionEvent.getAgent().getAgentId(),sendActionEvent);
-
+                    this.currentActions.put(sendActionEvent.getAgent().getAgentId(), sendActionEvent);
                     polledActions++;
                 } catch (InterruptedException e) {
                     ConsoleLogger.logError(LOGGER, e.getMessage());
@@ -104,12 +101,11 @@ public class ActionSenderThread implements Runnable {
                 .collect(Collectors.toList());
 
         LevelManager levelManager = ClientManager.getInstance().getLevelManager();
-        for (ResponseEvent responseEvent: responseEvents) {
-            if(!responseEvent.getResponseFromServer()) continue;
-            SendActionEvent sendActionEvent = this.currentActions.get(responseEvent.getAgentId());
-            levelManager.applyAction(sendActionEvent);
-        }
-        // TODO: perform changes to the level with the support of LevelManager (need to implement relevant methods)
+        responseEvents.stream().filter(ResponseEvent::isActionSuccessful)
+                .forEach(r -> {
+                    SendActionEvent sendActionEvent = this.currentActions.get(r.getAgentId());
+                    levelManager.applyAction(sendActionEvent.getAction(), sendActionEvent.getAgent());
+                });
 
         // Dispatch results from server to agent threads
         EventBus.getDefault().dispatch(responseEvents);

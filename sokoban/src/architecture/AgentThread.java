@@ -1,10 +1,14 @@
 package architecture;
 
 import architecture.bdi.Desire;
+import architecture.bdi.Intention;
 import board.Agent;
 import logging.ConsoleLogger;
+import planning.HTNPlanner;
+import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
+import planning.actions.SolveGoalTask;
 import utils.FibonacciHeap;
 
 import java.util.ArrayList;
@@ -17,7 +21,7 @@ import java.util.logging.Logger;
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
-    private static int MAGIC_NUMBER = 3;
+    private static int THRESHOLD = 3;
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
@@ -39,17 +43,11 @@ public class AgentThread implements Runnable {
         An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
         (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
         Intentions are generated for each agent control loop iteration --> deliberation step */
-            ConsoleLogger.logInfo(LOGGER, this.toString());
             try {
-                Thread.sleep(5000);
-                continue;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            /* try {
                 while (!this.desires.isEmpty()) {
                     // Get next desire
                     Desire desire = this.desires.dequeueMin().getValue();
+                    this.agent.setCurrentTargetBox(desire.getBox());
 
                     // Get percepts
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal());
@@ -62,36 +60,32 @@ public class AgentThread implements Runnable {
                     PrimitivePlan plan = planner.findPlan();
                     executePlan(plan);
                 }
-                //Thread.sleep(3000);
-                //ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
             } catch (Exception e) {
                 e.printStackTrace();
-            }*/
+            }
         }
     }
 
     private void executePlan(PrimitivePlan plan) {
         Queue<PrimitiveTask> tasks = plan.getTasks();
-        int threshold = 0;
+        int actionAttempts = 0;
         do {
-            if(threshold == MAGIC_NUMBER){
+            if (actionAttempts == THRESHOLD) {
                 //TODO The agent is stuck, we need to replan? Ask for help?
             }
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
-            boolean success = false;
             try {
                 ResponseEvent responseEvent = this.responseEvents.take();
-                success = responseEvent.getResponseFromServer();
-                if(success) {
+                boolean success = responseEvent.isActionSuccessful();
+                if (success) {
                     tasks.remove();
-                    threshold = 0;
+                    actionAttempts = 0;
                 } else {
-                    threshold++;
+                    actionAttempts++;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            // TODO: based on the value of success, decide what to do next --> keep on sending actions or break? ...
         } while (!tasks.isEmpty());
     }
 
@@ -104,7 +98,7 @@ public class AgentThread implements Runnable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         List<FibonacciHeap.Entry<Desire>> entries = new ArrayList<>();
-        sb.append(String.format("Hi, I'm agent %c with desires:\n", this.agent.getAgentId()));
+        sb.append(String.format("Agent %c with desires:\n", this.agent.getAgentId()));
         while (!this.desires.isEmpty()) {
             FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
             sb.append(entry.getValue().toString()).append("\n");

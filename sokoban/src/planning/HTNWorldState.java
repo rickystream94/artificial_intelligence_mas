@@ -29,9 +29,9 @@ public class HTNWorldState {
      * @param goal  current goal to track
      */
     public HTNWorldState(Agent agent, Box box, Goal goal) {
-        this.agent = agent;
-        this.box = box;
-        this.goal = goal;
+        this.agent = new Agent(agent);
+        this.box = new Box(box);
+        this.goal = new Goal(goal);
         this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 

@@ -25,8 +25,8 @@ public abstract class SokobanObject {
         this.coordinate = coordinate;
     }
 
-    public String getObjectType() {
-        return objectType.toString();
+    public SokobanObjectType getObjectType() {
+        return objectType;
     }
 
     @Override
