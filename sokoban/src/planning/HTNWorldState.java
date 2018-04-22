@@ -162,4 +162,9 @@ public class HTNWorldState {
                 this.box.getCoordinate().equals(s.box.getCoordinate()) &&
                 this.goal.getCoordinate().equals(s.goal.getCoordinate());
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate(), this.goal.getCoordinate());
+    }
 }

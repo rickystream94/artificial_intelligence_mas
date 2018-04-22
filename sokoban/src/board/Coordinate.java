@@ -43,7 +43,6 @@ public class Coordinate {
 
     @Override
     public boolean equals(Object o) {
-
         if (o == this) return true;
         if (!(o instanceof Coordinate)) {
             return false;

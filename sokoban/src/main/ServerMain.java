@@ -14,8 +14,8 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = "../../../environment/levels/SApushing.lvl";
-    private static final String millisPerAction = "100";
+    private static final String level = "../../../environment/levels/SAsimple2.lvl";
+    private static final String millisPerAction = "200";
     private static final String timeout = "300";
 
     public static void main(String[] args) {
@@ -40,6 +40,7 @@ public class ServerMain {
                 millisPerAction,
                 "-t",
                 timeout,
+                "-p",
                 "-c",
                 clientCommand
         };

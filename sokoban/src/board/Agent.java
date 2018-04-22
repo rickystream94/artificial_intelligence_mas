@@ -61,6 +61,7 @@ public class Agent extends SokobanObject {
         return "Agent{" +
                 "agentId=" + agentId +
                 ", color=" + color +
+                ", " + getCoordinate() +
                 '}';
     }
 }
