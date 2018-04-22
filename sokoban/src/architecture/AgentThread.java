@@ -22,10 +22,12 @@ public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
     private static int THRESHOLD = 3;
+
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
+    private LevelManager levelManager;
     // TODO We need a field to set the agent status: busy/available
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
@@ -33,6 +35,7 @@ public class AgentThread implements Runnable {
         this.desires = desires;
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     @Override
@@ -46,6 +49,7 @@ public class AgentThread implements Runnable {
             try {
                 while (!this.desires.isEmpty()) {
                     // Get next desire
+                    // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
                     Desire desire = this.desires.dequeueMin().getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
 
@@ -92,6 +96,10 @@ public class AgentThread implements Runnable {
     public void sendServerResponse(ResponseEvent responseEvent) {
         assert responseEvent.getAgentId() == this.agent.getAgentId();
         this.responseEvents.add(responseEvent);
+    }
+
+    public Agent getAgent() {
+        return agent;
     }
 
     @Override

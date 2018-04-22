@@ -1,15 +1,16 @@
 package architecture;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EventBus {
 
-    private List<AgentThread> listeners;
+    private Map<Character, AgentThread> listeners;
     private static EventBus instance;
 
     private EventBus() {
-        this.listeners = new ArrayList<>();
+        this.listeners = new HashMap<>();
     }
 
     public static EventBus getDefault() {
@@ -19,7 +20,7 @@ public class EventBus {
     }
 
     public void register(AgentThread agentThread) {
-        this.listeners.add(agentThread);
+        this.listeners.put(agentThread.getAgent().getAgentId(), agentThread);
     }
 
     public void dispatch(List<ResponseEvent> responseEvents) {

@@ -2,6 +2,7 @@ package planning;
 
 import architecture.bdi.Intention;
 import exceptions.NoValidRefinementsException;
+import logging.ConsoleLogger;
 import planning.actions.*;
 import planning.strategy.Strategy;
 import planning.strategy.StrategyBestFirst;
@@ -10,9 +11,11 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class HTNPlanner {
 
+    private static final Logger LOGGER = ConsoleLogger.getLogger(HTNPlanner.class.getSimpleName());
     private HTNWorldState currentWorldState;
     private Deque<HTNDecompositionRecord> decompositionHistory;
     private PrimitivePlan finalPlan;
@@ -63,7 +66,11 @@ public class HTNPlanner {
                     restoreToLastDecomposedTask();
             }
             this.planningStep++;
+
+            if (planningStep % 10 == 0)
+                ConsoleLogger.logInfo(LOGGER, String.format("Planning step: %d", planningStep));
         }
+        ConsoleLogger.logInfo(LOGGER, "Found plan!");
         return this.finalPlan;
     }
 

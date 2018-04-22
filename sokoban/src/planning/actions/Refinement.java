@@ -58,9 +58,10 @@ public class Refinement {
      * @return An integer number representing the cost of the current refinement
      */
     public int computeCost(HTNWorldState worldState) {
+        HTNWorldState worldStateCopy = new HTNWorldState(worldState);
         return this.subTasks.getTasks()
                 .stream()
-                .mapToInt(task -> task.calculateApproximation(worldState))
+                .mapToInt(task -> task.calculateApproximation(worldStateCopy))
                 .sum();
     }
 }

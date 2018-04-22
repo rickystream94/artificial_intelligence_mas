@@ -27,6 +27,7 @@ public class ActionSenderThread implements Runnable {
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
     private HashMap<Character, SendActionEvent> currentActions;
+    private LevelManager levelManager;
 
     ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
@@ -35,6 +36,7 @@ public class ActionSenderThread implements Runnable {
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
         this.currentActions = new HashMap<>();
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     @Override
@@ -87,20 +89,25 @@ public class ActionSenderThread implements Runnable {
      * @throws IOException
      */
     private String sendToServer(String jointAction) throws IOException {
-        this.serverOutMessages.write(jointAction);
-        this.serverOutMessages.flush();
+        //this.serverOutMessages.write(jointAction);
+        //this.serverOutMessages.flush();
+        System.out.println(jointAction);
+        System.out.flush();
 
-        return this.serverInMessages.readLine();
+        String response;
+        do {
+            response = this.serverInMessages.readLine();
+        } while (response.isEmpty());
+        return response;
     }
 
     private void processResponse(String response) {
         // Create list of ResponseEvent such that each element maps the agent id with the correct response
         String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
         List<ResponseEvent> responseEvents = IntStream.range(0, stringResponses.length)
-                .mapToObj(i -> new ResponseEvent((char) i, Boolean.parseBoolean(stringResponses[i])))
+                .mapToObj(i -> new ResponseEvent(Character.forDigit(i, 10), Boolean.parseBoolean(stringResponses[i])))
                 .collect(Collectors.toList());
 
-        LevelManager levelManager = ClientManager.getInstance().getLevelManager();
         responseEvents.stream().filter(ResponseEvent::isActionSuccessful)
                 .forEach(r -> {
                     SendActionEvent sendActionEvent = this.currentActions.get(r.getAgentId());

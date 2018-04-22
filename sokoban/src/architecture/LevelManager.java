@@ -49,7 +49,7 @@ public class LevelManager {
         level.getAgentsMap().remove(agent.getCoordinate());
         level.getAgentsMap().put(agent.getCoordinate(), agent);
         agent.setCoordinate(effect.getNewAgentPosition());
-        if (box != null) {
+        if (effect.getNewBoxPosition() != null && box != null) {
             level.getBoxesMap().remove(box.getCoordinate());
             level.getBoxesMap().put(box.getCoordinate(), box);
             box.setCoordinate(effect.getNewBoxPosition());

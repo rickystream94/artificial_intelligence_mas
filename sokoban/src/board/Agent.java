@@ -20,7 +20,7 @@ public class Agent extends SokobanObject {
      * @param agent other agent to copy
      */
     public Agent(Agent agent) {
-        super(agent.getCoordinate().getRow(), agent.getCoordinate().getCol(), agent.getObjectType());
+        super(agent);
         this.agentId = agent.agentId;
         this.color = agent.color;
     }

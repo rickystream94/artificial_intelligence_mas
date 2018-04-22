@@ -14,6 +14,8 @@ public class RefinementComparator implements Comparator<Refinement> {
 
     @Override
     public int compare(Refinement r1, Refinement r2) {
-        return r1.computeCost(new HTNWorldState(this.worldState)) - r2.computeCost(new HTNWorldState(this.worldState));
+        int cost1 = r1.computeCost(this.worldState);
+        int cost2 = r2.computeCost(this.worldState);
+        return cost1 - cost2;
     }
 }

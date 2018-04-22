@@ -41,7 +41,7 @@ public abstract class Strategy {
     }
 
     public void addToExploredStates(HTNWorldState worldState) {
-        this.exploredStatesSet.add(worldState);
+        this.exploredStatesSet.add(new HTNWorldState(worldState));
     }
 
     public boolean isStateExplored(HTNWorldState worldState) {

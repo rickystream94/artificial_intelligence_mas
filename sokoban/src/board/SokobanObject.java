@@ -12,6 +12,16 @@ public abstract class SokobanObject {
         this.objectType = objectType;
     }
 
+    /**
+     * Copy constructor
+     *
+     * @param other other object to copy
+     */
+    public SokobanObject(SokobanObject other) {
+        this.coordinate = new Coordinate(other.coordinate);
+        this.objectType = other.objectType;
+    }
+
     public Coordinate getCoordinate() {
         return this.coordinate;
     }

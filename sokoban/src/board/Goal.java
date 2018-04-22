@@ -17,7 +17,7 @@ public class Goal extends SokobanObject {
      * @param goal other goal to copy
      */
     public Goal(Goal goal) {
-        super(goal.getCoordinate().getRow(), goal.getCoordinate().getCol(), goal.getObjectType());
+        super(goal);
         this.goalType = goal.goalType;
     }
 

@@ -19,7 +19,7 @@ public class Box extends SokobanObject {
      * @param box other box to copy
      */
     public Box(Box box) {
-        super(box.getCoordinate().getRow(), box.getCoordinate().getCol(), box.getObjectType());
+        super(box);
         this.boxType = box.boxType;
         this.color = box.color;
     }

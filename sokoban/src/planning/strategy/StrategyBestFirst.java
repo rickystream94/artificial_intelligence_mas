@@ -28,7 +28,7 @@ public class StrategyBestFirst extends Strategy {
         do {
             chosenRefinement = this.refinements.poll();
         }
-        while (!this.refinementsBlacklist.contains(chosenRefinement));
+        while (this.refinementsBlacklist.contains(chosenRefinement));
 
         // Clear queue
         this.refinements.clear();

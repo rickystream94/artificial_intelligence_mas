@@ -42,9 +42,9 @@ public class HTNWorldState {
      */
     public HTNWorldState(HTNWorldState other) {
         this.levelManager = other.levelManager;
-        this.agent = other.agent;
-        this.box = other.box;
-        this.goal = other.goal;
+        this.agent = new Agent(other.agent);
+        this.box = new Box(other.box);
+        this.goal = new Goal(other.goal);
     }
 
 
@@ -135,7 +135,7 @@ public class HTNWorldState {
     }
 
     public Coordinate getBoxPosition() {
-        return this.agent.getCoordinate();
+        return this.box.getCoordinate();
     }
 
     public Coordinate getGoalPosition() {
