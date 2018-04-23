@@ -26,9 +26,9 @@ public class GoToLocationTask extends CompoundTask {
             // Add empty refinement
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
-            LinkedList<Task> subTasks = new LinkedList<>();
             // Generate all possible moves (optimize by excluding illegal moves)
             for (Direction dir : Direction.values()) {
+                LinkedList<Task> subTasks = new LinkedList<>();
                 PrimitiveTask moveTask = new PrimitiveTask(dir);
                 if (!currentWorldState.preconditionsMet(moveTask))
                     continue;

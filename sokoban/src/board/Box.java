@@ -13,6 +13,17 @@ public class Box extends SokobanObject {
         this.color = color;
     }
 
+    /**
+     * Copy constructor
+     *
+     * @param box other box to copy
+     */
+    public Box(Box box) {
+        super(box);
+        this.boxType = box.boxType;
+        this.color = box.color;
+    }
+
     public Color getColor() {
         return this.color;
     }

@@ -1,6 +1,7 @@
 package board;
 
 import java.util.Objects;
+import java.util.StringJoiner;
 
 public class Coordinate {
     private int row;
@@ -33,12 +34,15 @@ public class Coordinate {
     }
 
     public boolean isNeighbour(Coordinate other) {
-        return Math.abs((this.row - other.row) + (this.col - other.col)) == 1;
+        return Math.abs(this.row - other.row) + Math.abs(this.col - other.col) == 1;
+    }
+
+    public static int manhattanDistance(Coordinate c1, Coordinate c2) {
+        return Math.abs(c1.getRow() - c2.getRow()) + Math.abs(c1.getCol() - c2.getCol());
     }
 
     @Override
     public boolean equals(Object o) {
-
         if (o == this) return true;
         if (!(o instanceof Coordinate)) {
             return false;
@@ -52,8 +56,8 @@ public class Coordinate {
         return Objects.hash(this.row, this.col);
     }
 
-    public static int manhattanDistance(Coordinate c1, Coordinate c2) {
-        return Math.abs((c1.getRow() - c2.getRow()) + (c1.getCol() - c2.getCol()));
+    @Override
+    public String toString() {
+        return new StringJoiner(",", "(", ")").add(String.valueOf(this.row)).add(String.valueOf(this.col)).toString();
     }
-
 }

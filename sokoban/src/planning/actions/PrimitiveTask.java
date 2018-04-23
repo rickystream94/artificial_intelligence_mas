@@ -29,10 +29,6 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         dir2 = d2;
     }
 
-    public Effect getEffect(Coordinate currAgentPosition) {
-        return getEffect(currAgentPosition,null);
-    }
-
     public Effect getEffect(Coordinate currAgentPosition, Coordinate currBoxPosition) {
         switch (this.actionType) {
             case Move:
@@ -60,7 +56,7 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         return new Effect(newAgentPosition, newBoxPosition);
     }
 
-    public Effect getMoveEffect(Coordinate currAgentPosition) {
+    private Effect getMoveEffect(Coordinate currAgentPosition) {
         Coordinate newAgentPosition = Direction.getPositionByDirection(currAgentPosition, dir1);
         return new Effect(newAgentPosition);
     }
@@ -82,6 +78,8 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
     public String toString() {
         if (this.actionType == PrimitiveTaskType.Move)
             return this.actionType.toString() + "(" + dir1 + ")";
+        else if (this.actionType == PrimitiveTaskType.NoOp)
+            return this.actionType.toString();
         return this.actionType.toString() + "(" + dir1 + "," + dir2 + ")";
     }
 
@@ -92,8 +90,9 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         // Apply effect of primitive action to the copy of the world state
         worldState.applyEffect(getEffect(worldState.getAgentPosition(), worldState.getBoxPosition()));
 
-        // Manhattan Distance from box to goal
+        // Manhattan Distance from box to goal and from agent to box
         cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getGoalPosition());
+        cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
 
         // TODO: should include more cost components besides manhattan distance (e.g. presence of walls? Clear path to goal?)
         return cost;

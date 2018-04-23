@@ -25,18 +25,18 @@ public class MoveBoxToLocationTask extends CompoundTask {
         if (isAchieved(currentWorldState)) {
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
-            LinkedList<Task> subTasks = new LinkedList<>();
             Direction dirTowardsBox = Direction.getDirection(currentWorldState.getAgentPosition(), currentWorldState.getBoxPosition());
 
             // Push refinements
             for (Direction dir : Direction.values()) {
+                LinkedList<Task> subTasks = new LinkedList<>();
                 PrimitiveTask pushTask;
                 if (!Direction.isOpposite(dir, Objects.requireNonNull(dirTowardsBox))) {
                     pushTask = new PrimitiveTask(PrimitiveTaskType.Push, dirTowardsBox, dir);
                     if (!currentWorldState.preconditionsMet(pushTask))
                         continue;
                     subTasks.add(pushTask);
-                    subTasks.add(this);
+                    subTasks.add(new MoveBoxToLocationTask(boxDestination));
                     HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
                     foundRefinements.add(new Refinement(this, highLevelPlan, planningStep));
                 }
@@ -44,6 +44,7 @@ public class MoveBoxToLocationTask extends CompoundTask {
 
             // Pull refinements
             for (Direction dir : Direction.values()) {
+                LinkedList<Task> subTasks = new LinkedList<>();
                 PrimitiveTask pullTask;
                 if (dir != dirTowardsBox) {
                     pullTask = new PrimitiveTask(PrimitiveTaskType.Pull, dir, dirTowardsBox);

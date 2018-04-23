@@ -11,6 +11,16 @@ public class Goal extends SokobanObject {
         this.goalType = goalType;
     }
 
+    /**
+     * Copy constructor
+     *
+     * @param goal other goal to copy
+     */
+    public Goal(Goal goal) {
+        super(goal);
+        this.goalType = goal.goalType;
+    }
+
     public char getGoalType() {
         return this.goalType;
     }
@@ -32,7 +42,7 @@ public class Goal extends SokobanObject {
     @Override
     public String toString() {
         return "Goal{" +
-                "goalType=" + goalType +
+                "goalType=" + goalType + ", " + this.getCoordinate() +
                 '}';
     }
 }

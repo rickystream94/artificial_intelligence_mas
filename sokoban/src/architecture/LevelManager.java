@@ -1,11 +1,11 @@
 package architecture;
 
 import board.*;
-import exceptions.NotImplementedException;
 import logging.ConsoleLogger;
 import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
 
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -38,44 +38,41 @@ public class LevelManager {
         return true;
     }
 
-    private void moveAgent(Effect effect, Agent agent){
-        level.addEmptyCell(agent.getCoordinate());
-        level.removeEmptyCell(effect.getNewAgentPosition());
+    public void applyAction(PrimitiveTask task, Agent agent) {
+        Box box = agent.getCurrentTargetBox();
+        Effect effect = task.getEffect(agent.getCoordinate(), box != null ? box.getCoordinate() : null);
+        if (effect == null)
+            return;
+        handleEmptyCells(task, effect, agent, box);
+
+        // Change positions of objects
         level.getAgentsMap().remove(agent.getCoordinate());
+        level.getAgentsMap().put(agent.getCoordinate(), agent);
         agent.setCoordinate(effect.getNewAgentPosition());
-        level.getAgentsMap().put(agent.getCoordinate(),agent);
+        if (effect.getNewBoxPosition() != null && box != null) {
+            level.getBoxesMap().remove(box.getCoordinate());
+            level.getBoxesMap().put(box.getCoordinate(), box);
+            box.setCoordinate(effect.getNewBoxPosition());
+        }
     }
 
-    private void moveBox(Effect effect, Box box){
-        level.addEmptyCell(box.getCoordinate());
-        level.removeEmptyCell(effect.getNewBoxPosition());
-        level.getBoxesMap().remove(box.getCoordinate());
-        box.setCoordinate(effect.getNewBoxPosition());
-        level.getBoxesMap().put(box.getCoordinate(),box);
-    }
-
-    public void applyAction(SendActionEvent action){
-        Agent agent = action.getAgent();
-        PrimitiveTask task = action.getAction();
-        Box box = null;
-
-        Effect effect = task.getMoveEffect(agent.getCoordinate());
-        moveAgent(effect,agent);
-
-        switch (task.getType()){
+    private void handleEmptyCells(PrimitiveTask task, Effect effect, Agent agent, Box box) {
+        switch (task.getType()) {
+            case Move:
+                level.addEmptyCell(agent.getCoordinate());
+                level.removeEmptyCell(effect.getNewAgentPosition());
+                break;
             case Push:
-                box = level.getBoxesMap().get(effect.getNewAgentPosition());
+                level.addEmptyCell(agent.getCoordinate());
+                level.removeEmptyCell(effect.getNewBoxPosition());
                 break;
             case Pull:
-                box = level.getBoxesMap().get(agent.getCoordinate());
+                level.addEmptyCell(Objects.requireNonNull(box).getCoordinate());
+                level.removeEmptyCell(effect.getNewAgentPosition());
+                break;
+            default:
                 break;
         }
-
-        if(box != null) {
-            effect = task.getEffect(agent.getCoordinate(),box.getCoordinate());
-            moveBox(effect,box);
-        }
-
     }
 
     public Level getLevel() {

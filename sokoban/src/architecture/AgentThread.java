@@ -3,6 +3,7 @@ package architecture;
 import architecture.bdi.Desire;
 import architecture.bdi.Intention;
 import board.Agent;
+import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
@@ -11,6 +12,8 @@ import planning.actions.PrimitiveTask;
 import planning.actions.SolveGoalTask;
 import utils.FibonacciHeap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -19,17 +22,21 @@ import java.util.logging.Logger;
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
-    private static int MAGIC_NUMBER = 3;
+    private static int THRESHOLD = 3;
+
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
+    private LevelManager levelManager;
+    // TODO We need a field to set the agent status: busy/available
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
         this.desires = desires;
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     @Override
@@ -43,7 +50,17 @@ public class AgentThread implements Runnable {
             try {
                 while (!this.desires.isEmpty()) {
                     // Get next desire
+                    // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
+                    // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
+                    // that should move a blocking box somewhere close to the edges to free the way for the targeted box
+                    // TODO: desires re-prioritization to be performed and invoked during planning! e.g. if we haven't achieved our goal
+                    // after 5/10 primitive actions return the final plan, re-calculate the priorities and re-evaluate the desires:
+                    // there might be some desires now that have less priority than before and the agent will commit to them first
+                    // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
+                    // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
                     Desire desire = this.desires.dequeueMin().getValue();
+                    this.agent.setCurrentTargetBox(desire.getBox());
+                    ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal());
@@ -56,8 +73,13 @@ public class AgentThread implements Runnable {
                     PrimitivePlan plan = planner.findPlan();
                     executePlan(plan);
                 }
-                //Thread.sleep(3000);
-                //ConsoleLogger.logInfo(LOGGER, "Hi from agent thread number " + Thread.currentThread().getId());
+
+                // Agent has no more desires --> send NoOP actions
+                this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+                getServerResponse();
+            } catch (PlanNotFoundException e) {
+                ConsoleLogger.logError(LOGGER, e.getMessage());
+                System.exit(1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -66,31 +88,50 @@ public class AgentThread implements Runnable {
 
     private void executePlan(PrimitivePlan plan) {
         Queue<PrimitiveTask> tasks = plan.getTasks();
-        int threshold = 0;
+        int actionAttempts = 0;
         do {
-            if(threshold == MAGIC_NUMBER){
+            if (actionAttempts == THRESHOLD) {
                 //TODO The agent is stuck, we need to replan? Ask for help?
             }
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
-            boolean success = false;
             try {
-                ResponseEvent responseEvent = this.responseEvents.take();
-                success = responseEvent.getResponseFromServer();
-                if(success) {
+                if (getServerResponse()) {
                     tasks.remove();
-                    threshold = 0;
+                    actionAttempts = 0;
                 } else {
-                    threshold++;
+                    actionAttempts++;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            // TODO: based on the value of success, decide what to do next --> keep on sending actions or break? ...
         } while (!tasks.isEmpty());
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {
         assert responseEvent.getAgentId() == this.agent.getAgentId();
         this.responseEvents.add(responseEvent);
+    }
+
+    public boolean getServerResponse() throws InterruptedException {
+        ResponseEvent responseEvent = this.responseEvents.take();
+        return responseEvent.isActionSuccessful();
+    }
+
+    public Agent getAgent() {
+        return agent;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        List<FibonacciHeap.Entry<Desire>> entries = new ArrayList<>();
+        sb.append(String.format("Agent %c with desires:\n", this.agent.getAgentId()));
+        while (!this.desires.isEmpty()) {
+            FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
+            sb.append(entry.getValue().toString()).append("\n");
+            entries.add(entry);
+        }
+        entries.forEach(entry -> this.desires.enqueue(entry.getValue(), entry.getPriority()));
+        return sb.toString();
     }
 }

@@ -12,13 +12,13 @@ public enum Direction {
     public static Coordinate getPositionByDirection(Coordinate from, Direction d) {
         switch (d) {
             case N:
-                return new Coordinate(from.getRow(), from.getCol() + 1);
-            case S:
-                return new Coordinate(from.getRow(), from.getCol() - 1);
-            case E:
-                return new Coordinate(from.getRow() + 1, from.getCol());
-            case W:
                 return new Coordinate(from.getRow() - 1, from.getCol());
+            case S:
+                return new Coordinate(from.getRow() + 1, from.getCol());
+            case E:
+                return new Coordinate(from.getRow(), from.getCol() + 1);
+            case W:
+                return new Coordinate(from.getRow(), from.getCol() - 1);
             default:
                 return null;
         }

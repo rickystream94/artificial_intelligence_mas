@@ -2,22 +2,28 @@ package planning;
 
 import architecture.bdi.Intention;
 import exceptions.NoValidRefinementsException;
+import exceptions.PlanNotFoundException;
+import logging.ConsoleLogger;
 import planning.actions.*;
 import planning.strategy.Strategy;
 import planning.strategy.StrategyBestFirst;
+import utils.Memory;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class HTNPlanner {
 
+    private static final Logger LOGGER = ConsoleLogger.getLogger(HTNPlanner.class.getSimpleName());
     private HTNWorldState currentWorldState;
     private Deque<HTNDecompositionRecord> decompositionHistory;
     private PrimitivePlan finalPlan;
     private int planningStep;
     private Strategy strategy;
+    private int planFailureCounter;
 
     public HTNPlanner(HTNWorldState currentWorldState, Intention intention) {
         this.currentWorldState = currentWorldState;
@@ -30,9 +36,10 @@ public class HTNPlanner {
      *
      * @return the final primitive plan
      */
-    public PrimitivePlan findPlan() {
+    public PrimitivePlan findPlan() throws PlanNotFoundException {
         this.finalPlan = new PrimitivePlan();
         this.planningStep = 0;
+        this.planFailureCounter = 0;
         this.strategy.addToExploredStates(this.currentWorldState);
 
         while (!this.strategy.hasMoreTasksToProcess()) { // TODO: OR is purpose of the intention achieved
@@ -63,7 +70,14 @@ public class HTNPlanner {
                     restoreToLastDecomposedTask();
             }
             this.planningStep++;
+
+            // Check if planning is taking too long
+            if (planningStep % 50 == 0 && planningStep != 0) {
+                ConsoleLogger.logInfo(LOGGER, String.format("Planning step: %d", planningStep));
+                ConsoleLogger.logInfo(LOGGER, Memory.stringRep());
+            }
         }
+        ConsoleLogger.logInfo(LOGGER, "Found plan!");
         return this.finalPlan;
     }
 
@@ -79,7 +93,7 @@ public class HTNPlanner {
     /**
      * Function used to backtrack when a compound task cannot be decomposed or a primitive action leads to an already explored state
      */
-    private void restoreToLastDecomposedTask() {
+    private void restoreToLastDecomposedTask() throws PlanNotFoundException {
         HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
 
         // Restore
@@ -88,10 +102,19 @@ public class HTNPlanner {
         this.currentWorldState = lastSoundPlanningState.getWorldState();
         Refinement refinement = lastSoundPlanningState.getRefinement();
         this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
+        this.strategy.updateStatus(this.currentWorldState);
         this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
         // Blacklist refinement (avoid choosing same refinement --> infinite loops)
         this.strategy.addRefinementToBlacklist(refinement);
+
+        // Check if we brought planningStep back to 0 --> No plan can be found --> Throw
+        if (this.planningStep == -1 || this.planningStep == 0) {
+            this.planFailureCounter++;
+            if (this.planFailureCounter == 50) // Threshold high enough
+                throw new PlanNotFoundException();
+        } else
+            this.planFailureCounter = 0;
     }
 
     private boolean isCompoundTask(Task task) {

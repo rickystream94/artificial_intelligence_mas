@@ -35,4 +35,11 @@ public class Desire {
     public int hashCode() {
         return Objects.hash(box, goal);
     }
+
+    @Override
+    public String toString() {
+        return this.box.toString() +
+                " --> " +
+                this.goal.toString();
+    }
 }

@@ -29,9 +29,9 @@ public class HTNWorldState {
      * @param goal  current goal to track
      */
     public HTNWorldState(Agent agent, Box box, Goal goal) {
-        this.agent = agent;
-        this.box = box;
-        this.goal = goal;
+        this.agent = new Agent(agent);
+        this.box = new Box(box);
+        this.goal = new Goal(goal);
         this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
@@ -42,9 +42,9 @@ public class HTNWorldState {
      */
     public HTNWorldState(HTNWorldState other) {
         this.levelManager = other.levelManager;
-        this.agent = other.agent;
-        this.box = other.box;
-        this.goal = other.goal;
+        this.agent = new Agent(other.agent);
+        this.box = new Box(other.box);
+        this.goal = new Goal(other.goal);
     }
 
 
@@ -78,7 +78,7 @@ public class HTNWorldState {
      * @return true if all preconditions are met
      */
     private boolean checkMovePreconditions(Direction dir1) {
-        /* TODO: possibility of improvements
+        /* TODO: possibility of improvements --> RELAXATION MODE
         Intuitively, one might claim this return statement makes the trick:
         return this.levelManager.getLevel().isCellEmpty(targetPosition);
         The problem lies in the way the empty cells are (correctly!) stored: the Level instance contains information
@@ -90,12 +90,15 @@ public class HTNWorldState {
         it might be occupied as well as it might not!)
         What's the solution? --> RELAXING THE PROBLEM! e.g. don't consider the other agents/boxes (dynamic entities),
         but only the walls (static entities)
-        Currently, a relaxation where only walls are considered. But according to different situations,
-        there might be different needs...
-        (e.g. we might want to consider all the boxes of the same color when there are more agents of same color)
+        Currently, a relaxation where only walls and boxes of same color is considered. But according to different situations,
+        there might be different needs... (e.g. considering all boxes of same color when level is SINGLE AGENT --> deterministic)
          */
         Coordinate targetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
-        return !Level.isWall(targetPosition);
+        boolean isMet = !Level.isWall(targetPosition);
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(targetPosition));
+        return isMet;
     }
 
     /**
@@ -111,6 +114,9 @@ public class HTNWorldState {
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), dir2);
         boolean isMet = this.box.getCoordinate().equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
         isMet = isMet && !Level.isWall(boxTargetPosition); // 2nd Precond
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(boxTargetPosition));
         return isMet;
     }
 
@@ -125,8 +131,11 @@ public class HTNWorldState {
     private boolean checkPullPreconditions(Direction dir1, Direction dir2) {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), Objects.requireNonNull(Direction.getOpposite(dir2)));
-        boolean isMet = Level.isWall(agentTargetPosition); // 1st Precond
+        boolean isMet = !Level.isWall(agentTargetPosition); // 1st Precond
         isMet = isMet && this.agent.getCoordinate().equals(boxTargetPosition); // 2nd Precond
+        isMet = isMet && levelManager.getLevel().getBoxes().stream()
+                .filter(box -> box.getColor() == this.agent.getColor())
+                .noneMatch(box -> box.getCoordinate().equals(agentTargetPosition));
         return isMet;
     }
 
@@ -135,7 +144,7 @@ public class HTNWorldState {
     }
 
     public Coordinate getBoxPosition() {
-        return this.agent.getCoordinate();
+        return this.box.getCoordinate();
     }
 
     public Coordinate getGoalPosition() {
@@ -152,5 +161,10 @@ public class HTNWorldState {
         return this.agent.getCoordinate().equals(s.agent.getCoordinate()) &&
                 this.box.getCoordinate().equals(s.box.getCoordinate()) &&
                 this.goal.getCoordinate().equals(s.goal.getCoordinate());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate(), this.goal.getCoordinate());
     }
 }

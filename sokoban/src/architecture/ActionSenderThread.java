@@ -2,13 +2,11 @@ package architecture;
 
 import board.Agent;
 import logging.ConsoleLogger;
-import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
@@ -28,7 +26,8 @@ public class ActionSenderThread implements Runnable {
     private BlockingQueue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
-    private HashMap<Character,SendActionEvent> currentActions;
+    private HashMap<Character, SendActionEvent> currentActions;
+    private LevelManager levelManager;
 
     ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
@@ -37,6 +36,7 @@ public class ActionSenderThread implements Runnable {
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
         this.currentActions = new HashMap<>();
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     @Override
@@ -54,8 +54,7 @@ public class ActionSenderThread implements Runnable {
                     // take() will wait until an element becomes available in the queue
                     SendActionEvent sendActionEvent = this.eventsOrdered.take();
                     jointAction.add(sendActionEvent.getAction().toString());
-                    this.currentActions.put(sendActionEvent.getAgent().getAgentId(),sendActionEvent);
-
+                    this.currentActions.put(sendActionEvent.getAgent().getAgentId(), sendActionEvent);
                     polledActions++;
                 } catch (InterruptedException e) {
                     ConsoleLogger.logError(LOGGER, e.getMessage());
@@ -90,26 +89,28 @@ public class ActionSenderThread implements Runnable {
      * @throws IOException
      */
     private String sendToServer(String jointAction) throws IOException {
-        this.serverOutMessages.write(jointAction);
+        this.serverOutMessages.write(jointAction + "\n");
         this.serverOutMessages.flush();
 
-        return this.serverInMessages.readLine();
+        String response;
+        do {
+            response = this.serverInMessages.readLine();
+        } while (response.isEmpty());
+        return response;
     }
 
     private void processResponse(String response) {
         // Create list of ResponseEvent such that each element maps the agent id with the correct response
-        String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(",");
+        String[] stringResponses = response.replaceAll("[\\[\\]]", "").split(", ");
         List<ResponseEvent> responseEvents = IntStream.range(0, stringResponses.length)
-                .mapToObj(i -> new ResponseEvent((char) i, Boolean.parseBoolean(stringResponses[i])))
+                .mapToObj(i -> new ResponseEvent(Character.forDigit(i, 10), Boolean.parseBoolean(stringResponses[i])))
                 .collect(Collectors.toList());
 
-        LevelManager levelManager = ClientManager.getInstance().getLevelManager();
-        for (ResponseEvent responseEvent: responseEvents) {
-            if(!responseEvent.getResponseFromServer()) continue;
-            SendActionEvent sendActionEvent = this.currentActions.get(responseEvent.getAgentId());
-            levelManager.applyAction(sendActionEvent);
-        }
-        // TODO: perform changes to the level with the support of LevelManager (need to implement relevant methods)
+        responseEvents.stream().filter(ResponseEvent::isActionSuccessful)
+                .forEach(r -> {
+                    SendActionEvent sendActionEvent = this.currentActions.get(r.getAgentId());
+                    levelManager.applyAction(sendActionEvent.getAction(), sendActionEvent.getAgent());
+                });
 
         // Dispatch results from server to agent threads
         EventBus.getDefault().dispatch(responseEvents);
