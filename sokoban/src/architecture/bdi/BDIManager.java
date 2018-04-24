@@ -50,6 +50,7 @@ public class BDIManager {
                 for (Box box : boxesPerTypeMap.get(type)) {
                     for (Goal goal : goalsPerTypeMap.get(type)) {
                         int cost = getCostBetweenObjects(box, goal);
+                        cost += getPunishment(goal);
                         desireCostMap.put(new Desire(box, goal), cost);
                     }
                 }
@@ -99,6 +100,17 @@ public class BDIManager {
         return agentDesiresMap;
     }
 
+    public int getPunishment(SokobanObject object){
+        Level level = ClientManager.getInstance().getLevelManager().getLevel();
+        int punishment = 0;
+        for (Coordinate coordinate: object.getCoordinate().getNeighbours()) {
+            if(level.getWallsMap().containsKey(coordinate))
+                punishment++;
+            if(level.getGoalsMap().containsKey(coordinate))
+                punishment--;
+        }
+        return punishment;
+    }
     /**
      * Given a map with generic keys and integer values, returns the key that has the minimum value
      *
