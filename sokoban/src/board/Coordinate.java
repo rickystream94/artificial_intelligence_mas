@@ -44,21 +44,10 @@ public class Coordinate {
         HashSet<Coordinate> neighbours = new HashSet<>();
         if(row - 1 > 0) {
             neighbours.add(new Coordinate(row - 1, col));
-            if(col - 1 > 0) {
-                neighbours.add(new Coordinate(row - 1, col - 1));
-            }
-            if(col + 1 > 0) {
-                neighbours.add(new Coordinate(row- 1, col + 1));
-            }
         }
         if(row + 1 > 0) {
             neighbours.add(new Coordinate(row + 1, col));
-            if(col - 1 > 0) {
-                neighbours.add(new Coordinate(row + 1, col - 1));
-            }
-            if(col + 1 > 0) {
-                neighbours.add(new Coordinate(row + 1, col + 1));
-            }
+
         }
         if(col - 1 > 0) {
             neighbours.add(new Coordinate(row, col - 1));

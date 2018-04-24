@@ -50,17 +50,7 @@ public class BDIManager {
                 for (Box box : boxesPerTypeMap.get(type)) {
                     for (Goal goal : goalsPerTypeMap.get(type)) {
                         int cost = getCostBetweenObjects(box, goal);
-                        int walls = 0;
-                        int goalsValue = 0;
-                        for(Wall wall : level.getWalls()) {
-                            if(goal.getCoordinate().isNeighbour(wall.getCoordinate()))
-                                walls++;
-                        }
-                        for(Goal goall : goalsPerTypeMap.get(type)) {
-                            if(goal.getCoordinate().isNeighbour(goall.getCoordinate()))
-                                goalsValue++;
-                        }
-                        cost += (8 - walls + goalsValue) * 131;
+                        cost += getPunishment(goal);
                         desireCostMap.put(new Desire(box, goal), cost);
                     }
                 }
@@ -117,7 +107,7 @@ public class BDIManager {
             if(level.getWallsMap().containsKey(coordinate))
                 punishment++;
             if(level.getGoalsMap().containsKey(coordinate))
-                punishment++;
+                punishment--;
         }
         return punishment;
     }
