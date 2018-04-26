@@ -2,6 +2,7 @@ package architecture;
 
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
+import architecture.fipa.PerformativeManager;
 import board.Agent;
 import board.BoardReader;
 import board.Level;
@@ -62,6 +63,7 @@ public class ClientManager {
         List<AgentThread> agentThreads = this.levelManager.getLevel().getAgents().stream().map(agent -> new AgentThread(agent, desires.get(agent))).collect(Collectors.toList());
         agentThreads.forEach(agentThread -> {
             EventBus.getDefault().register(agentThread);
+            PerformativeManager.getDefault().register(agentThread);
             new Thread(agentThread).start();
         });
     }
