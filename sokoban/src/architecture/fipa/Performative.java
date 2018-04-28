@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public abstract class Performative {
     private PerformativeType performativeType ;
     private AgentThread asker;
-    private static final Logger LOGGER = ConsoleLogger.getLogger(ClientMain.class.getSimpleName());
+    protected static final Logger LOGGER = ConsoleLogger.getLogger(ClientMain.class.getSimpleName());
 
     public PerformativeType getPerformativeType() {
         return performativeType;
@@ -29,10 +29,6 @@ public abstract class Performative {
 
     public void setAsker(AgentThread asker) {
         this.asker = asker;
-    }
-
-    public static Logger getLOGGER() {
-        return LOGGER;
     }
 
     public abstract void execute(AgentThread helper);

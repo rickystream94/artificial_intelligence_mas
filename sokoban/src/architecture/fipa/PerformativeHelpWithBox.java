@@ -22,7 +22,7 @@ public class PerformativeHelpWithBox extends Performative {
 
     @Override
     public void execute(AgentThread helper) {
-        ConsoleLogger.logInfo(getLOGGER(), "Agent " + helper.getAgent() +
+        ConsoleLogger.logInfo(LOGGER, "Agent " + helper.getAgent() +
                 " is helping " + getAsker().getAgent() +
                 " since he is stuck by " + box);
     }

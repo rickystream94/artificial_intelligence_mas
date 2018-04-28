@@ -15,7 +15,7 @@ public class PerformativeManager {
 
     private static PerformativeManager instance;
 
-    private PerformativeManager() { listeners = new LinkedList<>(); }
+    private PerformativeManager() { listeners = new ArrayList<>(); }
 
     public static PerformativeManager getDefault() {
         if (instance == null)
