@@ -100,17 +100,17 @@ public class BDIManager {
         return agentDesiresMap;
     }
 
-    public int getPunishment(SokobanObject object){
-        Level level = ClientManager.getInstance().getLevelManager().getLevel();
+    public int getPunishment(SokobanObject object) {
         int punishment = 0;
-        for (Coordinate coordinate: object.getCoordinate().getNeighbours()) {
-            if(level.getWallsMap().containsKey(coordinate))
+        for (Coordinate coordinate : object.getCoordinate().getNeighbours()) {
+            if (Level.getWallsMap().containsKey(coordinate))
                 punishment++;
-            if(level.getGoalsMap().containsKey(coordinate))
+            if (Level.getGoalsMap().containsKey(coordinate))
                 punishment--;
         }
         return punishment;
     }
+
     /**
      * Given a map with generic keys and integer values, returns the key that has the minimum value
      *

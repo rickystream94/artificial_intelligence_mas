@@ -49,7 +49,9 @@ public class Level {
         return new ArrayList<>(Level.goalsMap.values());
     }
 
-    public static Map<Coordinate,Goal> getGoalsMap() { return Level.goalsMap; }
+    public static Map<Coordinate, Goal> getGoalsMap() {
+        return Level.goalsMap;
+    }
 
     public static boolean isWall(Coordinate coordinate) {
         return Level.wallsMap.containsKey(coordinate);
@@ -71,11 +73,13 @@ public class Level {
         return this.boxesMap;
     }
 
-    public List<Wall> getWalls() {
-        return new ArrayList<>(this.wallsMap.values());
+    public static List<Wall> getWalls() {
+        return new ArrayList<>(Level.wallsMap.values());
     }
 
-    public Map<Coordinate,Wall> getWallsMap() { return this.wallsMap; }
+    public static Map<Coordinate, Wall> getWallsMap() {
+        return Level.wallsMap;
+    }
 
     public boolean isCellEmpty(Coordinate coordinate) {
         EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
@@ -88,14 +92,6 @@ public class Level {
 
     public void addEmptyCell(Coordinate coordinate) {
         emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
-    }
-
-    public int getHeight() {
-        return Level.height;
-    }
-
-    public int getWidth() {
-        return Level.width;
     }
 
     @Override

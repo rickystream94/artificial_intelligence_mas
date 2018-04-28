@@ -1,6 +1,9 @@
 package board;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
 
 public class Coordinate {
     private int row;
@@ -40,19 +43,19 @@ public class Coordinate {
         return Math.abs(c1.getRow() - c2.getRow()) + Math.abs(c1.getCol() - c2.getCol());
     }
 
-    public Set<Coordinate> getNeighbours(){
+    public Set<Coordinate> getNeighbours() {
         HashSet<Coordinate> neighbours = new HashSet<>();
-        if(row - 1 > 0) {
+        if (row - 1 > 0) {
             neighbours.add(new Coordinate(row - 1, col));
         }
-        if(row + 1 > 0) {
+        if (row + 1 > 0) {
             neighbours.add(new Coordinate(row + 1, col));
 
         }
-        if(col - 1 > 0) {
+        if (col - 1 > 0) {
             neighbours.add(new Coordinate(row, col - 1));
         }
-        if(col + 1 > 0) {
+        if (col + 1 > 0) {
             neighbours.add(new Coordinate(row, col + 1));
         }
         return neighbours;
