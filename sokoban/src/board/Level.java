@@ -49,6 +49,8 @@ public class Level {
         return new ArrayList<>(Level.goalsMap.values());
     }
 
+    public static Map<Coordinate,Goal> getGoalsMap() { return Level.goalsMap; }
+
     public static boolean isWall(Coordinate coordinate) {
         return Level.wallsMap.containsKey(coordinate);
     }
@@ -68,6 +70,12 @@ public class Level {
     public Map<Coordinate, Box> getBoxesMap() {
         return this.boxesMap;
     }
+
+    public List<Wall> getWalls() {
+        return new ArrayList<>(this.wallsMap.values());
+    }
+
+    public Map<Coordinate,Wall> getWallsMap() { return this.wallsMap; }
 
     public boolean isCellEmpty(Coordinate coordinate) {
         EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
