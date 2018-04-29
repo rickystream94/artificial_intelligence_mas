@@ -2,6 +2,9 @@ package architecture;
 
 import architecture.bdi.Desire;
 import architecture.bdi.Intention;
+import architecture.fipa.Performative;
+import architecture.fipa.PerformativeHelpWithBox;
+import architecture.fipa.PerformativeManager;
 import board.Agent;
 import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
@@ -29,7 +32,7 @@ public class AgentThread implements Runnable {
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
-    // TODO We need a field to set the agent status: busy/available
+    private AgentThreadStatus status;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -37,6 +40,7 @@ public class AgentThread implements Runnable {
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
+        this.status = AgentThreadStatus.FREE;
     }
 
     @Override
@@ -91,8 +95,13 @@ public class AgentThread implements Runnable {
         int actionAttempts = 0;
         do {
             if (actionAttempts == THRESHOLD) {
-                //TODO The agent is stuck, we need to replan? Ask for help?
+                // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
+                // In here the agent has to figure out why he is stuck and determine the how he needs help
+                // Create the message and dispatch it on the Bus
+                Performative performative = new PerformativeHelpWithBox(null,this);
+                PerformativeManager.getDefault().execute(performative);
             }
+            status = AgentThreadStatus.BUSY;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
@@ -104,6 +113,7 @@ public class AgentThread implements Runnable {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            status = AgentThreadStatus.FREE;
         } while (!tasks.isEmpty());
     }
 
