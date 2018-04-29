@@ -49,12 +49,12 @@ public class Level {
         return new ArrayList<>(Level.goalsMap.values());
     }
 
-    public static Map<Coordinate, Goal> getGoalsMap() {
-        return Level.goalsMap;
+    public static boolean isGoalCell(Coordinate coordinate) {
+        return Level.goalsMap.containsKey(coordinate);
     }
 
-    public static boolean isWall(Coordinate coordinate) {
-        return Level.wallsMap.containsKey(coordinate);
+    public static boolean isNotWall(Coordinate coordinate) {
+        return !Level.wallsMap.containsKey(coordinate);
     }
 
     public List<Agent> getAgents() {
@@ -71,14 +71,6 @@ public class Level {
 
     public Map<Coordinate, Box> getBoxesMap() {
         return this.boxesMap;
-    }
-
-    public static List<Wall> getWalls() {
-        return new ArrayList<>(Level.wallsMap.values());
-    }
-
-    public static Map<Coordinate, Wall> getWallsMap() {
-        return Level.wallsMap;
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {

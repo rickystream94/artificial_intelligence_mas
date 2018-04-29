@@ -100,12 +100,12 @@ public class BDIManager {
         return agentDesiresMap;
     }
 
-    public int getPunishment(SokobanObject object) {
+    private int getPunishment(SokobanObject object) {
         int punishment = 0;
         for (Coordinate coordinate : object.getCoordinate().getNeighbours()) {
-            if (Level.getWallsMap().containsKey(coordinate))
+            if (!Level.isNotWall(coordinate)) // It's a wall
                 punishment++;
-            if (Level.getGoalsMap().containsKey(coordinate))
+            if (Level.isGoalCell(coordinate))
                 punishment--;
         }
         return punishment;
