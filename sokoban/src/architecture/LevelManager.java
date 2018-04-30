@@ -1,6 +1,8 @@
 package architecture;
 
-import board.*;
+import board.Agent;
+import board.Box;
+import board.Level;
 import logging.ConsoleLogger;
 import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
@@ -25,17 +27,10 @@ public class LevelManager {
      * @return true if level is solved, false otherwise
      */
     public boolean isLevelSolved() {
-        for (Box box : this.level.getBoxes()) {
-            for (Goal goal : Level.getGoals()) {
-                Coordinate boxPosition = box.getCoordinate();
-                Coordinate goalPosition = goal.getCoordinate();
-                if (goalPosition.getRow() == boxPosition.getRow() && goalPosition.getCol() == boxPosition.getCol()
-                        && Character.toLowerCase(box.getBoxType()) != goal.getGoalType()) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return Level.getGoals().stream()
+                .allMatch(goal -> this.level.getBoxes().stream() // Each goal must have a box of same type that solves it
+                        .filter(box -> Character.toLowerCase(box.getBoxType()) == goal.getGoalType())
+                        .anyMatch(box -> box.getCoordinate().equals(goal.getCoordinate())));
     }
 
     public void applyAction(PrimitiveTask task, Agent agent) {
