@@ -51,7 +51,7 @@ public class AgentThread implements Runnable {
         Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
         ConsoleLogger.logInfo(LOGGER, "Chosen relaxation of type " + relaxation.getClass().getSimpleName());
 
-        while (this.levelManager.isLevelSolved()) {
+        while (!this.levelManager.isLevelSolved()) {
             /* TODO: ** INTENTIONS AND DESIRES **
         Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
         An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
