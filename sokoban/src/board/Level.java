@@ -2,6 +2,7 @@ package board;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Level {
 
@@ -69,6 +70,12 @@ public class Level {
         return new ArrayList<>(this.boxesMap.values());
     }
 
+    public List<Box> getOtherBoxesOfSameColor(Box box) {
+        return getBoxes().stream()
+                .filter(b -> b.getColor() == box.getColor() && !b.equals(box))
+                .collect(Collectors.toList());
+    }
+
     public Map<Coordinate, Box> getBoxesMap() {
         return this.boxesMap;
     }
@@ -84,6 +91,22 @@ public class Level {
 
     public void addEmptyCell(Coordinate coordinate) {
         emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
+    }
+
+    public static int getWidth() {
+        return width;
+    }
+
+    public static int getHeight() {
+        return height;
+    }
+
+    public Set<Coordinate> getAllPlayableCells() {
+        Set<Coordinate> allCells = new HashSet<>();
+        allCells.addAll(emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
+        allCells.addAll(getBoxes().stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
+        allCells.addAll(getAgents().stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
+        return allCells;
     }
 
     @Override

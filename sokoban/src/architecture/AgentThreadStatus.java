@@ -1,5 +1,5 @@
 package architecture;
 
 public enum AgentThreadStatus {
-    BUSY, FREE
+    BUSY, FREE, STUCK, HELPING
 }

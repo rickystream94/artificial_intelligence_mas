@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 
 public class AgentThread implements Runnable {
@@ -35,6 +36,7 @@ public class AgentThread implements Runnable {
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
     private AgentThreadStatus status;
+    private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -43,22 +45,24 @@ public class AgentThread implements Runnable {
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
         this.status = AgentThreadStatus.FREE;
+        this.helpRequests = new ConcurrentLinkedDeque<>();
     }
 
     @Override
     public void run() {
         // Preliminary one-time steps
         Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
-        ConsoleLogger.logInfo(LOGGER, "Chosen relaxation of type " + relaxation.getClass().getSimpleName());
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Chosen relaxation of type %s", this.agent.getAgentId(), relaxation.getClass().getSimpleName()));
 
-        while (!this.levelManager.isLevelSolved()) {
+        try {
+            while (!this.levelManager.isLevelSolved()) {
             /* TODO: ** INTENTIONS AND DESIRES **
         Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
         An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
         (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
         Intentions are generated for each agent control loop iteration --> deliberation step */
-            try {
                 while (!this.desires.isEmpty()) {
+                    FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
                     // Get next desire
                     // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
                     // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
@@ -68,7 +72,7 @@ public class AgentThread implements Runnable {
                     // there might be some desires now that have less priority than before and the agent will commit to them first
                     // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
                     // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
-                    Desire desire = this.desires.dequeueMin().getValue();
+                    Desire desire = entry.getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
@@ -78,22 +82,41 @@ public class AgentThread implements Runnable {
                     // Create intention
                     Intention intention = new Intention(new SolveGoalTask());
 
-                    // Plan
-                    HTNPlanner planner = new HTNPlanner(worldState, intention);
-                    PrimitivePlan plan = planner.findPlan();
-                    executePlan(plan);
+                    try {
+                        // Plan
+                        HTNPlanner planner = new HTNPlanner(worldState, intention);
+                        PrimitivePlan plan = planner.findPlan();
+                        executePlan(plan);
+                    } catch (PlanNotFoundException e) {
+                        ConsoleLogger.logError(LOGGER, e.getMessage());
+                        // Current desire wasn't achieved --> add it back to the heap!
+                        this.desires.enqueue(entry.getValue(), entry.getPriority());
+
+                        // Set agent's status to stuck: will replan accordingly in next iteration --> needs help!
+                        this.status = AgentThreadStatus.STUCK;
+
+                        System.exit(1); // TODO to be removed when replanning works
+                    }
                 }
 
                 // Agent has no more desires --> send NoOP actions
-                this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
-                getServerResponse();
-            } catch (PlanNotFoundException e) {
-                ConsoleLogger.logError(LOGGER, e.getMessage());
-                // TODO: re-plan
-                System.exit(1);
-            } catch (Exception e) {
-                e.printStackTrace();
+                idle();
             }
+        } catch (Exception e) {
+            ConsoleLogger.logError(LOGGER, e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private void idle() throws InterruptedException {
+        setStatus(AgentThreadStatus.FREE);
+        if (this.helpRequests.isEmpty()) {
+            this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+            getServerResponse();
+        } else {
+            setStatus(AgentThreadStatus.HELPING);
+            // TODO: should help
         }
     }
 
@@ -136,6 +159,19 @@ public class AgentThread implements Runnable {
 
     public Agent getAgent() {
         return agent;
+    }
+
+    /**
+     * The status should be queried synchronously
+     *
+     * @return current Agent's status
+     */
+    public synchronized AgentThreadStatus getStatus() {
+        return this.status;
+    }
+
+    private void setStatus(AgentThreadStatus status) {
+        this.status = status;
     }
 
     @Override

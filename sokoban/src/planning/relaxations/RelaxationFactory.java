@@ -10,7 +10,7 @@ public class RelaxationFactory {
         LevelManager levelManager = ClientManager.getInstance().getLevelManager();
         if (ClientManager.getInstance().getNumberOfAgents() == 1)
             // Single-Agent
-            return new AllObjectsRelaxation(levelManager);
+            return new NoForeignBoxesRelaxation(levelManager, agentColor); // TODO: AllObjectsRelaxation shouldn't consider agents
 
         // Multi-Agent
         return new NoForeignBoxesRelaxation(levelManager, agentColor);

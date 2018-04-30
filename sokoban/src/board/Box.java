@@ -48,9 +48,6 @@ public class Box extends SokobanObject {
 
     @Override
     public String toString() {
-        return "Box{" +
-                "boxType=" + boxType +
-                ", color=" + color +
-                '}';
+        return String.format("Box{boxType=%s, color=%s, %s}", boxType, color, getCoordinate());
     }
 }

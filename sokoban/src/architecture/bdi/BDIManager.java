@@ -50,7 +50,7 @@ public class BDIManager {
                 for (Box box : boxesPerTypeMap.get(type)) {
                     for (Goal goal : goalsPerTypeMap.get(type)) {
                         int cost = getCostBetweenObjects(box, goal);
-                        cost += getPunishment(goal);
+                        cost += getDiscount(goal);
                         desireCostMap.put(new Desire(box, goal), cost);
                     }
                 }
@@ -79,7 +79,7 @@ public class BDIManager {
             Desire currentDesire = desires.remove(0);
             List<Agent> agentsOfColor = agents.stream().filter(agent -> agent.getColor() == currentDesire.getBox().getColor()).collect(Collectors.toList());
             Map<Object, Integer> desireCostByAgent = new HashMap<>(); // Each agent's cost to reach the desire's box
-            agentsOfColor.forEach(agent -> desireCostByAgent.put(agent, getCostBetweenObjects(agent, currentDesire.getBox())));
+            agentsOfColor.forEach(agent -> desireCostByAgent.put(agent, getCostBetweenObjects(agent, currentDesire.getBox()) + getDiscount(currentDesire.getGoal())));
             Agent chosenAgent = (Agent) getKeyByMinValue(desireCostByAgent);
 
             // Check if current workload of chosen agent is above the minimum
@@ -100,15 +100,23 @@ public class BDIManager {
         return agentDesiresMap;
     }
 
-    private int getPunishment(SokobanObject object) {
-        int punishment = 0;
-        for (Coordinate coordinate : object.getCoordinate().getNeighbours()) {
-            if (!Level.isNotWall(coordinate)) // It's a wall
-                punishment++;
+    private int getDiscount(SokobanObject object) {
+        int discount = 0, consecutiveWalls = 0;
+        for (Coordinate coordinate : object.getCoordinate().getClockwiseNeighbours()) {
+            if (!Level.isNotWall(coordinate)) {
+                // It's a wall
+                discount -= 10;
+                consecutiveWalls++;
+            } else
+                consecutiveWalls = 0;
             if (Level.isGoalCell(coordinate))
-                punishment--;
+                discount -= 10;
+            if (consecutiveWalls > 1) {
+                // Additional discount for consecutive walls
+                discount -= 10;
+            }
         }
-        return punishment;
+        return discount;
     }
 
     /**
