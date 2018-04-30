@@ -52,6 +52,7 @@ public class HTNWorldState {
         this.agent = new Agent(other.agent);
         this.box = new Box(other.box);
         this.goal = new Goal(other.goal);
+        this.relaxation = other.relaxation;
     }
 
 

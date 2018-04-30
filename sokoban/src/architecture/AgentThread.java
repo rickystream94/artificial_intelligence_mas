@@ -49,6 +49,7 @@ public class AgentThread implements Runnable {
     public void run() {
         // Preliminary one-time steps
         Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
+        ConsoleLogger.logInfo(LOGGER, "Chosen relaxation of type " + relaxation.getClass().getSimpleName());
 
         while (true) { // TODO: or better, while(isLevelSolved())
             /* TODO: ** INTENTIONS AND DESIRES **
@@ -104,7 +105,7 @@ public class AgentThread implements Runnable {
                 // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
                 // In here the agent has to figure out why he is stuck and determine the how he needs help
                 // Create the message and dispatch it on the Bus
-                Performative performative = new PerformativeHelpWithBox(null,this);
+                Performative performative = new PerformativeHelpWithBox(null, this);
                 PerformativeManager.getDefault().execute(performative);
             }
             status = AgentThreadStatus.BUSY;

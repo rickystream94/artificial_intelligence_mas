@@ -7,8 +7,7 @@ public class VerySimpleFormatter extends Formatter {
 
     @Override
     public String format(LogRecord record) {
-        return "[" + record.getLoggerName() + "." +
-                record.getSourceMethodName() + "] - " +
+        return "[" + record.getLoggerName() + "] - " +
                 "[" + record.getLevel() + "] - " +
                 formatMessage(record) +
                 "\n";
