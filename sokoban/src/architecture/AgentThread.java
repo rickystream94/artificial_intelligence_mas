@@ -1,29 +1,35 @@
 package architecture;
 
+import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;
 import architecture.bdi.Intention;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
 import board.Agent;
+import board.Box;
+import board.Coordinate;
+import board.SokobanObject;
+import exceptions.InvalidActionException;
 import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
-import planning.actions.SolveGoalTask;
+import planning.actions.RefinementComparator;
+import planning.actions.RefinementsComparatorFactory;
 import planning.relaxations.Relaxation;
 import planning.relaxations.RelaxationFactory;
 import utils.FibonacciHeap;
+import utils.HashMapHelper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class AgentThread implements Runnable {
 
@@ -50,10 +56,6 @@ public class AgentThread implements Runnable {
 
     @Override
     public void run() {
-        // Preliminary one-time steps
-        Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Chosen relaxation of type %s", this.agent.getAgentId(), relaxation.getClass().getSimpleName()));
-
         try {
             while (!this.levelManager.isLevelSolved()) {
             /* TODO: ** INTENTIONS AND DESIRES **
@@ -77,25 +79,26 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal(), relaxation);
+                    Relaxation relaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire);
+                    HTNWorldState worldState = new HTNWorldState(this.agent, desire, relaxation);
+                    RefinementComparator comparator = RefinementsComparatorFactory.getComparator(desire, worldState);
 
                     // Create intention
-                    Intention intention = new Intention(new SolveGoalTask());
+                    Intention intention = desire.getIntention();
 
                     try {
                         // Plan
-                        HTNPlanner planner = new HTNPlanner(worldState, intention);
+                        HTNPlanner planner = new HTNPlanner(worldState, desire, comparator);
                         PrimitivePlan plan = planner.findPlan();
                         executePlan(plan);
-                    } catch (PlanNotFoundException e) {
-                        ConsoleLogger.logError(LOGGER, e.getMessage());
+                    } catch (InvalidActionException e) {
+                        ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.desires.enqueue(entry.getValue(), entry.getPriority());
-
-                        // Set agent's status to stuck: will replan accordingly in next iteration --> needs help!
-                        this.status = AgentThreadStatus.STUCK;
-
-                        System.exit(1); // TODO to be removed when replanning works
+                        examineBlockingIssue(entry.getValue().getTarget());
+                    } catch (PlanNotFoundException e) {
+                        ConsoleLogger.logError(LOGGER, e.getMessage());
+                        System.exit(1);
                     }
                 }
 
@@ -109,28 +112,12 @@ public class AgentThread implements Runnable {
         }
     }
 
-    private void idle() throws InterruptedException {
-        setStatus(AgentThreadStatus.FREE);
-        if (this.helpRequests.isEmpty()) {
-            this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
-            getServerResponse();
-        } else {
-            setStatus(AgentThreadStatus.HELPING);
-            // TODO: should help
-        }
-    }
-
-    private void executePlan(PrimitivePlan plan) {
+    private void executePlan(PrimitivePlan plan) throws InvalidActionException {
         Queue<PrimitiveTask> tasks = plan.getTasks();
         int actionAttempts = 0;
         do {
-            if (actionAttempts == THRESHOLD) {
-                // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
-                // In here the agent has to figure out why he is stuck and determine the how he needs help
-                // Create the message and dispatch it on the Bus
-                Performative performative = new PerformativeHelpWithBox(null, this);
-                PerformativeManager.getDefault().execute(performative);
-            }
+            if (actionAttempts == THRESHOLD)
+                throw new InvalidActionException(this.agent.getAgentId());
             status = AgentThreadStatus.BUSY;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
@@ -145,6 +132,55 @@ public class AgentThread implements Runnable {
             }
         } while (!tasks.isEmpty());
         status = AgentThreadStatus.FREE; // TODO: must be placed properly where relevant
+    }
+
+    /**
+     * This method is in charge of letting the agent figure out whether he can solve the blocking issue on its own or
+     * he needs to ask for help
+     *
+     * @param target
+     */
+    private void examineBlockingIssue(Coordinate target) {
+        // TODO Here's there's an issue: we're only detecting boxes that block the AGENT and not the BOX
+        // This way we would consider a blocking-box the same one we're trying to put in the goal, resulting in
+        // infinite loop
+        List<SokobanObject> neighbours = this.levelManager.getLevel().getDynamicNeighbours(this.agent.getCoordinate());
+
+        // Try to see if any blocking box of same color
+        List<Box> movableBoxes = neighbours.stream().filter(n -> n instanceof Box && ((Box) n).getColor() == this.agent.getColor()).map(n -> (Box) n).collect(Collectors.toList());
+        if (!movableBoxes.isEmpty()) {
+            Box boxToClear = movableBoxes.get(0); // Get random box
+            List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(boxToClear.getCoordinate(), 1);
+            potentialNewPositions.add(this.agent.getCoordinate());
+            Map<Object, Integer> distances = new HashMap<>();
+            potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, target)));
+            Coordinate chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+
+            // Create new desire and enqueue it with maximum priority
+            ClearPathDesire clearPathDesire = new ClearPathDesire(boxToClear, chosenTarget);
+            this.desires.enqueue(clearPathDesire, -1000);
+        } else {
+            // Set agent's status to stuck: will re-plan accordingly in next iteration --> needs help!
+            this.status = AgentThreadStatus.STUCK;
+
+            // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
+            // In here the agent has to figure out why he is stuck and determine the how he needs help
+            // Create the message and dispatch it on the Bus
+            Performative performative = new PerformativeHelpWithBox(null, this);
+            PerformativeManager.getDefault().execute(performative);
+            // TODO improvements
+        }
+    }
+
+    private void idle() throws InterruptedException {
+        setStatus(AgentThreadStatus.FREE);
+        if (this.helpRequests.isEmpty()) {
+            this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+            getServerResponse();
+        } else {
+            setStatus(AgentThreadStatus.HELPING);
+            // TODO: should help
+        }
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {

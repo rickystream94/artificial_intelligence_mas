@@ -1,6 +1,6 @@
 package planning;
 
-import architecture.bdi.Intention;
+import architecture.bdi.Desire;
 import exceptions.NoValidRefinementsException;
 import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
@@ -25,10 +25,10 @@ public class HTNPlanner {
     private Strategy strategy;
     private int planFailureCounter;
 
-    public HTNPlanner(HTNWorldState currentWorldState, Intention intention) {
+    public HTNPlanner(HTNWorldState currentWorldState, Desire desire, RefinementComparator comparator) {
         this.currentWorldState = currentWorldState;
         this.decompositionHistory = new ArrayDeque<>();
-        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), intention.getTask());
+        this.strategy = new StrategyBestFirst(comparator, desire);
     }
 
     /**

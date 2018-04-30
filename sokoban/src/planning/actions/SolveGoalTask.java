@@ -23,7 +23,7 @@ public class SolveGoalTask extends CompoundTask {
         } else {
             LinkedList<Task> subTasks = new LinkedList<>();
             subTasks.add(new GoToLocationTask(currentWorldState.getBoxPosition()));
-            subTasks.add(new MoveBoxToLocationTask(currentWorldState.getGoalPosition()));
+            subTasks.add(new MoveBoxToLocationTask(currentWorldState.getBoxTarget()));
             HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
             foundRefinements.add(new Refinement(this, highLevelPlan, planningStep));
         }
@@ -32,7 +32,7 @@ public class SolveGoalTask extends CompoundTask {
 
     @Override
     public boolean isAchieved(HTNWorldState currentWorldState) {
-        return currentWorldState.getBoxPosition().equals(currentWorldState.getGoalPosition());
+        return currentWorldState.getBoxPosition().equals(currentWorldState.getBoxTarget());
     }
 
     @Override

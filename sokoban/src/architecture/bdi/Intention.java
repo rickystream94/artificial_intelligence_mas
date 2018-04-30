@@ -8,7 +8,7 @@ public class Intention {
 
     private Task task;
 
-    public Intention(Task task) {
+    protected Intention(Task task) {
         this.task = task;
     }
 

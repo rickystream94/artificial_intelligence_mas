@@ -42,12 +42,12 @@ public class LevelManager {
 
         // Change positions of objects
         level.getAgentsMap().remove(agent.getCoordinate());
-        level.getAgentsMap().put(agent.getCoordinate(), agent);
         agent.setCoordinate(effect.getNewAgentPosition());
+        level.getAgentsMap().put(agent.getCoordinate(), agent);
         if (effect.getNewBoxPosition() != null && box != null) {
             level.getBoxesMap().remove(box.getCoordinate());
-            level.getBoxesMap().put(box.getCoordinate(), box);
             box.setCoordinate(effect.getNewBoxPosition());
+            level.getBoxesMap().put(box.getCoordinate(), box);
         }
     }
 

@@ -43,9 +43,9 @@ public class Coordinate {
         return Math.abs(c1.getRow() - c2.getRow()) + Math.abs(c1.getCol() - c2.getCol());
     }
 
-    public static List<Coordinate> getAllCellsWithFixedDistanceFrom(Coordinate from, int distance) {
-        Set<Coordinate> allPlayableCells = ClientManager.getInstance().getLevelManager().getLevel().getAllPlayableCells();
-        return allPlayableCells.stream().filter(to -> manhattanDistance(from, to) == distance).collect(Collectors.toList());
+    public static List<Coordinate> getEmptyCellsWithFixedDistanceFrom(Coordinate from, int distance) {
+        Set<Coordinate> emptyCells = ClientManager.getInstance().getLevelManager().getLevel().getEmptyCellsPositions();
+        return emptyCells.stream().filter(to -> manhattanDistance(from, to) == distance).collect(Collectors.toList());
     }
 
     public List<Coordinate> getClockwiseNeighbours() {

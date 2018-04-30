@@ -70,12 +70,6 @@ public class Level {
         return new ArrayList<>(this.boxesMap.values());
     }
 
-    public List<Box> getOtherBoxesOfSameColor(Box box) {
-        return getBoxes().stream()
-                .filter(b -> b.getColor() == box.getColor() && !b.equals(box))
-                .collect(Collectors.toList());
-    }
-
     public Map<Coordinate, Box> getBoxesMap() {
         return this.boxesMap;
     }
@@ -101,12 +95,8 @@ public class Level {
         return height;
     }
 
-    public Set<Coordinate> getAllPlayableCells() {
-        Set<Coordinate> allCells = new HashSet<>();
-        allCells.addAll(emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
-        allCells.addAll(getBoxes().stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
-        allCells.addAll(getAgents().stream().map(SokobanObject::getCoordinate).collect(Collectors.toList()));
-        return allCells;
+    public Set<Coordinate> getEmptyCellsPositions() {
+        return this.emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toSet());
     }
 
     @Override
@@ -139,5 +129,17 @@ public class Level {
         }
 
         return s.toString();
+    }
+
+    public List<SokobanObject> getDynamicNeighbours(Coordinate coordinate) {
+        List<SokobanObject> neighbours = new ArrayList<>();
+        List<Coordinate> neighbourPositions = coordinate.getClockwiseNeighbours();
+        for (Coordinate c : neighbourPositions) {
+            if (agentsMap.containsKey(c))
+                neighbours.add(agentsMap.get(c));
+            if (boxesMap.containsKey(c))
+                neighbours.add(boxesMap.get(c));
+        }
+        return neighbours;
     }
 }

@@ -1,5 +1,6 @@
 package planning.strategy;
 
+import architecture.bdi.Desire;
 import exceptions.NoValidRefinementsException;
 import planning.HTNWorldState;
 import planning.actions.Refinement;
@@ -12,11 +13,13 @@ public abstract class Strategy {
     private Set<HTNWorldState> exploredStatesSet;
     private Deque<Task> tasksToProcess;
     protected Set<Refinement> refinementsBlacklist;
+    protected Desire desire;
 
-    public Strategy(Task rootTask) {
+    public Strategy(Desire desire) {
         this.exploredStatesSet = new HashSet<>();
         this.tasksToProcess = new ArrayDeque<>();
-        this.tasksToProcess.push(rootTask);
+        this.desire = desire;
+        this.tasksToProcess.push(desire.getIntention().getTask());
         this.refinementsBlacklist = new HashSet<>();
     }
 

@@ -1,5 +1,5 @@
 package planning.actions;
 
 public enum CompoundTaskType {
-    GoToLocation, SolveGoal, MoveBoxToLocation
+    GoToLocation, SolveGoal, MoveBoxToLocation, ClearBox
 }
