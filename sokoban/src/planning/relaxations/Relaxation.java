@@ -16,7 +16,7 @@ public abstract class Relaxation {
     }
 
     protected boolean isEmpty(Coordinate objectPosition) {
-        return this.levelManager.getLevel().isCellEmpty(objectPosition);
+        return this.levelManager.getLevel().isCellEmpty(objectPosition) || this.levelManager.getLevel().getAgentsMap().containsKey(objectPosition);
     }
 
     public abstract boolean movePreconditionsMet(Coordinate targetPosition);
