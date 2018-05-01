@@ -4,8 +4,8 @@ import java.util.Objects;
 
 public class Wall extends SokobanObject {
 
-    public Wall(int row, int col, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public Wall(int row, int col) {
+        super(row, col);
     }
 
     @Override

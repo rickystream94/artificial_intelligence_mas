@@ -4,8 +4,8 @@ import java.util.Objects;
 
 public class EmptyCell extends SokobanObject {
 
-    public EmptyCell(int row, int col, SokobanObjectType type) {
-        super(row, col, type);
+    public EmptyCell(int row, int col) {
+        super(row, col);
     }
 
     @Override

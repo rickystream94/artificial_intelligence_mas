@@ -4,12 +4,10 @@ import java.util.Objects;
 
 public abstract class SokobanObject {
 
-    private SokobanObjectType objectType;
     private Coordinate coordinate;
 
-    public SokobanObject(int row, int col, SokobanObjectType objectType) {
+    public SokobanObject(int row, int col) {
         this.coordinate = new Coordinate(row, col);
-        this.objectType = objectType;
     }
 
     /**
@@ -19,7 +17,6 @@ public abstract class SokobanObject {
      */
     public SokobanObject(SokobanObject other) {
         this.coordinate = new Coordinate(other.coordinate);
-        this.objectType = other.objectType;
     }
 
     public Coordinate getCoordinate() {
@@ -35,21 +32,16 @@ public abstract class SokobanObject {
         this.coordinate = coordinate;
     }
 
-    public SokobanObjectType getObjectType() {
-        return objectType;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof SokobanObject)) return false;
         SokobanObject that = (SokobanObject) o;
-        return objectType == that.objectType &&
-                Objects.equals(coordinate, that.coordinate);
+        return Objects.equals(coordinate, that.coordinate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(objectType, coordinate);
+        return Objects.hash(coordinate);
     }
 }

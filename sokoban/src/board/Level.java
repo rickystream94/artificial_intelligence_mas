@@ -75,16 +75,16 @@ public class Level {
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {
-        EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
+        EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol());
         return emptyCells.contains(emptyCell);
     }
 
     public void removeEmptyCell(Coordinate coordinate) {
-        emptyCells.remove(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
+        emptyCells.remove(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
     }
 
     public void addEmptyCell(Coordinate coordinate) {
-        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
+        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
     }
 
     public static int getWidth() {
@@ -97,6 +97,14 @@ public class Level {
 
     public Set<Coordinate> getEmptyCellsPositions() {
         return this.emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toSet());
+    }
+
+    public SokobanObject dynamicObjectAt(Coordinate coordinate) {
+        if (agentsMap.containsKey(coordinate))
+            return agentsMap.get(coordinate);
+        if (boxesMap.containsKey(coordinate))
+            return boxesMap.get(coordinate);
+        return null;
     }
 
     @Override
@@ -129,17 +137,5 @@ public class Level {
         }
 
         return s.toString();
-    }
-
-    public List<SokobanObject> getDynamicNeighbours(Coordinate coordinate) {
-        List<SokobanObject> neighbours = new ArrayList<>();
-        List<Coordinate> neighbourPositions = coordinate.getClockwiseNeighbours();
-        for (Coordinate c : neighbourPositions) {
-            if (agentsMap.containsKey(c))
-                neighbours.add(agentsMap.get(c));
-            if (boxesMap.containsKey(c))
-                neighbours.add(boxesMap.get(c));
-        }
-        return neighbours;
     }
 }

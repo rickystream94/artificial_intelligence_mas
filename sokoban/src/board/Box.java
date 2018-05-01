@@ -7,8 +7,8 @@ public class Box extends SokobanObject {
     private char boxType;
     private Color color;
 
-    public Box(int row, int col, char boxType, Color color, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public Box(int row, int col, char boxType, Color color) {
+        super(row, col);
         this.boxType = boxType;
         this.color = color;
     }
