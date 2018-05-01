@@ -15,6 +15,7 @@ import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
 import planning.PrimitivePlan;
+import planning.actions.Direction;
 import planning.actions.PrimitiveTask;
 import planning.relaxations.Relaxation;
 import planning.relaxations.RelaxationFactory;
@@ -26,12 +27,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
-    private static int THRESHOLD = 3;
+    private static int FAILURES_THRESHOLD = 1;
 
     private Agent agent;
     private FibonacciHeap<Desire> desires;
@@ -39,7 +39,6 @@ public class AgentThread implements Runnable {
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
     private AgentThreadStatus status;
-    private Relaxation planningRelaxation;
     private int planFailureCounter;
     private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
@@ -79,7 +78,7 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    this.planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.planFailureCounter);
+                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.planFailureCounter);
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire, planningRelaxation);
 
                     try {
@@ -92,7 +91,7 @@ public class AgentThread implements Runnable {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.desires.enqueue(entry.getValue(), entry.getPriority());
-                        detectBlockingObject(entry.getValue().getTarget());
+                        detectBlockingObject(e.getFailedAction(), entry.getValue());
                     } catch (PlanNotFoundException e) {
                         this.planFailureCounter++;
                         if (this.planFailureCounter == 1) {
@@ -120,18 +119,18 @@ public class AgentThread implements Runnable {
 
     private void executePlan(PrimitivePlan plan) throws InvalidActionException {
         Queue<PrimitiveTask> tasks = plan.getTasks();
-        int actionAttempts = 0;
+        int failedAttempts = 0;
         do {
-            if (actionAttempts == THRESHOLD)
-                throw new InvalidActionException(this.agent.getAgentId());
+            if (failedAttempts == FAILURES_THRESHOLD)
+                throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
             status = AgentThreadStatus.BUSY;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
                     tasks.remove();
-                    actionAttempts = 0;
+                    failedAttempts = 0;
                 } else {
-                    actionAttempts++;
+                    failedAttempts++;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -144,37 +143,58 @@ public class AgentThread implements Runnable {
      * This method is in charge of letting the agent figure out whether he can solve the blocking issue on its own or
      * he needs to ask for help
      *
-     * @param target
+     * @param failedAction last action that failed
+     * @param desire       current desire to achieve
      */
-    private void detectBlockingObject(Coordinate target) {
+    private void detectBlockingObject(PrimitiveTask failedAction, Desire desire) {
         // TODO Here's there's an issue: we're only detecting boxes that block the AGENT and not the BOX
         // This way we would consider a blocking-box the same one we're trying to put in the goal, resulting in
         // infinite loop
-        List<SokobanObject> neighbours = this.levelManager.getLevel().getDynamicNeighbours(this.agent.getCoordinate());
+        Coordinate blockingCell;
+        switch (failedAction.getType()) {
+            case Move:
+                blockingCell = Direction.getPositionByDirection(this.agent.getCoordinate(), failedAction.getDir1());
+                break;
+            case Push:
+                Box box = desire.getBox();
+                blockingCell = Direction.getPositionByDirection(box.getCoordinate(), failedAction.getDir2());
+                break;
+            case Pull:
+                blockingCell = Direction.getPositionByDirection(this.agent.getCoordinate(), failedAction.getDir1());
+                break;
+            default:
+                blockingCell = null; // Unreachable
+        }
+        SokobanObject blockingObject = this.levelManager.getLevel().dynamicObjectAt(Objects.requireNonNull(blockingCell));
 
-        // Try to see if any blocking box of same color
-        List<Box> movableBoxes = neighbours.stream().filter(n -> n instanceof Box && ((Box) n).getColor() == this.agent.getColor()).map(n -> (Box) n).collect(Collectors.toList());
-        if (!movableBoxes.isEmpty()) {
-            Box boxToClear = movableBoxes.get(0); // Get random box // TODO: we should be almost sure to pick the right box
-            List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(boxToClear.getCoordinate(), 1);
-            potentialNewPositions.add(this.agent.getCoordinate());
-            Map<Object, Integer> distances = new HashMap<>();
-            potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, target)));
-            Coordinate chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+        // Examine blocking object
+        if (blockingObject instanceof Agent) {
+            // TODO: decide how to behave in either case: the blocking agent's color doesn't matter, in either case it needs to free the cell
+        } else if (blockingObject instanceof Box) {
+            if (((Box) blockingObject).getColor() == this.agent.getColor()) {
+                // Blocking box is of the same color
+                List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), 1);
+                potentialNewPositions.add(this.agent.getCoordinate());
+                Map<Object, Integer> distances = new HashMap<>();
+                potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
+                Coordinate chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
 
-            // Create new desire and enqueue it with maximum priority
-            ClearPathDesire clearPathDesire = new ClearPathDesire(boxToClear, chosenTarget);
-            this.desires.enqueue(clearPathDesire, -1000);
-        } else {
-            // Set agent's status to stuck: will re-plan accordingly in next iteration --> needs help!
-            this.status = AgentThreadStatus.STUCK;
+                // Create new desire and enqueue it with maximum priority
+                ClearPathDesire clearPathDesire = new ClearPathDesire((Box) blockingObject, chosenTarget);
+                this.desires.enqueue(clearPathDesire, -1000);
+            } else {
+                // Box of different color
+                // TODO: need for help! This box is blocking me and I can't move it
 
-            // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
-            // In here the agent has to figure out why he is stuck and determine the how he needs help
-            // Create the message and dispatch it on the Bus
-            Performative performative = new PerformativeHelpWithBox(null, this);
-            PerformativeManager.getDefault().execute(performative);
-            // TODO improvements
+                // Set agent's status to stuck: will re-plan accordingly in next iteration --> needs help!
+                this.status = AgentThreadStatus.STUCK;
+
+                // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
+                // In here the agent has to figure out why he is stuck and determine the how he needs help
+                // Create the message and dispatch it on the Bus
+                Performative performative = new PerformativeHelpWithBox(null, this);
+                PerformativeManager.getDefault().execute(performative);
+            }
         }
     }
 
