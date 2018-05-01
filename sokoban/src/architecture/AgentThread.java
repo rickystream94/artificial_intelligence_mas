@@ -88,6 +88,9 @@ public class AgentThread implements Runnable {
 
                     try {
                         // Plan
+                        // TODO: it might be convenient to have another helper class to support planning
+                        // A first attempt might use NoForeignBoxesRelaxation: if planning fails, we switch to OnlyWalls relaxation
+                        // This way we avoid using re-planning for levels that do not contain blocking obstacles
                         HTNPlanner planner = new HTNPlanner(worldState, desire, comparator);
                         PrimitivePlan plan = planner.findPlan();
                         executePlan(plan);
