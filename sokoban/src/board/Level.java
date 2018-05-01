@@ -49,10 +49,12 @@ public class Level {
         return new ArrayList<>(Level.goalsMap.values());
     }
 
-    public static Map<Coordinate,Goal> getGoalsMap() { return Level.goalsMap; }
+    public static boolean isGoalCell(Coordinate coordinate) {
+        return Level.goalsMap.containsKey(coordinate);
+    }
 
-    public static boolean isWall(Coordinate coordinate) {
-        return Level.wallsMap.containsKey(coordinate);
+    public static boolean isNotWall(Coordinate coordinate) {
+        return !Level.wallsMap.containsKey(coordinate);
     }
 
     public List<Agent> getAgents() {
@@ -71,12 +73,6 @@ public class Level {
         return this.boxesMap;
     }
 
-    public List<Wall> getWalls() {
-        return new ArrayList<>(this.wallsMap.values());
-    }
-
-    public Map<Coordinate,Wall> getWallsMap() { return this.wallsMap; }
-
     public boolean isCellEmpty(Coordinate coordinate) {
         EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
         return emptyCells.contains(emptyCell);
@@ -88,14 +84,6 @@ public class Level {
 
     public void addEmptyCell(Coordinate coordinate) {
         emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
-    }
-
-    public int getHeight() {
-        return Level.height;
-    }
-
-    public int getWidth() {
-        return Level.width;
     }
 
     @Override

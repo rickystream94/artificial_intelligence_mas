@@ -13,6 +13,8 @@ import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
 import planning.actions.SolveGoalTask;
+import planning.relaxations.Relaxation;
+import planning.relaxations.RelaxationFactory;
 import utils.FibonacciHeap;
 
 import java.util.ArrayList;
@@ -45,6 +47,10 @@ public class AgentThread implements Runnable {
 
     @Override
     public void run() {
+        // Preliminary one-time steps
+        Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
+        ConsoleLogger.logInfo(LOGGER, "Chosen relaxation of type " + relaxation.getClass().getSimpleName());
+
         while (true) { // TODO: or better, while(isLevelSolved())
             /* TODO: ** INTENTIONS AND DESIRES **
         Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
@@ -67,7 +73,7 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal());
+                    HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal(), relaxation);
 
                     // Create intention
                     Intention intention = new Intention(new SolveGoalTask());
@@ -83,6 +89,7 @@ public class AgentThread implements Runnable {
                 getServerResponse();
             } catch (PlanNotFoundException e) {
                 ConsoleLogger.logError(LOGGER, e.getMessage());
+                // TODO: re-plan
                 System.exit(1);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -98,7 +105,7 @@ public class AgentThread implements Runnable {
                 // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
                 // In here the agent has to figure out why he is stuck and determine the how he needs help
                 // Create the message and dispatch it on the Bus
-                Performative performative = new PerformativeHelpWithBox(null,this);
+                Performative performative = new PerformativeHelpWithBox(null, this);
                 PerformativeManager.getDefault().execute(performative);
             }
             status = AgentThreadStatus.BUSY;

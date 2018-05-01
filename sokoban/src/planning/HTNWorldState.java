@@ -2,11 +2,15 @@ package planning;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
-import board.*;
+import board.Agent;
+import board.Box;
+import board.Coordinate;
+import board.Goal;
 import planning.actions.Direction;
 import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
 import planning.actions.PrimitiveTaskType;
+import planning.relaxations.Relaxation;
 
 import java.util.Objects;
 
@@ -19,19 +23,22 @@ public class HTNWorldState {
     private Box box;
     private Goal goal;
     private LevelManager levelManager;
+    private Relaxation relaxation;
 
     /**
      * This constructor assumes that the color constraints between agent and box are satisfied
      * (Caller must verify this condition before instantiating a HTNWorldState)
      *
-     * @param agent current agent to track
-     * @param box   current box to track
-     * @param goal  current goal to track
+     * @param agent      current agent to track
+     * @param box        current box to track
+     * @param goal       current goal to track
+     * @param relaxation relaxation for checking the preconditions
      */
-    public HTNWorldState(Agent agent, Box box, Goal goal) {
+    public HTNWorldState(Agent agent, Box box, Goal goal, Relaxation relaxation) {
         this.agent = new Agent(agent);
         this.box = new Box(box);
         this.goal = new Goal(goal);
+        this.relaxation = relaxation;
         this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
@@ -45,6 +52,7 @@ public class HTNWorldState {
         this.agent = new Agent(other.agent);
         this.box = new Box(other.box);
         this.goal = new Goal(other.goal);
+        this.relaxation = other.relaxation;
     }
 
 
@@ -78,27 +86,8 @@ public class HTNWorldState {
      * @return true if all preconditions are met
      */
     private boolean checkMovePreconditions(Direction dir1) {
-        /* TODO: possibility of improvements --> RELAXATION MODE
-        Intuitively, one might claim this return statement makes the trick:
-        return this.levelManager.getLevel().isCellEmpty(targetPosition);
-        The problem lies in the way the empty cells are (correctly!) stored: the Level instance contains information
-        about the GLOBAL level, the one that always reflects the real situation, and not the one that each agent's planner
-        thinks it is at the current planning step. Therefore, it will always include information about the position
-        of the other agents/boxes (which will not be among the empty cells!). This will lead to a common
-        (undesirable) situation: a primitive action's precondition might fail because a cell is reported "not empty"
-        because another agent/box is occupying it (whereas, in reality, during the real plan execution,
-        it might be occupied as well as it might not!)
-        What's the solution? --> RELAXING THE PROBLEM! e.g. don't consider the other agents/boxes (dynamic entities),
-        but only the walls (static entities)
-        Currently, a relaxation where only walls and boxes of same color is considered. But according to different situations,
-        there might be different needs... (e.g. considering all boxes of same color when level is SINGLE AGENT --> deterministic)
-         */
         Coordinate targetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
-        boolean isMet = !Level.isWall(targetPosition);
-        isMet = isMet && levelManager.getLevel().getBoxes().stream()
-                .filter(box -> box.getColor() == this.agent.getColor())
-                .noneMatch(box -> box.getCoordinate().equals(targetPosition));
-        return isMet;
+        return this.relaxation.movePreconditionsMet(targetPosition);
     }
 
     /**
@@ -112,12 +101,7 @@ public class HTNWorldState {
     private boolean checkPushPreconditions(Direction dir1, Direction dir2) {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), dir2);
-        boolean isMet = this.box.getCoordinate().equals(agentTargetPosition); // 1st Precond, implies boxPosition is neighbour of agentPosition
-        isMet = isMet && !Level.isWall(boxTargetPosition); // 2nd Precond
-        isMet = isMet && levelManager.getLevel().getBoxes().stream()
-                .filter(box -> box.getColor() == this.agent.getColor())
-                .noneMatch(box -> box.getCoordinate().equals(boxTargetPosition));
-        return isMet;
+        return this.relaxation.pushPreconditionsMet(agentTargetPosition, this.box.getCoordinate(), boxTargetPosition);
     }
 
     /**
@@ -131,12 +115,7 @@ public class HTNWorldState {
     private boolean checkPullPreconditions(Direction dir1, Direction dir2) {
         Coordinate agentTargetPosition = Direction.getPositionByDirection(this.agent.getCoordinate(), dir1);
         Coordinate boxTargetPosition = Direction.getPositionByDirection(this.box.getCoordinate(), Objects.requireNonNull(Direction.getOpposite(dir2)));
-        boolean isMet = !Level.isWall(agentTargetPosition); // 1st Precond
-        isMet = isMet && this.agent.getCoordinate().equals(boxTargetPosition); // 2nd Precond
-        isMet = isMet && levelManager.getLevel().getBoxes().stream()
-                .filter(box -> box.getColor() == this.agent.getColor())
-                .noneMatch(box -> box.getCoordinate().equals(agentTargetPosition));
-        return isMet;
+        return this.relaxation.pullPreconditionsMet(this.agent.getCoordinate(), agentTargetPosition, boxTargetPosition);
     }
 
     public Coordinate getAgentPosition() {

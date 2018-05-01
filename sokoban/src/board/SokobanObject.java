@@ -47,4 +47,9 @@ public abstract class SokobanObject {
         return objectType == that.objectType &&
                 Objects.equals(coordinate, that.coordinate);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(objectType, coordinate);
+    }
 }
