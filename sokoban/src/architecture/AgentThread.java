@@ -2,7 +2,6 @@ package architecture;
 
 import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;
-import architecture.bdi.Intention;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
@@ -82,9 +81,6 @@ public class AgentThread implements Runnable {
                     Relaxation relaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire);
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire, relaxation);
                     RefinementComparator comparator = RefinementsComparatorFactory.getComparator(desire, worldState);
-
-                    // Create intention
-                    Intention intention = desire.getIntention();
 
                     try {
                         // Plan
