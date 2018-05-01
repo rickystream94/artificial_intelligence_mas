@@ -1,9 +1,7 @@
 package planning.relaxations;
 
 import architecture.ClientManager;
-import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;
-import architecture.bdi.GoalDesire;
 import board.Color;
 import logging.ConsoleLogger;
 
@@ -16,19 +14,14 @@ public class RelaxationFactory {
     public static Relaxation getBestPlanningRelaxation(Color agentColor, Desire desire, int planFailureCounter) {
         if (ClientManager.getInstance().getNumberOfAgents() == 1) {
             // Single-Agent
-            if (desire instanceof GoalDesire) {
-                if (planFailureCounter == 0) {
-                    // First planning attempt with regular recommended relaxation
-                    logInfo(NoForeignBoxesRelaxation.class.getSimpleName());
-                    return new NoForeignBoxesRelaxation(agentColor);
-                }
-                // If planning with the above relaxation fails, we relax even more to detect the blocking object
-                logInfo(OnlyWallsRelaxation.class.getSimpleName());
-                return new OnlyWallsRelaxation();
-            } else if (desire instanceof ClearPathDesire) {
+            if (planFailureCounter == 0) {
+                // First planning attempt with regular recommended relaxation
                 logInfo(NoForeignBoxesRelaxation.class.getSimpleName());
                 return new NoForeignBoxesRelaxation(agentColor);
             }
+            // If planning with the above relaxation fails, we relax even more to detect the blocking object
+            logInfo(OnlyWallsRelaxation.class.getSimpleName());
+            return new OnlyWallsRelaxation();
         }
 
         // Multi-Agent
