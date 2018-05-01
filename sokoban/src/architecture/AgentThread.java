@@ -39,6 +39,8 @@ public class AgentThread implements Runnable {
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
     private AgentThreadStatus status;
+    private Relaxation planningRelaxation;
+    private int planFailureCounter;
     private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
@@ -49,6 +51,7 @@ public class AgentThread implements Runnable {
         this.levelManager = ClientManager.getInstance().getLevelManager();
         this.status = AgentThreadStatus.FREE;
         this.helpRequests = new ConcurrentLinkedDeque<>();
+        this.planFailureCounter = 0;
     }
 
     @Override
@@ -76,25 +79,32 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    Relaxation relaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire);
-                    HTNWorldState worldState = new HTNWorldState(this.agent, desire, relaxation);
+                    this.planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.planFailureCounter);
+                    HTNWorldState worldState = new HTNWorldState(this.agent, desire, planningRelaxation);
 
                     try {
                         // Plan
-                        // TODO: it might be convenient to have another helper class to support planning
-                        // A first attempt might use NoForeignBoxesRelaxation: if planning fails, we switch to OnlyWalls relaxation
-                        // This way we avoid using re-planning for levels that do not contain blocking obstacles
                         HTNPlanner planner = new HTNPlanner(worldState, desire);
                         PrimitivePlan plan = planner.findPlan();
+                        this.planFailureCounter = 0; // Reset failure counter when a plan is successfully found
                         executePlan(plan);
                     } catch (InvalidActionException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.desires.enqueue(entry.getValue(), entry.getPriority());
-                        examineBlockingIssue(entry.getValue().getTarget());
+                        detectBlockingObject(entry.getValue().getTarget());
                     } catch (PlanNotFoundException e) {
-                        ConsoleLogger.logError(LOGGER, e.getMessage());
-                        System.exit(1);
+                        this.planFailureCounter++;
+                        if (this.planFailureCounter == 1) {
+                            // Current desire wasn't achieved --> add it back to the heap!
+                            // First failed attempt allowed, will switch to new relaxation
+                            ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                            this.desires.enqueue(entry.getValue(), entry.getPriority());
+                        } else {
+                            // Planning keeps failing, unexpected exception. Throw and quit.
+                            ConsoleLogger.logError(LOGGER, e.getMessage());
+                            System.exit(1);
+                        }
                     }
                 }
 
@@ -136,7 +146,7 @@ public class AgentThread implements Runnable {
      *
      * @param target
      */
-    private void examineBlockingIssue(Coordinate target) {
+    private void detectBlockingObject(Coordinate target) {
         // TODO Here's there's an issue: we're only detecting boxes that block the AGENT and not the BOX
         // This way we would consider a blocking-box the same one we're trying to put in the goal, resulting in
         // infinite loop

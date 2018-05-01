@@ -1,6 +1,5 @@
 package planning.relaxations;
 
-import architecture.LevelManager;
 import board.Coordinate;
 import board.Level;
 
@@ -10,8 +9,7 @@ import board.Level;
  */
 public class OnlyWallsRelaxation extends Relaxation {
 
-    protected OnlyWallsRelaxation(LevelManager levelManager) {
-        super(levelManager);
+    protected OnlyWallsRelaxation() {
     }
 
     @Override

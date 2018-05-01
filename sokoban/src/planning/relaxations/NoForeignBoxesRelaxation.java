@@ -1,6 +1,5 @@
 package planning.relaxations;
 
-import architecture.LevelManager;
 import board.Color;
 import board.Coordinate;
 
@@ -12,8 +11,7 @@ public class NoForeignBoxesRelaxation extends OnlyWallsRelaxation {
 
     private final Color myColor;
 
-    protected NoForeignBoxesRelaxation(LevelManager levelManager, Color myColor) {
-        super(levelManager);
+    protected NoForeignBoxesRelaxation(Color myColor) {
         this.myColor = myColor;
     }
 
