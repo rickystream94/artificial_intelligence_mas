@@ -16,8 +16,6 @@ import planning.HTNPlanner;
 import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
-import planning.actions.RefinementComparator;
-import planning.actions.RefinementsComparatorFactory;
 import planning.relaxations.Relaxation;
 import planning.relaxations.RelaxationFactory;
 import utils.FibonacciHeap;
@@ -80,14 +78,13 @@ public class AgentThread implements Runnable {
                     // Get percepts
                     Relaxation relaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire);
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire, relaxation);
-                    RefinementComparator comparator = RefinementsComparatorFactory.getComparator(desire, worldState);
 
                     try {
                         // Plan
                         // TODO: it might be convenient to have another helper class to support planning
                         // A first attempt might use NoForeignBoxesRelaxation: if planning fails, we switch to OnlyWalls relaxation
                         // This way we avoid using re-planning for levels that do not contain blocking obstacles
-                        HTNPlanner planner = new HTNPlanner(worldState, desire, comparator);
+                        HTNPlanner planner = new HTNPlanner(worldState, desire);
                         PrimitivePlan plan = planner.findPlan();
                         executePlan(plan);
                     } catch (InvalidActionException e) {
@@ -148,7 +145,7 @@ public class AgentThread implements Runnable {
         // Try to see if any blocking box of same color
         List<Box> movableBoxes = neighbours.stream().filter(n -> n instanceof Box && ((Box) n).getColor() == this.agent.getColor()).map(n -> (Box) n).collect(Collectors.toList());
         if (!movableBoxes.isEmpty()) {
-            Box boxToClear = movableBoxes.get(0); // Get random box
+            Box boxToClear = movableBoxes.get(0); // Get random box // TODO: we should be almost sure to pick the right box
             List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(boxToClear.getCoordinate(), 1);
             potentialNewPositions.add(this.agent.getCoordinate());
             Map<Object, Integer> distances = new HashMap<>();

@@ -25,10 +25,10 @@ public class HTNPlanner {
     private Strategy strategy;
     private int planFailureCounter;
 
-    public HTNPlanner(HTNWorldState currentWorldState, Desire desire, RefinementComparator comparator) {
+    public HTNPlanner(HTNWorldState currentWorldState, Desire desire) {
         this.currentWorldState = currentWorldState;
         this.decompositionHistory = new ArrayDeque<>();
-        this.strategy = new StrategyBestFirst(comparator, desire);
+        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), desire);
     }
 
     /**
@@ -42,7 +42,7 @@ public class HTNPlanner {
         this.planFailureCounter = 0;
         this.strategy.addToExploredStates(this.currentWorldState);
 
-        while (!this.strategy.hasMoreTasksToProcess()) { // TODO: OR is purpose of the intention achieved
+        while (!this.strategy.hasMoreTasksToProcess()) {
             Task currentTask = this.strategy.getNextTaskToProcess();
             if (isCompoundTask(currentTask)) {
                 // Compound task --> Needs to be refined!

@@ -4,7 +4,7 @@ import architecture.bdi.Desire;
 import exceptions.NoValidRefinementsException;
 import planning.HTNWorldState;
 import planning.actions.Refinement;
-import planning.actions.RefinementsComparatorFactory;
+import planning.actions.RefinementComparator;
 
 import java.util.Comparator;
 import java.util.List;
@@ -41,6 +41,6 @@ public class StrategyBestFirst extends Strategy {
 
     @Override
     public void updateStatus(HTNWorldState worldState) {
-        this.refinementComparator = RefinementsComparatorFactory.getComparator(this.desire, worldState);
+        this.refinementComparator = new RefinementComparator(worldState);
     }
 }
