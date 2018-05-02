@@ -32,7 +32,6 @@ import java.util.logging.Logger;
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
-    private static int FAILURES_THRESHOLD = 1;
 
     private Agent agent;
     private FibonacciHeap<Desire> desires;
@@ -40,8 +39,8 @@ public class AgentThread implements Runnable {
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
+    private LockDetector lockDetector;
     private AgentThreadStatus status;
-    private int planFailureCounter;
     private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
@@ -52,8 +51,8 @@ public class AgentThread implements Runnable {
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
         this.status = AgentThreadStatus.FREE;
+        this.lockDetector = new LockDetector();
         this.helpRequests = new ConcurrentLinkedDeque<>();
-        this.planFailureCounter = 0;
     }
 
     @Override
@@ -77,14 +76,14 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.planFailureCounter);
+                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.lockDetector.getNumFailedPlans());
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire, planningRelaxation);
 
                     try {
                         // Plan
                         HTNPlanner planner = new HTNPlanner(worldState, desire);
                         PrimitivePlan plan = planner.findPlan();
-                        this.planFailureCounter = 0; // Reset failure counter when a plan is successfully found
+                        this.lockDetector.planSuccessful(); // Reset failure counter when a plan is successfully found
                         executePlan(plan);
 
                         // If we reach this point, the desire is achieved. If goal desire, back it up
@@ -96,12 +95,13 @@ public class AgentThread implements Runnable {
                         this.desires.enqueue(entry.getValue(), entry.getPriority());
                         detectBlockingObject(e.getFailedAction(), entry.getValue());
                     } catch (PlanNotFoundException e) {
-                        this.planFailureCounter++;
-                        if (this.planFailureCounter == 1) {
+                        this.lockDetector.planFailed();
+                        if (this.lockDetector.needsReplanning()) {
                             // Current desire wasn't achieved --> add it back to the heap!
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                             this.desires.enqueue(entry.getValue(), entry.getPriority());
+                            this.lockDetector.resetClearingDistance(entry.getValue());
                         } else {
                             // Planning keeps failing, unexpected exception. Throw and quit.
                             ConsoleLogger.logError(LOGGER, e.getMessage());
@@ -125,7 +125,9 @@ public class AgentThread implements Runnable {
         while (it.hasNext()) {
             GoalDesire desire = it.next();
             if (!levelManager.getLevel().isGoalDesireAchieved(desire)) {
-                this.desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire));
+                // Avoid picking the same goal if its priority is the lowest!
+                // Penalize the desire (+100)
+                this.desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 100);
                 it.remove();
             }
         }
@@ -133,18 +135,18 @@ public class AgentThread implements Runnable {
 
     private void executePlan(PrimitivePlan plan) throws InvalidActionException {
         Queue<PrimitiveTask> tasks = plan.getTasks();
-        int failedAttempts = 0;
+        this.lockDetector.resetFailedActions();
         do {
-            if (failedAttempts == FAILURES_THRESHOLD)
+            if (this.lockDetector.isStuck())
                 throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
             status = AgentThreadStatus.BUSY;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
                     tasks.remove();
-                    failedAttempts = 0;
+                    this.lockDetector.resetFailedActions();
                 } else {
-                    failedAttempts++;
+                    this.lockDetector.actionFailed();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -161,9 +163,6 @@ public class AgentThread implements Runnable {
      * @param desire       current desire to achieve
      */
     private void detectBlockingObject(PrimitiveTask failedAction, Desire desire) {
-        // TODO Here's there's an issue: we're only detecting boxes that block the AGENT and not the BOX
-        // This way we would consider a blocking-box the same one we're trying to put in the goal, resulting in
-        // infinite loop
         Coordinate blockingCell;
         switch (failedAction.getType()) {
             case Move:
@@ -187,11 +186,18 @@ public class AgentThread implements Runnable {
         } else if (blockingObject instanceof Box) {
             if (((Box) blockingObject).getColor() == this.agent.getColor()) {
                 // Blocking box is of the same color
-                List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), 1);
+                int clearingDistance = this.lockDetector.getClearingDistance(desire);
+                List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), clearingDistance);
                 potentialNewPositions.add(this.agent.getCoordinate());
                 Map<Object, Integer> distances = new HashMap<>();
                 potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
                 Coordinate chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+
+                // Avoid priority conflicts: increase all priorities by 1
+                List<FibonacciHeap.Entry<Desire>> tempDesires = new ArrayList<>();
+                while (!this.desires.isEmpty())
+                    tempDesires.add(this.desires.dequeueMin());
+                tempDesires.forEach(d -> this.desires.enqueue(d.getValue(), d.getPriority() + 1));
 
                 // Create new desire and enqueue it with maximum priority
                 ClearPathDesire clearPathDesire = new ClearPathDesire((Box) blockingObject, chosenTarget);
