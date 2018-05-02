@@ -1,5 +1,6 @@
 package architecture.bdi;
 
+import architecture.ClientManager;
 import board.Box;
 import board.Coordinate;
 import board.Goal;
@@ -44,8 +45,17 @@ public class GoalDesire implements Desire {
         return box.equals(goalDesire.box) && goal.equals(goalDesire.goal);
     }
 
+    /**
+     * Super important: since, at runtime, box will change position, hashCode won't return the same value if we hash both
+     * box and goal! During intention generation, everything is still static so it's feasible. Then, just hash the goal
+     * (it it still an identifier and for sure each goal is mapped to one and only one box)
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
+        if (ClientManager.isClientRunning())
+            return Objects.hashCode(goal);
         return Objects.hash(box, goal);
     }
 
