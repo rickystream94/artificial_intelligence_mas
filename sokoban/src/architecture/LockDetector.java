@@ -1,6 +1,6 @@
 package architecture;
 
-import architecture.bdi.Desire;
+import board.Box;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +13,12 @@ public class LockDetector {
 
     private int numFailedPlans;
     private int numFailedActions;
-    private Map<Desire, Integer> desireClearingDistanceMap;
+    private Map<Box, Integer> boxClearingDistanceMap;
 
     public LockDetector() {
         this.numFailedPlans = 0;
         this.numFailedActions = 0;
-        this.desireClearingDistanceMap = new HashMap<>();
+        this.boxClearingDistanceMap = new HashMap<>();
     }
 
     public int getNumFailedPlans() {
@@ -49,17 +49,17 @@ public class LockDetector {
         return this.numFailedActions == MAX_ACTION_RETRIES;
     }
 
-    public int getClearingDistance(Desire desire) {
-        if (!this.desireClearingDistanceMap.containsKey(desire)) {
-            this.desireClearingDistanceMap.put(desire, DEFAULT_CLEARING_DISTANCE);
+    public int getClearingDistance(Box box) {
+        if (!this.boxClearingDistanceMap.containsKey(box)) {
+            this.boxClearingDistanceMap.put(box, DEFAULT_CLEARING_DISTANCE);
             return DEFAULT_CLEARING_DISTANCE;
         }
-        // If desire was already stored, increase the clearing distance
-        this.desireClearingDistanceMap.put(desire, this.desireClearingDistanceMap.get(desire) + 1);
-        return this.desireClearingDistanceMap.get(desire);
+        // If box was already stored, increase the clearing distance
+        this.boxClearingDistanceMap.put(box, this.boxClearingDistanceMap.get(box) + 1);
+        return this.boxClearingDistanceMap.get(box);
     }
 
-    public void resetClearingDistance(Desire desire) {
-        this.desireClearingDistanceMap.remove(desire);
+    public void resetClearingDistance(Box box) {
+        this.boxClearingDistanceMap.remove(box);
     }
 }

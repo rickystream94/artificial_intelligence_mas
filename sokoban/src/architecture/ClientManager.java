@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 public class ClientManager {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(ClientManager.class.getSimpleName());
-    private static boolean clientIsRunning;
 
     private LevelManager levelManager;
     private int numberOfAgents;
@@ -27,7 +26,6 @@ public class ClientManager {
     private ActionSenderThread actionSenderThread;
 
     private ClientManager() {
-        clientIsRunning = false;
     }
 
     public static ClientManager getInstance() {
@@ -68,7 +66,6 @@ public class ClientManager {
             PerformativeManager.getDefault().register(agentThread);
             new Thread(agentThread).start();
         });
-        clientIsRunning = true;
     }
 
     public LevelManager getLevelManager() {
@@ -81,9 +78,5 @@ public class ClientManager {
 
     public ActionSenderThread getActionSenderThread() {
         return actionSenderThread;
-    }
-
-    public static boolean isClientRunning() {
-        return clientIsRunning;
     }
 }

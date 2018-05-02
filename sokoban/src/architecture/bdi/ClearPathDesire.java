@@ -41,11 +41,11 @@ public class ClearPathDesire implements Desire {
         if (this == o) return true;
         if (!(o instanceof ClearPathDesire)) return false;
         ClearPathDesire clearPathDesire = (ClearPathDesire) o;
-        return target.equals(clearPathDesire.target);
+        return target.equals(clearPathDesire.target) && box.equals(clearPathDesire.box);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(target);
+        return Objects.hash(box, target);
     }
 }

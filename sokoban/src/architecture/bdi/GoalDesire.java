@@ -1,6 +1,5 @@
 package architecture.bdi;
 
-import architecture.ClientManager;
 import board.Box;
 import board.Coordinate;
 import board.Goal;
@@ -54,8 +53,6 @@ public class GoalDesire implements Desire {
      */
     @Override
     public int hashCode() {
-        if (ClientManager.isClientRunning())
-            return Objects.hashCode(goal);
         return Objects.hash(box, goal);
     }
 

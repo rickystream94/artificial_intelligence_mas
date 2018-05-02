@@ -1,21 +1,20 @@
 package board;
 
-import java.util.Objects;
-
 public class EmptyCell extends SokobanObject {
 
-    public EmptyCell(int row, int col) {
-        super(row, col);
+    public EmptyCell(int id, int row, int col) {
+        super(id, row, col);
     }
 
     @Override
     public boolean equals(Object o) {
-
         if (o == this) return true;
-        if (!(o instanceof EmptyCell)) {
-            return false;
-        }
-        EmptyCell other = (EmptyCell) o;
-        return Objects.equals(super.getCoordinate(), other.getCoordinate());
+        if (!super.equals(o)) return false;
+        return o instanceof EmptyCell;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

@@ -5,9 +5,11 @@ import java.util.Objects;
 public abstract class SokobanObject {
 
     private Coordinate coordinate;
+    private int objectId;
 
-    public SokobanObject(int row, int col) {
+    public SokobanObject(int objectId, int row, int col) {
         this.coordinate = new Coordinate(row, col);
+        this.objectId = objectId;
     }
 
     /**
@@ -17,15 +19,11 @@ public abstract class SokobanObject {
      */
     public SokobanObject(SokobanObject other) {
         this.coordinate = new Coordinate(other.coordinate);
+        this.objectId = other.objectId;
     }
 
     public Coordinate getCoordinate() {
         return this.coordinate;
-    }
-
-    public void setCoordinate(int row, int col) {
-        this.coordinate.setRow(row);
-        this.coordinate.setCol(col);
     }
 
     public void setCoordinate(Coordinate coordinate) {
@@ -37,11 +35,16 @@ public abstract class SokobanObject {
         if (this == o) return true;
         if (!(o instanceof SokobanObject)) return false;
         SokobanObject that = (SokobanObject) o;
-        return Objects.equals(coordinate, that.coordinate);
+        return Objects.equals(objectId, that.objectId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(coordinate);
+        return Objects.hash(objectId);
+    }
+
+    @Override
+    public String toString() {
+        return "ID=" + objectId;
     }
 }

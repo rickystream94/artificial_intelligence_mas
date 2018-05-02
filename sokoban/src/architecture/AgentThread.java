@@ -60,16 +60,18 @@ public class AgentThread implements Runnable {
         try {
             while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty()) {
-                    // Get next desire
-                    // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
-                    // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
-                    // that should move a blocking box somewhere close to the edges to free the way for the targeted box
-                    // TODO: desires re-prioritization to be performed and invoked during planning! e.g. if we haven't achieved our goal
-                    // after 5/10 primitive actions return the final plan, re-calculate the priorities and re-evaluate the desires:
-                    // there might be some desires now that have less priority than before and the agent will commit to them first
-                    // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
-                    // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
+                    // TODO: the same algorithm that generates the desires in BDIManager should be re-used here:
+                    // Where to place it? --> before de-queueing next desire
+                    // What's the reason for this? --> after X successful actions executed during executePlan
+                    // there might be some desires now that have less priority than before
+                    // and the agent will commit to them first
+                    // How? --> Break plan execution, re-enqueue un-achieved desire and continue
+                    // this.desires = bdiManager.calculatePriorities(...);
+
+                    // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     checkAndEnqueueUnsolvedGoalDesires();
+
+                    // Get next desire
                     FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
                     Desire desire = entry.getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
@@ -101,7 +103,7 @@ public class AgentThread implements Runnable {
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                             this.desires.enqueue(entry.getValue(), entry.getPriority());
-                            this.lockDetector.resetClearingDistance(entry.getValue());
+                            //this.lockDetector.resetClearingDistance(entry.getValue());
                         } else {
                             // Planning keeps failing, unexpected exception. Throw and quit.
                             ConsoleLogger.logError(LOGGER, e.getMessage());
@@ -184,10 +186,11 @@ public class AgentThread implements Runnable {
         if (blockingObject instanceof Agent) {
             // TODO: decide how to behave in either case: the blocking agent's color doesn't matter, in either case it needs to free the cell
         } else if (blockingObject instanceof Box) {
-            if (((Box) blockingObject).getColor() == this.agent.getColor()) {
+            Box blockingBox = (Box) blockingObject;
+            if (blockingBox.getColor() == this.agent.getColor()) {
                 // Blocking box is of the same color
-                int clearingDistance = this.lockDetector.getClearingDistance(desire);
-                List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), clearingDistance);
+                int clearingDistance = this.lockDetector.getClearingDistance(blockingBox);
+                List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
                 potentialNewPositions.add(this.agent.getCoordinate());
                 Map<Object, Integer> distances = new HashMap<>();
                 potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
@@ -200,7 +203,7 @@ public class AgentThread implements Runnable {
                 tempDesires.forEach(d -> this.desires.enqueue(d.getValue(), d.getPriority() + 1));
 
                 // Create new desire and enqueue it with maximum priority
-                ClearPathDesire clearPathDesire = new ClearPathDesire((Box) blockingObject, chosenTarget);
+                ClearPathDesire clearPathDesire = new ClearPathDesire(blockingBox, chosenTarget);
                 this.desires.enqueue(clearPathDesire, -1000);
             } else {
                 // Box of different color

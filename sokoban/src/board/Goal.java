@@ -6,8 +6,8 @@ public class Goal extends SokobanObject {
 
     private char goalType;
 
-    public Goal(int row, int col, char goalType) {
-        super(row, col);
+    public Goal(int id, int row, int col, char goalType) {
+        super(id, row, col);
         this.goalType = goalType;
     }
 
@@ -41,8 +41,8 @@ public class Goal extends SokobanObject {
 
     @Override
     public String toString() {
-        return "Goal{" +
-                "goalType=" + goalType + ", " + this.getCoordinate() +
+        return "Goal{" + super.toString() +
+                ", goalType=" + goalType + ", " + this.getCoordinate() +
                 '}';
     }
 }

@@ -13,6 +13,7 @@ public class Level {
      */
     private static int width;
     private static int height;
+    private static int availableObjectId = 0;
     private static Map<Coordinate, Goal> goalsMap;
     private static Map<Coordinate, Wall> wallsMap;
 
@@ -48,6 +49,10 @@ public class Level {
         walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
     }
 
+    public static int getAvailableObjectId() {
+        return availableObjectId++;
+    }
+
     public static List<Goal> getGoals() {
         return new ArrayList<>(Level.goalsMap.values());
     }
@@ -77,16 +82,15 @@ public class Level {
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {
-        EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol());
-        return emptyCells.contains(emptyCell);
+        return emptyCells.stream().anyMatch(emptyCell -> emptyCell.getCoordinate().equals(coordinate));
     }
 
     public void removeEmptyCell(Coordinate coordinate) {
-        emptyCells.remove(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
+        emptyCells.removeIf(emptyCell -> emptyCell.getCoordinate().equals(coordinate));
     }
 
     public void addEmptyCell(Coordinate coordinate) {
-        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
+        emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), coordinate.getRow(), coordinate.getCol()));
     }
 
     public static int getWidth() {
