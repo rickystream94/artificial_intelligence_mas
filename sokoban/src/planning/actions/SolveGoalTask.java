@@ -1,10 +1,8 @@
 package planning.actions;
 
 import planning.HTNWorldState;
-import planning.HighLevelPlan;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,11 +19,7 @@ public class SolveGoalTask extends CompoundTask {
         if (isAchieved(currentWorldState)) {
             foundRefinements.add(new Refinement(this, planningStep));
         } else {
-            LinkedList<Task> subTasks = new LinkedList<>();
-            subTasks.add(new GoToLocationTask(currentWorldState.getBoxPosition()));
-            subTasks.add(new MoveBoxToLocationTask(currentWorldState.getBoxTarget()));
-            HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
-            foundRefinements.add(new Refinement(this, highLevelPlan, planningStep));
+            foundRefinements.add(getSimpleRefinement(currentWorldState, planningStep));
         }
         return foundRefinements;
     }
