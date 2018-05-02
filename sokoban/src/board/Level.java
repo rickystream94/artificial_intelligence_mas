@@ -1,5 +1,7 @@
 package board;
 
+import architecture.bdi.GoalDesire;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -105,6 +107,12 @@ public class Level {
         if (boxesMap.containsKey(coordinate))
             return boxesMap.get(coordinate);
         return null;
+    }
+
+    public boolean isGoalDesireAchieved(GoalDesire desire) {
+        Box box = desire.getBox();
+        Coordinate targetPosition = desire.getTarget();
+        return box.getCoordinate().equals(targetPosition);
     }
 
     @Override

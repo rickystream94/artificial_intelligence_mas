@@ -7,6 +7,7 @@ import logging.ConsoleLogger;
 import planning.actions.*;
 import planning.strategy.Strategy;
 import planning.strategy.StrategyBestFirst;
+import utils.Memory;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -71,10 +72,10 @@ public class HTNPlanner {
             this.planningStep++;
 
             // Check if planning is taking too long
-            /*if (planningStep % 50 == 0 && planningStep != 0) {
+            if (planningStep % 100 == 0 && planningStep != 0) {
                 ConsoleLogger.logInfo(LOGGER, String.format("Planning step: %d", planningStep));
                 ConsoleLogger.logInfo(LOGGER, Memory.stringRep());
-            }*/
+            }
         }
         ConsoleLogger.logInfo(LOGGER, "Found plan!");
         return this.finalPlan;

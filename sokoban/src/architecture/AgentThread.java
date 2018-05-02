@@ -2,6 +2,7 @@ package architecture;
 
 import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;
+import architecture.bdi.GoalDesire;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
@@ -35,6 +36,7 @@ public class AgentThread implements Runnable {
 
     private Agent agent;
     private FibonacciHeap<Desire> desires;
+    private Map<GoalDesire, Double> achievedGoalDesiresPriorityMap;
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
@@ -45,6 +47,7 @@ public class AgentThread implements Runnable {
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
         this.desires = desires;
+        this.achievedGoalDesiresPriorityMap = new HashMap<>();
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
@@ -57,13 +60,7 @@ public class AgentThread implements Runnable {
     public void run() {
         try {
             while (!this.levelManager.isLevelSolved()) {
-            /* TODO: ** INTENTIONS AND DESIRES **
-        Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
-        An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
-        (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
-        Intentions are generated for each agent control loop iteration --> deliberation step */
                 while (!this.desires.isEmpty()) {
-                    FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
                     // Get next desire
                     // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
                     // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
@@ -73,6 +70,8 @@ public class AgentThread implements Runnable {
                     // there might be some desires now that have less priority than before and the agent will commit to them first
                     // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
                     // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
+                    checkAndEnqueueUnsolvedGoalDesires();
+                    FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
                     Desire desire = entry.getValue();
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
@@ -87,6 +86,10 @@ public class AgentThread implements Runnable {
                         PrimitivePlan plan = planner.findPlan();
                         this.planFailureCounter = 0; // Reset failure counter when a plan is successfully found
                         executePlan(plan);
+
+                        // If we reach this point, the desire is achieved. If goal desire, back it up
+                        if (desire instanceof GoalDesire)
+                            this.achievedGoalDesiresPriorityMap.put((GoalDesire) desire, entry.getPriority());
                     } catch (InvalidActionException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
@@ -114,6 +117,17 @@ public class AgentThread implements Runnable {
             ConsoleLogger.logError(LOGGER, e.getMessage());
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    private void checkAndEnqueueUnsolvedGoalDesires() {
+        Iterator<GoalDesire> it = this.achievedGoalDesiresPriorityMap.keySet().iterator();
+        while (it.hasNext()) {
+            GoalDesire desire = it.next();
+            if (!levelManager.getLevel().isGoalDesireAchieved(desire)) {
+                this.desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire));
+                it.remove();
+            }
         }
     }
 
