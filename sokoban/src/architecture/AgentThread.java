@@ -41,6 +41,7 @@ public class AgentThread implements Runnable {
     private LevelManager levelManager;
     private LockDetector lockDetector;
     private AgentThreadStatus status;
+    private Desire previouslyAchievedDesire;
     private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
@@ -66,14 +67,24 @@ public class AgentThread implements Runnable {
                     // there might be some desires now that have less priority than before
                     // and the agent will commit to them first
                     // How? --> Break plan execution, re-enqueue un-achieved desire and continue
+                    // TODO: currently, if the agent is stuck, it might go into a deadlock where two ClearPathDesires are alternated
+                    // re-prioritizing might be a solution
+                    // TODO: agentThread is getting too complex, move some logic related to desires to BDIManager
                     // this.desires = bdiManager.calculatePriorities(...);
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     checkAndEnqueueUnsolvedGoalDesires();
 
                     // Get next desire
-                    FibonacciHeap.Entry<Desire> entry = this.desires.dequeueMin();
-                    Desire desire = entry.getValue();
+                    FibonacciHeap.Entry<Desire> entry;
+                    Desire desire;
+                    do {
+                        // If we just achieved a ClearPathDesire successfully, discard the previous ones that have been enqueued
+                        entry = this.desires.dequeueMin();
+                        desire = entry.getValue();
+                    }
+                    while (this.previouslyAchievedDesire instanceof ClearPathDesire && desire instanceof ClearPathDesire);
+                    this.previouslyAchievedDesire = null;
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
@@ -91,6 +102,7 @@ public class AgentThread implements Runnable {
                         // If we reach this point, the desire is achieved. If goal desire, back it up
                         if (desire instanceof GoalDesire)
                             this.achievedGoalDesiresPriorityMap.put((GoalDesire) desire, entry.getPriority());
+                        this.previouslyAchievedDesire = desire;
                     } catch (InvalidActionException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
@@ -191,6 +203,8 @@ public class AgentThread implements Runnable {
                 // Blocking box is of the same color
                 int clearingDistance = this.lockDetector.getClearingDistance(blockingBox);
                 List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
+                // TODO: there should be a more well-structured heuristic --> the most preferred cells are the edge ones
+                // surrounded only by walls/boxes and distant from the goals (e.g. SAtowersOfSaigon5)
                 potentialNewPositions.add(this.agent.getCoordinate());
                 Map<Object, Integer> distances = new HashMap<>();
                 potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
