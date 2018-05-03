@@ -71,6 +71,7 @@ public class AgentThread implements Runnable {
                     // re-prioritizing might be a solution
                     // TODO: agentThread is getting too complex, move some logic related to desires to BDIManager
                     // this.desires = bdiManager.calculatePriorities(...);
+                    // TODO: add more logging
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     checkAndEnqueueUnsolvedGoalDesires();
@@ -80,10 +81,11 @@ public class AgentThread implements Runnable {
                     Desire desire;
                     do {
                         // If we just achieved a ClearPathDesire successfully, discard the previous ones that have been enqueued
+                        // that wish to clear the same box
                         entry = this.desires.dequeueMin();
                         desire = entry.getValue();
                     }
-                    while (this.previouslyAchievedDesire instanceof ClearPathDesire && desire instanceof ClearPathDesire);
+                    while (this.previouslyAchievedDesire instanceof ClearPathDesire && desire instanceof ClearPathDesire && desire.getBox() == this.previouslyAchievedDesire.getBox());
                     this.previouslyAchievedDesire = null;
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
@@ -100,8 +102,13 @@ public class AgentThread implements Runnable {
                         executePlan(plan);
 
                         // If we reach this point, the desire is achieved. If goal desire, back it up
-                        if (desire instanceof GoalDesire)
+                        if (desire instanceof GoalDesire) {
                             this.achievedGoalDesiresPriorityMap.put((GoalDesire) desire, entry.getPriority());
+                            if (this.previouslyAchievedDesire instanceof ClearPathDesire)
+                                this.lockDetector.resetClearingDistance(this.previouslyAchievedDesire.getBox());
+                        }
+                        //else if (desire instanceof ClearPathDesire)
+                        //   this.lockDetector.resetClearingDistance(desire.getBox());
                         this.previouslyAchievedDesire = desire;
                     } catch (InvalidActionException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
@@ -115,11 +122,13 @@ public class AgentThread implements Runnable {
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                             this.desires.enqueue(entry.getValue(), entry.getPriority());
-                            //this.lockDetector.resetClearingDistance(entry.getValue());
                         } else {
                             // Planning keeps failing, unexpected exception. Throw and quit.
                             ConsoleLogger.logError(LOGGER, e.getMessage());
                             System.exit(1);
+                            // TODO: there's a bug: with OnlyWallsRelaxation, it's impossible to fail planning:
+                            // if code reaches this point it means a ClearPath task has a fake empty cell as target
+                            // We need to get rid of them!
                         }
                     }
                 }
