@@ -1,4 +1,4 @@
-package architecture;
+package architecture.monitoring;
 
 import planning.PrimitivePlan;
 
