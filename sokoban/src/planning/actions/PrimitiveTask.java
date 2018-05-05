@@ -93,8 +93,6 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         // Manhattan Distance from box to goal and from agent to box
         cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getBoxTarget());
         cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
-
-        // TODO: should include more cost components besides manhattan distance (e.g. presence of walls? Clear path to goal?)
         return cost;
     }
 

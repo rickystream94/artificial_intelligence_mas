@@ -45,8 +45,6 @@ public class SolveGoalTask extends CompoundTask {
 
     @Override
     public int calculateApproximation(HTNWorldState worldState) {
-        // TODO: since this is the root compound task that, in planning, would exist only once, the implementation of this method
-        // should provide a heuristic cost for prioritizing DESIRES
         return 0;
     }
 }
