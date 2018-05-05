@@ -1,6 +1,6 @@
 package board;
 
-import architecture.bdi.GoalDesire;
+import architecture.bdi.Desire;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,7 +113,7 @@ public class Level {
         return null;
     }
 
-    public boolean isGoalDesireAchieved(GoalDesire desire) {
+    public boolean isDesireAchieved(Desire desire) {
         Box box = desire.getBox();
         Coordinate targetPosition = desire.getTarget();
         return box.getCoordinate().equals(targetPosition);
