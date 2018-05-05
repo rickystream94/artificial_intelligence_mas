@@ -1,7 +1,10 @@
 package board;
 
+import architecture.bdi.Desire;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Level {
 
@@ -10,6 +13,7 @@ public class Level {
      */
     private static int width;
     private static int height;
+    private static int availableObjectId = 0;
     private static Map<Coordinate, Goal> goalsMap;
     private static Map<Coordinate, Wall> wallsMap;
 
@@ -45,6 +49,10 @@ public class Level {
         walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
     }
 
+    public static int getAvailableObjectId() {
+        return availableObjectId++;
+    }
+
     public static List<Goal> getGoals() {
         return new ArrayList<>(Level.goalsMap.values());
     }
@@ -74,16 +82,41 @@ public class Level {
     }
 
     public boolean isCellEmpty(Coordinate coordinate) {
-        EmptyCell emptyCell = new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY);
-        return emptyCells.contains(emptyCell);
+        return emptyCells.stream().anyMatch(emptyCell -> emptyCell.getCoordinate().equals(coordinate));
     }
 
     public void removeEmptyCell(Coordinate coordinate) {
-        emptyCells.remove(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
+        emptyCells.removeIf(emptyCell -> emptyCell.getCoordinate().equals(coordinate));
     }
 
     public void addEmptyCell(Coordinate coordinate) {
-        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol(), SokobanObjectType.EMPTY));
+        emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), coordinate.getRow(), coordinate.getCol()));
+    }
+
+    public static int getWidth() {
+        return width;
+    }
+
+    public static int getHeight() {
+        return height;
+    }
+
+    public Set<Coordinate> getEmptyCellsPositions() {
+        return this.emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toSet());
+    }
+
+    public SokobanObject dynamicObjectAt(Coordinate coordinate) {
+        if (agentsMap.containsKey(coordinate))
+            return agentsMap.get(coordinate);
+        if (boxesMap.containsKey(coordinate))
+            return boxesMap.get(coordinate);
+        return null;
+    }
+
+    public boolean isDesireAchieved(Desire desire) {
+        Box box = desire.getBox();
+        Coordinate targetPosition = desire.getTarget();
+        return box.getCoordinate().equals(targetPosition);
     }
 
     @Override

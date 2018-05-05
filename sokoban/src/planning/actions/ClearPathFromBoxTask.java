@@ -1,26 +1,24 @@
 package planning.actions;
 
+import board.Coordinate;
 import planning.HTNWorldState;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
-public class SolveGoalTask extends CompoundTask {
+public class ClearPathFromBoxTask extends CompoundTask {
 
-    public SolveGoalTask() {
-        this.taskType = CompoundTaskType.SolveGoal;
+    public ClearPathFromBoxTask() {
+        super.taskType = CompoundTaskType.ClearBox;
     }
 
     @Override
     public List<Refinement> getSatisfiedRefinements(HTNWorldState currentWorldState, int planningStep) {
         List<Refinement> foundRefinements = new ArrayList<>();
-
-        if (isAchieved(currentWorldState)) {
+        if (isAchieved(currentWorldState))
             foundRefinements.add(new Refinement(this, planningStep));
-        } else {
+        else
             foundRefinements.add(getSimpleRefinement(currentWorldState, planningStep));
-        }
         return foundRefinements;
     }
 
@@ -30,21 +28,7 @@ public class SolveGoalTask extends CompoundTask {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other == this) return true;
-        if (!super.equals(other)) return false;
-        if (!(other instanceof SolveGoalTask)) return false;
-        SolveGoalTask task = (SolveGoalTask) other;
-        return this.taskType == task.taskType;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(this.taskType);
-    }
-
-    @Override
     public int calculateApproximation(HTNWorldState worldState) {
-        return 0;
+        return Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
     }
 }

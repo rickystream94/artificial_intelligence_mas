@@ -2,10 +2,10 @@ package planning;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
+import architecture.bdi.Desire;
 import board.Agent;
 import board.Box;
 import board.Coordinate;
-import board.Goal;
 import planning.actions.Direction;
 import planning.actions.Effect;
 import planning.actions.PrimitiveTask;
@@ -21,7 +21,7 @@ public class HTNWorldState {
 
     private Agent agent;
     private Box box;
-    private Goal goal;
+    private Coordinate boxTarget;
     private LevelManager levelManager;
     private Relaxation relaxation;
 
@@ -30,16 +30,15 @@ public class HTNWorldState {
      * (Caller must verify this condition before instantiating a HTNWorldState)
      *
      * @param agent      current agent to track
-     * @param box        current box to track
-     * @param goal       current goal to track
+     * @param desire     desire to achieve at the end of planning
      * @param relaxation relaxation for checking the preconditions
      */
-    public HTNWorldState(Agent agent, Box box, Goal goal, Relaxation relaxation) {
+    public HTNWorldState(Agent agent, Desire desire, Relaxation relaxation) {
         this.agent = new Agent(agent);
-        this.box = new Box(box);
-        this.goal = new Goal(goal);
         this.relaxation = relaxation;
         this.levelManager = ClientManager.getInstance().getLevelManager();
+        this.box = new Box(desire.getBox());
+        this.boxTarget = desire.getTarget();
     }
 
     /**
@@ -51,7 +50,7 @@ public class HTNWorldState {
         this.levelManager = other.levelManager;
         this.agent = new Agent(other.agent);
         this.box = new Box(other.box);
-        this.goal = new Goal(other.goal);
+        this.boxTarget = other.boxTarget;
         this.relaxation = other.relaxation;
     }
 
@@ -126,8 +125,8 @@ public class HTNWorldState {
         return this.box.getCoordinate();
     }
 
-    public Coordinate getGoalPosition() {
-        return this.goal.getCoordinate();
+    public Coordinate getBoxTarget() {
+        return this.boxTarget;
     }
 
     @Override
@@ -138,12 +137,11 @@ public class HTNWorldState {
             return false;
         HTNWorldState s = (HTNWorldState) o;
         return this.agent.getCoordinate().equals(s.agent.getCoordinate()) &&
-                this.box.getCoordinate().equals(s.box.getCoordinate()) &&
-                this.goal.getCoordinate().equals(s.goal.getCoordinate());
+                this.box.getCoordinate().equals(s.box.getCoordinate());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate(), this.goal.getCoordinate());
+        return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate());
     }
 }

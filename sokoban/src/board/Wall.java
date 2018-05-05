@@ -1,21 +1,20 @@
 package board;
 
-import java.util.Objects;
-
 public class Wall extends SokobanObject {
 
-    public Wall(int row, int col, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public Wall(int id, int row, int col) {
+        super(id, row, col);
     }
 
     @Override
     public boolean equals(Object o) {
-
         if (o == this) return true;
-        if (!(o instanceof Wall)) {
-            return false;
-        }
-        Wall other = (Wall) o;
-        return Objects.equals(super.getCoordinate(), other.getCoordinate());
+        if (!super.equals(o)) return false;
+        return o instanceof Wall;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

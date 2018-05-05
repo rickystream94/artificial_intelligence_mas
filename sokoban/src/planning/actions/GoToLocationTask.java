@@ -62,7 +62,6 @@ public class GoToLocationTask extends CompoundTask {
 
     @Override
     public int calculateApproximation(HTNWorldState worldState) {
-        // TODO: should it include more cost components?
         return Coordinate.manhattanDistance(worldState.getAgentPosition(), this.destination);
     }
 }

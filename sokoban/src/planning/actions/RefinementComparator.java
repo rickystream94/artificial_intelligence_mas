@@ -6,7 +6,7 @@ import java.util.Comparator;
 
 public class RefinementComparator implements Comparator<Refinement> {
 
-    private final HTNWorldState worldState;
+    protected final HTNWorldState worldState;
 
     public RefinementComparator(HTNWorldState worldState) {
         this.worldState = worldState;

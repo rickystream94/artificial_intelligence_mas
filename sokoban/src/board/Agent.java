@@ -8,8 +8,8 @@ public class Agent extends SokobanObject {
     private Color color;
     private Box currentTargetBox;
 
-    public Agent(int row, int col, char agentId, Color color, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public Agent(int id, int row, int col, char agentId, Color color) {
+        super(id, row, col);
         this.agentId = agentId;
         this.color = color;
     }
@@ -58,8 +58,8 @@ public class Agent extends SokobanObject {
 
     @Override
     public String toString() {
-        return "Agent{" +
-                "agentId=" + agentId +
+        return "Agent{" + super.toString() +
+                ", agentId=" + agentId +
                 ", color=" + color +
                 ", " + getCoordinate() +
                 '}';

@@ -4,12 +4,12 @@ import java.util.Objects;
 
 public abstract class SokobanObject {
 
-    private SokobanObjectType objectType;
     private Coordinate coordinate;
+    private int objectId;
 
-    public SokobanObject(int row, int col, SokobanObjectType objectType) {
+    public SokobanObject(int objectId, int row, int col) {
         this.coordinate = new Coordinate(row, col);
-        this.objectType = objectType;
+        this.objectId = objectId;
     }
 
     /**
@@ -19,24 +19,15 @@ public abstract class SokobanObject {
      */
     public SokobanObject(SokobanObject other) {
         this.coordinate = new Coordinate(other.coordinate);
-        this.objectType = other.objectType;
+        this.objectId = other.objectId;
     }
 
     public Coordinate getCoordinate() {
         return this.coordinate;
     }
 
-    public void setCoordinate(int row, int col) {
-        this.coordinate.setRow(row);
-        this.coordinate.setCol(col);
-    }
-
     public void setCoordinate(Coordinate coordinate) {
         this.coordinate = coordinate;
-    }
-
-    public SokobanObjectType getObjectType() {
-        return objectType;
     }
 
     @Override
@@ -44,12 +35,16 @@ public abstract class SokobanObject {
         if (this == o) return true;
         if (!(o instanceof SokobanObject)) return false;
         SokobanObject that = (SokobanObject) o;
-        return objectType == that.objectType &&
-                Objects.equals(coordinate, that.coordinate);
+        return Objects.equals(objectId, that.objectId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(objectType, coordinate);
+        return Objects.hash(objectId);
+    }
+
+    @Override
+    public String toString() {
+        return "ID=" + objectId;
     }
 }

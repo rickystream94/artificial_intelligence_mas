@@ -4,6 +4,7 @@ import architecture.ClientManager;
 import board.*;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
+import utils.HashMapHelper;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -50,16 +51,16 @@ public class BDIManager {
                 for (Box box : boxesPerTypeMap.get(type)) {
                     for (Goal goal : goalsPerTypeMap.get(type)) {
                         int cost = getCostBetweenObjects(box, goal);
-                        cost += getPunishment(goal);
-                        desireCostMap.put(new Desire(box, goal), cost);
+                        cost += getDiscount(goal);
+                        desireCostMap.put(new GoalDesire(box, goal), cost);
                     }
                 }
-                Desire minCostDesire = (Desire) getKeyByMinValue(desireCostMap);
-                desires.add(minCostDesire);
+                Desire minCostGoalDesire = (Desire) HashMapHelper.getKeyByMinIntValue(desireCostMap);
+                desires.add(minCostGoalDesire);
 
                 // Remove occurrence of chosen box and goal for the current desire
-                boxesPerTypeMap.get(type).remove(minCostDesire.getBox());
-                goalsPerTypeMap.get(type).remove(minCostDesire.getGoal());
+                boxesPerTypeMap.get(type).remove(minCostGoalDesire.getBox());
+                goalsPerTypeMap.get(type).remove(((GoalDesire) minCostGoalDesire).getGoal());
             }
         }
         // Testing purposes --> All goals should be assigned to a box (there can be, instead, a box not assigned to any goal)
@@ -76,58 +77,47 @@ public class BDIManager {
 
         // Step 4: Assign Desires  to agents keeping the workload well spread among them
         while (!desires.isEmpty()) {
-            Desire currentDesire = desires.remove(0);
-            List<Agent> agentsOfColor = agents.stream().filter(agent -> agent.getColor() == currentDesire.getBox().getColor()).collect(Collectors.toList());
+            Desire currentGoalDesire = desires.remove(0);
+            List<Agent> agentsOfColor = agents.stream().filter(agent -> agent.getColor() == currentGoalDesire.getBox().getColor()).collect(Collectors.toList());
             Map<Object, Integer> desireCostByAgent = new HashMap<>(); // Each agent's cost to reach the desire's box
-            agentsOfColor.forEach(agent -> desireCostByAgent.put(agent, getCostBetweenObjects(agent, currentDesire.getBox())));
-            Agent chosenAgent = (Agent) getKeyByMinValue(desireCostByAgent);
+            agentsOfColor.forEach(agent -> desireCostByAgent.put(agent, getCostBetweenObjects(agent, currentGoalDesire.getBox()) + getDiscount(((GoalDesire) currentGoalDesire).getGoal())));
+            Agent chosenAgent = (Agent) HashMapHelper.getKeyByMinIntValue(desireCostByAgent);
 
             // Check if current workload of chosen agent is above the minimum
-            Map<Object, Integer> agentsWorkload = workloadOfAgentsByColor.get(currentDesire.getBox().getColor());
+            Map<Object, Integer> agentsWorkload = workloadOfAgentsByColor.get(currentGoalDesire.getBox().getColor());
             if (agentsWorkload.get(chosenAgent) > agentsWorkload.values().stream().min(Integer::compareTo).get()) {
-                // Desire is assigned to the agent with the lowest workload
-                chosenAgent = (Agent) getKeyByMinValue(agentsWorkload);
+                // GoalDesire is assigned to the agent with the lowest workload
+                chosenAgent = (Agent) HashMapHelper.getKeyByMinIntValue(agentsWorkload);
             }
 
             // Increment workload of chosen agent
             agentsWorkload.put(chosenAgent, agentsWorkload.get(chosenAgent) + 1);
 
             // Assign desire to chosen agent
-            agentDesiresMap.get(chosenAgent).enqueue(currentDesire, (double) desireCostByAgent.get(chosenAgent));
+            agentDesiresMap.get(chosenAgent).enqueue(currentGoalDesire, (double) desireCostByAgent.get(chosenAgent));
         }
         ConsoleLogger.logInfo(LOGGER, "Step 4: Done (semi-optimally) assigning desires to agents");
 
         return agentDesiresMap;
     }
 
-    private int getPunishment(SokobanObject object) {
-        int punishment = 0;
-        for (Coordinate coordinate : object.getCoordinate().getNeighbours()) {
-            if (!Level.isNotWall(coordinate)) // It's a wall
-                punishment++;
+    private int getDiscount(SokobanObject object) {
+        int discount = 0, consecutiveWalls = 0;
+        for (Coordinate coordinate : object.getCoordinate().getClockwiseNeighbours()) {
+            if (!Level.isNotWall(coordinate)) {
+                // It's a wall
+                discount -= 10;
+                consecutiveWalls++;
+            } else
+                consecutiveWalls = 0;
             if (Level.isGoalCell(coordinate))
-                punishment--;
-        }
-        return punishment;
-    }
-
-    /**
-     * Given a map with generic keys and integer values, returns the key that has the minimum value
-     *
-     * @param map Generic Object-Integer map
-     * @return key corresponding to minimum value
-     */
-    private Object getKeyByMinValue(Map<Object, Integer> map) {
-        int minValue = Integer.MAX_VALUE;
-        Object chosenKey = null;
-        for (Object key : map.keySet()) {
-            int value = map.get(key);
-            if (value < minValue) {
-                minValue = value;
-                chosenKey = key;
+                discount -= 10;
+            if (consecutiveWalls > 1) {
+                // Additional discount for consecutive walls
+                discount -= 10;
             }
         }
-        return chosenKey;
+        return discount;
     }
 
     private int getCostBetweenObjects(SokobanObject o1, SokobanObject o2) {

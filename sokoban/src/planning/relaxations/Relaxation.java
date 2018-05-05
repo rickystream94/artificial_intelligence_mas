@@ -1,5 +1,6 @@
 package planning.relaxations;
 
+import architecture.ClientManager;
 import architecture.LevelManager;
 import board.Coordinate;
 
@@ -7,8 +8,8 @@ public abstract class Relaxation {
 
     protected LevelManager levelManager;
 
-    public Relaxation(LevelManager levelManager) {
-        this.levelManager = levelManager;
+    protected Relaxation() {
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     protected boolean positionsCoincide(Coordinate pos1, Coordinate pos2) {
@@ -16,7 +17,7 @@ public abstract class Relaxation {
     }
 
     protected boolean isEmpty(Coordinate objectPosition) {
-        return this.levelManager.getLevel().isCellEmpty(objectPosition);
+        return this.levelManager.getLevel().isCellEmpty(objectPosition) || this.levelManager.getLevel().getAgentsMap().containsKey(objectPosition);
     }
 
     public abstract boolean movePreconditionsMet(Coordinate targetPosition);

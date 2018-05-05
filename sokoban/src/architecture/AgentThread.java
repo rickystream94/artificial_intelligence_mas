@@ -1,18 +1,18 @@
 package architecture;
 
 import architecture.bdi.Desire;
-import architecture.bdi.Intention;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
 import board.Agent;
+import exceptions.InvalidActionException;
 import exceptions.PlanNotFoundException;
+import exceptions.StuckByForeignBoxException;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
 import planning.PrimitivePlan;
 import planning.actions.PrimitiveTask;
-import planning.actions.SolveGoalTask;
 import planning.relaxations.Relaxation;
 import planning.relaxations.RelaxationFactory;
 import utils.FibonacciHeap;
@@ -22,19 +22,23 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 
 public class AgentThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(AgentThread.class.getSimpleName());
-    private static int THRESHOLD = 3;
 
     private Agent agent;
     private FibonacciHeap<Desire> desires;
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
+
+    private LockDetector lockDetector;
+    private DesireHelper desireHelper;
     private AgentThreadStatus status;
+    private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -43,85 +47,119 @@ public class AgentThread implements Runnable {
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
         this.status = AgentThreadStatus.FREE;
+        this.lockDetector = new LockDetector(agent);
+        this.desireHelper = new DesireHelper(agent);
+        this.helpRequests = new ConcurrentLinkedDeque<>();
     }
 
     @Override
     public void run() {
-        // Preliminary one-time steps
-        Relaxation relaxation = RelaxationFactory.getBestRelaxation(this.agent.getColor());
-        ConsoleLogger.logInfo(LOGGER, "Chosen relaxation of type " + relaxation.getClass().getSimpleName());
-
-        while (true) { // TODO: or better, while(isLevelSolved())
-            /* TODO: ** INTENTIONS AND DESIRES **
-        Since the desires can't change (boxes/goals don't disappear from the board), each agent will only have to PRIORITIZE which desire it's currently willing to achieve (each loop iteration? Or at less frequent intervals? ...)
-        An INTENTION is something more concrete, which shows how the agent is currently trying to achieve that desire
-        (e.g. SolveGoal, SolveConflict, ClearPath, MoveToBox, MoveBoxToGoal --> CompoundTask!)
-        Intentions are generated for each agent control loop iteration --> deliberation step */
-            try {
+        try {
+            while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty()) {
+                    // TODO: the same algorithm that generates the desires in BDIManager should be re-used here:
+                    // Where to place it? --> before de-queueing next desire
+                    // What's the reason for this? --> after X successful actions executed during executePlan
+                    // there might be some desires now that have less priority than before
+                    // and the agent will commit to them first
+                    // How? --> Break plan execution, re-enqueue un-achieved desire and continue
+                    // TODO: currently, if the agent is stuck, it might go into a deadlock where two ClearPathDesires are alternated
+                    // re-prioritizing might be a solution
+                    // this.desires = bdiManager.calculatePriorities(...);
+
+                    // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
+                    this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
+
                     // Get next desire
-                    // TODO: a further check when prioritizing should be performed: there are desires that can't be achieved (box is stuck)
-                    // We must check for goals that should be achieved in a specific order --> we need a new CompoundTask type like ClearBox
-                    // that should move a blocking box somewhere close to the edges to free the way for the targeted box
-                    // TODO: desires re-prioritization to be performed and invoked during planning! e.g. if we haven't achieved our goal
-                    // after 5/10 primitive actions return the final plan, re-calculate the priorities and re-evaluate the desires:
-                    // there might be some desires now that have less priority than before and the agent will commit to them first
-                    // TODO: when there are more goals of same type, agent should prioritize the desires that fulfill
-                    // the goals that are at the edges (to avoid blocking other boxes) (example from level SAsokobanLevel96)
-                    Desire desire = this.desires.dequeueMin().getValue();
+                    Desire desire = this.desireHelper.getNextDesire(this.desires);
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
                     // Get percepts
-                    HTNWorldState worldState = new HTNWorldState(this.agent, desire.getBox(), desire.getGoal(), relaxation);
+                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.lockDetector.getNumFailedPlans());
+                    HTNWorldState worldState = new HTNWorldState(this.agent, desire, planningRelaxation);
 
-                    // Create intention
-                    Intention intention = new Intention(new SolveGoalTask());
+                    try {
+                        // Plan
+                        HTNPlanner planner = new HTNPlanner(worldState, desire);
+                        PrimitivePlan plan = planner.findPlan();
+                        this.lockDetector.planSuccessful(); // Reset failure counter when a plan is successfully found
+                        executePlan(plan);
 
-                    // Plan
-                    HTNPlanner planner = new HTNPlanner(worldState, intention);
-                    PrimitivePlan plan = planner.findPlan();
-                    executePlan(plan);
+                        // If we reach this point, the desire is achieved. If goal desire, back it up
+                        this.desireHelper.achievedDesire(this.lockDetector);
+                    } catch (InvalidActionException e) {
+                        ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                        // Current desire wasn't achieved --> add it back to the heap!
+                        this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
+                        try {
+                            this.lockDetector.detectBlockingObject(e.getFailedAction(), desire, this.desires);
+                        } catch (StuckByForeignBoxException ex) {
+                            // TODO: needs help! This box is blocking me and I can't move it --> Communication
+                            this.status = AgentThreadStatus.STUCK;
+
+                            // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
+                            // In here the agent has to figure out why he is stuck and determine the how he needs help
+                            // Create the message and dispatch it on the Bus
+                            Performative performative = new PerformativeHelpWithBox(null, this);
+                            PerformativeManager.getDefault().execute(performative);
+                        }
+                    } catch (PlanNotFoundException e) {
+                        // Current desire wasn't achieved --> add it back to the heap!
+                        this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
+                        this.lockDetector.planFailed();
+                        if (this.lockDetector.needsReplanning()) {
+                            // First failed attempt allowed, will switch to new relaxation
+                            ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                        } else {
+                            // Planning keeps failing, unexpected exception --> Quit.
+                            ConsoleLogger.logError(LOGGER, e.getMessage());
+                            System.exit(1);
+                        }
+                    }
                 }
 
                 // Agent has no more desires --> send NoOP actions
-                this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
-                getServerResponse();
-            } catch (PlanNotFoundException e) {
-                ConsoleLogger.logError(LOGGER, e.getMessage());
-                // TODO: re-plan
-                System.exit(1);
-            } catch (Exception e) {
-                e.printStackTrace();
+                idle();
             }
+        } catch (Exception e) {
+            ConsoleLogger.logError(LOGGER, e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 
-    private void executePlan(PrimitivePlan plan) {
+    private void executePlan(PrimitivePlan plan) throws InvalidActionException {
         Queue<PrimitiveTask> tasks = plan.getTasks();
-        int actionAttempts = 0;
+        this.lockDetector.resetFailedActions();
         do {
-            if (actionAttempts == THRESHOLD) {
-                // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
-                // In here the agent has to figure out why he is stuck and determine the how he needs help
-                // Create the message and dispatch it on the Bus
-                Performative performative = new PerformativeHelpWithBox(null, this);
-                PerformativeManager.getDefault().execute(performative);
-            }
+            if (this.lockDetector.isStuck())
+                throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
             status = AgentThreadStatus.BUSY;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
                     tasks.remove();
-                    actionAttempts = 0;
+                    this.lockDetector.resetFailedActions();
                 } else {
-                    actionAttempts++;
+                    this.lockDetector.actionFailed();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = AgentThreadStatus.FREE;
         } while (!tasks.isEmpty());
+        status = AgentThreadStatus.FREE; // TODO: must be placed properly where relevant
+    }
+
+    private void idle() throws InterruptedException {
+        setStatus(AgentThreadStatus.FREE);
+        if (this.helpRequests.isEmpty()) {
+            this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+            getServerResponse();
+        } else {
+            setStatus(AgentThreadStatus.HELPING);
+            // TODO: should help
+        }
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {
@@ -136,6 +174,19 @@ public class AgentThread implements Runnable {
 
     public Agent getAgent() {
         return agent;
+    }
+
+    /**
+     * The status should be queried synchronously
+     *
+     * @return current Agent's status
+     */
+    public synchronized AgentThreadStatus getStatus() {
+        return this.status;
+    }
+
+    private void setStatus(AgentThreadStatus status) {
+        this.status = status;
     }
 
     @Override

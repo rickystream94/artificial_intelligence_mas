@@ -1,6 +1,5 @@
 package planning.relaxations;
 
-import architecture.LevelManager;
 import board.Coordinate;
 
 /**
@@ -8,8 +7,7 @@ import board.Coordinate;
  */
 public class AllObjectsRelaxation extends Relaxation {
 
-    protected AllObjectsRelaxation(LevelManager levelManager) {
-        super(levelManager);
+    protected AllObjectsRelaxation() {
     }
 
     @Override

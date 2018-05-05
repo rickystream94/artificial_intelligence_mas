@@ -1,9 +1,9 @@
 package board;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.StringJoiner;
+import architecture.ClientManager;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Coordinate {
     private int row;
@@ -43,20 +43,24 @@ public class Coordinate {
         return Math.abs(c1.getRow() - c2.getRow()) + Math.abs(c1.getCol() - c2.getCol());
     }
 
-    public Set<Coordinate> getNeighbours() {
-        HashSet<Coordinate> neighbours = new HashSet<>();
-        if (row - 1 > 0) {
+    public static List<Coordinate> getEmptyCellsWithFixedDistanceFrom(Coordinate from, int distance) {
+        Set<Coordinate> emptyCells = ClientManager.getInstance().getLevelManager().getLevel().getEmptyCellsPositions();
+        return emptyCells.stream().filter(to -> manhattanDistance(from, to) == distance).collect(Collectors.toList());
+    }
+
+    public List<Coordinate> getClockwiseNeighbours() {
+        List<Coordinate> neighbours = new ArrayList<>();
+        if (row - 1 >= 0) {
             neighbours.add(new Coordinate(row - 1, col));
         }
-        if (row + 1 > 0) {
-            neighbours.add(new Coordinate(row + 1, col));
-
-        }
-        if (col - 1 > 0) {
-            neighbours.add(new Coordinate(row, col - 1));
-        }
-        if (col + 1 > 0) {
+        if (col + 1 < Level.getWidth()) {
             neighbours.add(new Coordinate(row, col + 1));
+        }
+        if (row + 1 < Level.getHeight()) {
+            neighbours.add(new Coordinate(row + 1, col));
+        }
+        if (col - 1 >= 0) {
+            neighbours.add(new Coordinate(row, col - 1));
         }
         return neighbours;
     }

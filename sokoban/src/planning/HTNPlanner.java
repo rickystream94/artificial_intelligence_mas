@@ -1,6 +1,6 @@
 package planning;
 
-import architecture.bdi.Intention;
+import architecture.bdi.Desire;
 import exceptions.NoValidRefinementsException;
 import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
@@ -25,10 +25,10 @@ public class HTNPlanner {
     private Strategy strategy;
     private int planFailureCounter;
 
-    public HTNPlanner(HTNWorldState currentWorldState, Intention intention) {
+    public HTNPlanner(HTNWorldState currentWorldState, Desire desire) {
         this.currentWorldState = currentWorldState;
         this.decompositionHistory = new ArrayDeque<>();
-        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), intention.getTask());
+        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), desire);
     }
 
     /**
@@ -42,7 +42,7 @@ public class HTNPlanner {
         this.planFailureCounter = 0;
         this.strategy.addToExploredStates(this.currentWorldState);
 
-        while (!this.strategy.hasMoreTasksToProcess()) { // TODO: OR is purpose of the intention achieved
+        while (!this.strategy.hasMoreTasksToProcess()) {
             Task currentTask = this.strategy.getNextTaskToProcess();
             if (isCompoundTask(currentTask)) {
                 // Compound task --> Needs to be refined!
@@ -72,7 +72,7 @@ public class HTNPlanner {
             this.planningStep++;
 
             // Check if planning is taking too long
-            if (planningStep % 50 == 0 && planningStep != 0) {
+            if (planningStep % 100 == 0 && planningStep != 0) {
                 ConsoleLogger.logInfo(LOGGER, String.format("Planning step: %d", planningStep));
                 ConsoleLogger.logInfo(LOGGER, Memory.stringRep());
             }
@@ -109,9 +109,9 @@ public class HTNPlanner {
         this.strategy.addRefinementToBlacklist(refinement);
 
         // Check if we brought planningStep back to 0 --> No plan can be found --> Throw
-        if (this.planningStep == -1 || this.planningStep == 0) {
+        if (this.planningStep >= -1 && this.planningStep <= 1) {
             this.planFailureCounter++;
-            if (this.planFailureCounter == 50) // Threshold high enough
+            if (this.planFailureCounter > 50) // Threshold high enough
                 throw new PlanNotFoundException();
         } else
             this.planFailureCounter = 0;

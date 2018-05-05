@@ -7,8 +7,8 @@ public class Box extends SokobanObject {
     private char boxType;
     private Color color;
 
-    public Box(int row, int col, char boxType, Color color, SokobanObjectType objectType) {
-        super(row, col, objectType);
+    public Box(int id, int row, int col, char boxType, Color color) {
+        super(id, row, col);
         this.boxType = boxType;
         this.color = color;
     }
@@ -48,9 +48,6 @@ public class Box extends SokobanObject {
 
     @Override
     public String toString() {
-        return "Box{" +
-                "boxType=" + boxType +
-                ", color=" + color +
-                '}';
+        return String.format("Box{%s, boxType=%s, color=%s, %s}", super.toString(), boxType, color, getCoordinate());
     }
 }

@@ -45,6 +45,6 @@ public enum Direction {
         } else if (from.getCol() == to.getCol()) {
             return from.getRow() - to.getRow() > 0 ? N : S;
         } else
-            return null; // TODO: are we interested in cases where from-to is on a diagonal path?
+            return null;
     }
 }
