@@ -35,7 +35,7 @@ public class DesireHelper {
      * @param desires Heap of all desires
      * @return next desire to process
      */
-    public Desire getNextDesire(FibonacciHeap<Desire> desires) {
+    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) {
         FibonacciHeap.Entry<Desire> entry;
         Desire desire;
         int skippedDesires = 0;
@@ -45,11 +45,17 @@ public class DesireHelper {
             final Desire finalDesire = entry.getValue();
             desire = finalDesire;
 
-            // Build breaking conditions
+            // Verify loop-breaking conditions
             boolean shouldSkipDesire = desire instanceof ClearPathDesire;
-            shouldSkipDesire &= lastAchievedDesire instanceof GoalDesire;
-            shouldSkipDesire &= this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget());
-            shouldSkipDesire |= Level.isDesireAchieved(desire);
+            shouldSkipDesire = shouldSkipDesire && lastAchievedDesire instanceof GoalDesire;
+            shouldSkipDesire = shouldSkipDesire && this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget());
+            shouldSkipDesire = shouldSkipDesire || Level.isDesireAchieved(desire);
+            if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
+                // We have to back-up the achieved goal desire!
+                this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
+                this.clearPathDesiresAchieved.forEach(d -> lockDetector.resetClearingDistance(d.getBox()));
+                this.clearPathDesiresAchieved.clear();
+            }
 
             if (shouldSkipDesire) {
                 skippedDesires++;
@@ -73,7 +79,7 @@ public class DesireHelper {
         while (it.hasNext()) {
             Desire desire = it.next();
             if (!Level.isDesireAchieved(desire)) {
-                // Avoid picking the same goal if its priority is the lowest!
+                // Avoid picking the same desire if its priority is the lowest!
                 // Penalize the desire (+100)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Goal desire %s has to be achieved again!", this.agent.getAgentId(), desire));
                 desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 100);
@@ -95,6 +101,7 @@ public class DesireHelper {
         } else if (currentDesire instanceof ClearPathDesire) {
             this.clearPathDesiresAchieved.add(currentDesire);
             lockDetector.clearChosenTargets(currentDesire.getBox());
+            lockDetector.progressPerformed();
         }
         this.lastAchievedDesire = currentDesire;
     }

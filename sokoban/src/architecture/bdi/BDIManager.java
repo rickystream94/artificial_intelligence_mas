@@ -101,7 +101,7 @@ public class BDIManager {
         return agentDesiresMap;
     }
 
-    private int getDiscount(SokobanObject object) {
+    private static int getDiscount(SokobanObject object) {
         int discount = 0, consecutiveWalls = 0;
         for (Coordinate coordinate : object.getCoordinate().getClockwiseNeighbours()) {
             if (!Level.isNotWall(coordinate)) {
@@ -120,7 +120,51 @@ public class BDIManager {
         return discount;
     }
 
-    private int getCostBetweenObjects(SokobanObject o1, SokobanObject o2) {
+    private static int getCostBetweenObjects(SokobanObject o1, SokobanObject o2) {
         return Coordinate.manhattanDistance(o1.getCoordinate(), o2.getCoordinate());
+    }
+
+    public static FibonacciHeap<Desire> recomputeDesiresForAgent(Agent agent, FibonacciHeap<Desire> desires) {
+        int oldNumberOfDesires = desires.size();
+
+        // 1) Remove all ClearPathDesires
+        List<Desire> goalDesires = new ArrayList<>();
+        while (!desires.isEmpty()) {
+            FibonacciHeap.Entry<Desire> entry = desires.dequeueMin();
+            if (entry.getValue() instanceof GoalDesire)
+                goalDesires.add(entry.getValue());
+        }
+
+        // 2) Re-create goal desires
+        List<Box> boxes = goalDesires.stream().map(Desire::getBox).collect(Collectors.toList());
+        List<Goal> goals = goalDesires.stream().map(d -> ((GoalDesire) d).getGoal()).collect(Collectors.toList());
+        assert goals.size() == boxes.size();
+        List<Desire> newDesires = new ArrayList<>();
+        while (!goals.isEmpty()) {
+            Map<Object, Integer> desireCostMap = new HashMap<>();
+            for (Box box : boxes) {
+                for (Goal goal : goals) {
+                    if (Character.toLowerCase(box.getBoxType()) == goal.getGoalType()) {
+                        int cost = getCostBetweenObjects(box, goal);
+                        cost += getDiscount(goal);
+                        desireCostMap.put(new GoalDesire(box, goal), cost);
+                    }
+                }
+            }
+            Desire minCostGoalDesire = (Desire) HashMapHelper.getKeyByMinIntValue(desireCostMap);
+            newDesires.add(minCostGoalDesire);
+            goals.remove(((GoalDesire) minCostGoalDesire).getGoal());
+            boxes.remove(minCostGoalDesire.getBox());
+        }
+
+        // Re-prioritize goal desires
+        for (Desire goalDesire : newDesires) {
+            int priority = getCostBetweenObjects(agent, goalDesire.getBox()) + getDiscount(((GoalDesire) goalDesire).getGoal());
+            desires.enqueue(goalDesire, priority);
+        }
+        assert desires.size() == oldNumberOfDesires;
+
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Done cleaning up and re-prioritizing desires.", agent.getAgentId()));
+        return desires;
     }
 }
