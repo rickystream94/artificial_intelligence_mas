@@ -128,12 +128,13 @@ public class Level {
     }
 
     private void sanityCheck() {
+        int fakeEmptyCells = 0;
 
         // NORTH
-        for(int col = 0; col<width; col++) {
-            for(int foundRow = 0; foundRow < height; foundRow++) {
-                if(this.wallsMap.containsKey(new Coordinate(foundRow, col))) {
-                    for(int row = foundRow - 1; row >= 0; row--)
+        for (int col = 0; col < width; col++) {
+            for (int foundRow = 0; foundRow < height; foundRow++) {
+                if (wallsMap.containsKey(new Coordinate(foundRow, col))) {
+                    for (int row = foundRow - 1; row >= 0; row--)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -141,10 +142,10 @@ public class Level {
         }
 
         //EAST
-        for(int row = 0; row < height; row++) {
-            for(int foundCol = 0; foundCol < width; foundCol++) {
-                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
-                    for(int col = foundCol - 1; col >= 0; col--)
+        for (int row = 0; row < height; row++) {
+            for (int foundCol = 0; foundCol < width; foundCol++) {
+                if (wallsMap.containsKey(new Coordinate(row, foundCol))) {
+                    for (int col = foundCol - 1; col >= 0; col--)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -152,10 +153,10 @@ public class Level {
         }
 
         // SOUTH
-        for(int col = 0; col < width; col++) {
-            for(int foundRow = height-1; foundRow>=0; foundRow--) {
-                if(this.wallsMap.containsKey(new Coordinate(foundRow,col))) {
-                    for(int row = foundRow; row < height; row++)
+        for (int col = 0; col < width; col++) {
+            for (int foundRow = height - 1; foundRow >= 0; foundRow--) {
+                if (wallsMap.containsKey(new Coordinate(foundRow, col))) {
+                    for (int row = foundRow; row < height; row++)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -163,10 +164,10 @@ public class Level {
         }
 
         //WEST
-        for(int row = 0; row < height; row++) {
-            for(int foundCol = width - 1; foundCol >= 0; foundCol--) {
-                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
-                    for(int col = foundCol; col < width; col++)
+        for (int row = 0; row < height; row++) {
+            for (int foundCol = width - 1; foundCol >= 0; foundCol--) {
+                if (wallsMap.containsKey(new Coordinate(row, foundCol))) {
+                    for (int col = foundCol; col < width; col++)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }

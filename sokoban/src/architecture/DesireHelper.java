@@ -39,17 +39,24 @@ public class DesireHelper {
         FibonacciHeap.Entry<Desire> entry;
         Desire desire;
         int skippedDesires = 0;
-        boolean validDesire;
+        boolean shouldBreakLoop;
         do {
             entry = desires.dequeueMin();
             final Desire finalDesire = entry.getValue();
             desire = finalDesire;
-            if ((desire instanceof ClearPathDesire && lastAchievedDesire instanceof GoalDesire && this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget())) || Level.isDesireAchieved(desire)) {
+
+            // Build breaking conditions
+            boolean shouldSkipDesire = desire instanceof ClearPathDesire;
+            shouldSkipDesire &= lastAchievedDesire instanceof GoalDesire;
+            shouldSkipDesire &= this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget());
+            shouldSkipDesire |= Level.isDesireAchieved(desire);
+
+            if (shouldSkipDesire) {
                 skippedDesires++;
-                validDesire = false;
-            } else validDesire = true;
+                shouldBreakLoop = false;
+            } else shouldBreakLoop = true;
         }
-        while (!validDesire && !desires.isEmpty());
+        while (!shouldBreakLoop && !desires.isEmpty());
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d redundant desires", this.agent.getAgentId(), skippedDesires));
         this.currentDesire = desire;
         this.currentDesirePriority = entry.getPriority();
