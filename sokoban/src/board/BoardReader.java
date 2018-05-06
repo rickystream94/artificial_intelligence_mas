@@ -37,9 +37,8 @@ public class BoardReader {
         // Read lines specifying level layout
         while (!line.equals("")) {
             int cell;
-            boolean validPerimiter;
 
-            for (validPerimiter = false, cell = 0; cell < line.length(); cell++) {
+            for (cell = 0; cell < line.length(); cell++) {
                 char id = line.charAt(cell);
                 SokobanObject sokobanObject;
                 boolean isObjectColorDefined = objectColors.size() > 0 && objectColors.containsKey(id);
@@ -68,13 +67,11 @@ public class BoardReader {
                 else if (id == '+') {
                     sokobanObject = new Wall(Level.getAvailableObjectId(), height, cell);
                     walls.add((Wall) sokobanObject);
-                    validPerimiter = !validPerimiter;
                 }
 
                 // Object in current cell is an EmptyCell
                 else {
-                    if(validPerimiter)
-                        emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), height, cell));
+                    emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), height, cell));
                 }
             }
             if (cell > width)
