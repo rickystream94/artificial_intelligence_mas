@@ -15,6 +15,7 @@ import utils.HashMapHelper;
 
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class LockDetector {
 
@@ -28,6 +29,7 @@ public class LockDetector {
     private int numFailedPlans;
     private int numFailedActions;
     private Map<Box, Integer> boxClearingDistanceMap;
+    private Map<Box, List<Coordinate>> chosenTargetsForClearBox;
 
     public LockDetector(Agent agent) {
         this.agent = agent;
@@ -35,6 +37,7 @@ public class LockDetector {
         this.numFailedPlans = 0;
         this.numFailedActions = 0;
         this.boxClearingDistanceMap = new HashMap<>();
+        this.chosenTargetsForClearBox = new HashMap<>();
     }
 
     public int getNumFailedPlans() {
@@ -150,14 +153,46 @@ public class LockDetector {
      * @return coordinate where the box should be moved
      */
     private Coordinate getTargetForBoxToClear(Box blockingBox, Desire desire) {
-        int clearingDistance = getClearingDistance(blockingBox);
-        List<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
-        // TODO: there should be a more well-structured heuristic --> the most preferred cells are the edge ones
-        // surrounded only by walls/boxes and distant from the goals (e.g. SAtowersOfSaigon5)
-        potentialNewPositions.add(this.agent.getCoordinate());
         Map<Object, Integer> distances = new HashMap<>();
-        potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
+        int clearingDistance = getClearingDistance(blockingBox);
+        Set<Coordinate> edgeCells = getEdgeCells();
+        Set<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
+        //potentialNewPositions.addAll(edgeCells);
 
-        return (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+        // Prefer edge cells if it's the first attempt to clear this box
+        if (clearingDistance < 2 && !edgeCells.isEmpty()) {
+            // Target --> Edge cell far away to the blocking box
+            edgeCells.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingBox.getCoordinate())));
+            return (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+        }
+
+        // Target --> More distant among the cells with fixed distance from the blocking box
+        potentialNewPositions.add(this.agent.getCoordinate());
+        //potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
+        potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingBox.getCoordinate())));
+
+        // Avoid choosing the same clearing target if it was already chosen in a previous (failed) iteration
+        Coordinate chosenTarget;
+        do {
+            chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
+            distances.remove(chosenTarget);
+        }
+        while (this.chosenTargetsForClearBox.containsKey(blockingBox) && this.chosenTargetsForClearBox.get(blockingBox).contains(chosenTarget));
+        if (!this.chosenTargetsForClearBox.containsKey(blockingBox)) {
+            List<Coordinate> chosenTargets = new ArrayList<>();
+            this.chosenTargetsForClearBox.put(blockingBox, chosenTargets);
+        }
+        this.chosenTargetsForClearBox.get(blockingBox).add(chosenTarget);
+
+        return chosenTarget;
+    }
+
+    public void clearChosenTargets(Box box) {
+        this.chosenTargetsForClearBox.remove(box);
+    }
+
+    private Set<Coordinate> getEdgeCells() {
+        Set<Coordinate> emptyCells = levelManager.getLevel().getEmptyCellsPositions();
+        return emptyCells.stream().filter(Coordinate::isEdgeCell).collect(Collectors.toSet());
     }
 }

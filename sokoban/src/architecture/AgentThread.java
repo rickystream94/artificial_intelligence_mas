@@ -66,6 +66,7 @@ public class AgentThread implements Runnable {
                     // TODO: currently, if the agent is stuck, it might go into a deadlock where two ClearPathDesires are alternated
                     // re-prioritizing might be a solution
                     // this.desires = bdiManager.calculatePriorities(...);
+                    // TODO: desires to be prioritized according to strict order (tunnels or dead-ends)
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);

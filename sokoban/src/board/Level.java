@@ -105,6 +105,12 @@ public class Level {
         return this.emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toSet());
     }
 
+    /**
+     * If the object in position coordinate is either a box or an agent (dynamic object), return it. Otherwise return null
+     *
+     * @param coordinate
+     * @return
+     */
     public SokobanObject dynamicObjectAt(Coordinate coordinate) {
         if (agentsMap.containsKey(coordinate))
             return agentsMap.get(coordinate);
@@ -113,7 +119,7 @@ public class Level {
         return null;
     }
 
-    public boolean isDesireAchieved(Desire desire) {
+    public static boolean isDesireAchieved(Desire desire) {
         Box box = desire.getBox();
         Coordinate targetPosition = desire.getTarget();
         return box.getCoordinate().equals(targetPosition);

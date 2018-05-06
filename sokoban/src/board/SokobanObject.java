@@ -22,6 +22,10 @@ public abstract class SokobanObject {
         this.objectId = other.objectId;
     }
 
+    public int getObjectId() {
+        return objectId;
+    }
+
     public Coordinate getCoordinate() {
         return this.coordinate;
     }
