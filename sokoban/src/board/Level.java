@@ -47,6 +47,8 @@ public class Level {
         boxes.forEach(box -> this.boxesMap.put(box.getCoordinate(), box));
         goals.forEach(goal -> Level.goalsMap.put(goal.getCoordinate(), goal));
         walls.forEach(wall -> Level.wallsMap.put(wall.getCoordinate(), wall));
+
+        sanityCheck();
     }
 
     public static int getAvailableObjectId() {
@@ -123,6 +125,53 @@ public class Level {
         Box box = desire.getBox();
         Coordinate targetPosition = desire.getTarget();
         return box.getCoordinate().equals(targetPosition);
+    }
+
+    private void sanityCheck() {
+
+        // NORTH
+        for(int col = 0; col<width; col++) {
+            for(int foundRow = 0; foundRow < height; foundRow++) {
+                if(this.wallsMap.containsKey(new Coordinate(foundRow, col))) {
+                    for(int row = foundRow - 1; row >= 0; row--)
+                        removeEmptyCell(new Coordinate(row, col));
+                    break;
+                }
+            }
+        }
+
+        //EAST
+        for(int row = 0; row < height; row++) {
+            for(int foundCol = 0; foundCol < width; foundCol++) {
+                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
+                    for(int col = foundCol - 1; col >= 0; col--)
+                        removeEmptyCell(new Coordinate(row, col));
+                    break;
+                }
+            }
+        }
+
+        // SOUTH
+        for(int col = 0; col < width; col++) {
+            for(int foundRow = height-1; foundRow>=0; foundRow--) {
+                if(this.wallsMap.containsKey(new Coordinate(foundRow,col))) {
+                    for(int row = foundRow; row < height; row++)
+                        removeEmptyCell(new Coordinate(row, col));
+                    break;
+                }
+            }
+        }
+
+        //WEST
+        for(int row = 0; row < height; row++) {
+            for(int foundCol = width - 1; foundCol >= 0; foundCol--) {
+                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
+                    for(int col = foundCol; col < width; col++)
+                        removeEmptyCell(new Coordinate(row, col));
+                    break;
+                }
+            }
+        }
     }
 
     @Override
