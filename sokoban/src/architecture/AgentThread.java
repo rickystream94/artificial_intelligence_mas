@@ -96,6 +96,7 @@ public class AgentThread implements Runnable {
                             this.lockDetector.detectBlockingObject(e.getFailedAction(), desire, this.desires);
                         } catch (NoProgressException ex) {
                             // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
+                            ConsoleLogger.logInfo(LOGGER, e.getMessage());
                             this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
                         } catch (StuckByForeignBoxException ex) {
                             // TODO: needs help! This box is blocking me and I can't move it --> Communication
