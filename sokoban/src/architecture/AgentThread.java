@@ -110,15 +110,15 @@ public class AgentThread implements Runnable {
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
-                        this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                         this.lockDetector.planFailed();
                         if (this.lockDetector.needsReplanning()) {
+                            this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         } else {
-                            // Planning keeps failing, unexpected exception --> Quit.
-                            ConsoleLogger.logError(LOGGER, e.getMessage());
-                            System.exit(1);
+                            // Plan keeps failing --> A fake empty cell has been set as target, remove it!
+                            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: removed fake empty cell %s", agent.getAgentId(), desire.getTarget()));
+                            levelManager.getLevel().removeEmptyCell(desire.getTarget());
                         }
                     }
                 }
