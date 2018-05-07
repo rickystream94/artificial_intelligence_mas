@@ -46,32 +46,32 @@ public class BoardReader {
 
                 // Object in current cell is an Agent
                 if ('0' <= id && id <= '9') {
-                    sokobanObject = new Agent(Level.getAvailableObjectId(), height, cell, id, objectColor);
+                    sokobanObject = new Agent(height, cell, id, objectColor);
                     agents.add((Agent) sokobanObject);
                 }
 
                 // Object in current cell is a Goal
                 else if ('a' <= id && id <= 'z') {
-                    sokobanObject = new Goal(Level.getAvailableObjectId(), height, cell, id);
+                    sokobanObject = new Goal(height, cell, id);
                     goals.add((Goal) sokobanObject);
-                    emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), height, cell)); // Goals are empty cells!
+                    emptyCells.add(new EmptyCell(height, cell)); // Goals are empty cells!
                 }
 
                 // Object in current cell is a Box
                 else if ('A' <= id && id <= 'Z') {
-                    sokobanObject = new Box(Level.getAvailableObjectId(), height, cell, id, objectColor);
+                    sokobanObject = new Box(height, cell, id, objectColor);
                     boxes.add((Box) sokobanObject);
                 }
 
                 // Object in current cell is a Wall
                 else if (id == '+') {
-                    sokobanObject = new Wall(Level.getAvailableObjectId(), height, cell);
+                    sokobanObject = new Wall(height, cell);
                     walls.add((Wall) sokobanObject);
                 }
 
                 // Object in current cell is an EmptyCell
                 else {
-                    emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), height, cell));
+                    emptyCells.add(new EmptyCell(height, cell));
                 }
             }
             if (cell > width)

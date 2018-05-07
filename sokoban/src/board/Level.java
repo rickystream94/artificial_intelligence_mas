@@ -92,7 +92,7 @@ public class Level {
     }
 
     public void addEmptyCell(Coordinate coordinate) {
-        emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), coordinate.getRow(), coordinate.getCol()));
+        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
     }
 
     public static int getWidth() {
