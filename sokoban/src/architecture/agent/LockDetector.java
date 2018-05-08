@@ -1,5 +1,7 @@
-package architecture;
+package architecture.agent;
 
+import architecture.ClientManager;
+import architecture.LevelManager;
 import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;
 import board.Agent;
@@ -97,26 +99,21 @@ public class LockDetector {
         Coordinate blockingCell = getBlockingCellByAction(failedAction, currentDesire);
         SokobanObject blockingObject = this.levelManager.getLevel().dynamicObjectAt(Objects.requireNonNull(blockingCell));
 
-        // Examine blocking object and decide
+        // Analyze blocking object and decide
         if (blockingObject instanceof Agent) {
             // TODO: the blocking agent's color doesn't matter, in either case it needs to free the cell
         } else if (blockingObject instanceof Box) {
             Box blockingBox = (Box) blockingObject;
             if (blockingBox.getColor() == this.agent.getColor()) {
+                // Blocking box is of the same color --> Clear the box
                 noProgress();
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found blocking box %s", this.agent.getAgentId(), blockingBox));
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: %d failed actions since last successful progress", this.agent.getAgentId(), this.noProgressCounter));
                 if (needsToReprioritizeDesires())
                     throw new NoProgressException(agent);
 
-                // Blocking box is of the same color --> Clear the box
-                Coordinate chosenTarget = getTargetForBoxToClear(blockingBox, currentDesire);
-                // TODO not very good but it's to avoid NullPointerException when no more targets are available
-                if (chosenTarget == null) {
-                    resetClearingDistance(blockingBox);
-                    clearChosenTargets(blockingBox);
-                    throw new NoProgressException(agent);
-                }
+                // Create new desire
+                Desire clearPathDesire = handleBlockingBox(blockingBox);
 
                 // Avoid priority conflicts: increase all priorities by 1
                 List<FibonacciHeap.Entry<Desire>> tempDesires = new ArrayList<>();
@@ -124,14 +121,24 @@ public class LockDetector {
                     tempDesires.add(desires.dequeueMin());
                 tempDesires.forEach(d -> desires.enqueue(d.getValue(), d.getPriority() + 1));
 
-                // Create new desire and enqueue it with maximum priority
-                ClearPathDesire clearPathDesire = new ClearPathDesire(blockingBox, chosenTarget);
+                // Enqueue the new desire with maximum priority
                 desires.enqueue(clearPathDesire, -1000);
             } else {
                 // Box of different color
                 throw new StuckByForeignBoxException(agent, blockingBox);
             }
         }
+    }
+
+    public Desire handleBlockingBox(Box blockingBox) throws NoProgressException {
+        Coordinate chosenTarget = getTargetForBoxToClear(blockingBox);
+        // TODO not very good but it's to avoid NullPointerException when no more targets are available
+        if (chosenTarget == null) {
+            resetClearingDistance(blockingBox);
+            clearChosenTargets(blockingBox);
+            throw new NoProgressException(agent);
+        }
+        return new ClearPathDesire(blockingBox, chosenTarget);
     }
 
     /**
@@ -164,10 +171,9 @@ public class LockDetector {
      * Finds the cell where the blocking box should be moved
      *
      * @param blockingBox blocking box
-     * @param desire      current desire
      * @return coordinate where the box should be moved
      */
-    private Coordinate getTargetForBoxToClear(Box blockingBox, Desire desire) {
+    private Coordinate getTargetForBoxToClear(Box blockingBox) {
         Map<Object, Integer> distances = new HashMap<>();
         int clearingDistance = getClearingDistance(blockingBox);
         Set<Coordinate> edgeCells = getEdgeCells();

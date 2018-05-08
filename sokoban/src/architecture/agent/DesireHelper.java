@@ -1,4 +1,4 @@
-package architecture;
+package architecture.agent;
 
 import architecture.bdi.ClearPathDesire;
 import architecture.bdi.Desire;

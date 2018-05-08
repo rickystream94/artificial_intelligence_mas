@@ -44,7 +44,7 @@ public class AgentThread implements Runnable {
     private LockDetector lockDetector;
     private DesireHelper desireHelper;
     private AgentThreadStatus status;
-    private Queue<Performative> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
+    private Queue<Desire> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -52,7 +52,7 @@ public class AgentThread implements Runnable {
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
-        this.status = AgentThreadStatus.FREE;
+        setStatus(AgentThreadStatus.WORKING);
         this.lockDetector = new LockDetector(agent);
         this.desireHelper = new DesireHelper(agent);
         this.helpRequests = new ConcurrentLinkedDeque<>();
@@ -73,6 +73,11 @@ public class AgentThread implements Runnable {
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
+
+                    // Check on status
+
+                    // Check if there are any help requests I should commit to
+                    hasHelpRequests(); // TODO
 
                     // Get next desire
                     Desire desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
@@ -104,12 +109,9 @@ public class AgentThread implements Runnable {
                             this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
                         } catch (StuckByForeignBoxException ex) {
                             // TODO: needs help! This box is blocking me and I can't move it --> Communication
-                            this.status = AgentThreadStatus.STUCK;
 
-                            // The Performative Message can be a Request, Proposal or Inquirie (I dont think we need this)
-                            // In here the agent has to figure out why he is stuck and determine the how he needs help
                             // Create the message and dispatch it on the Bus
-                            Performative performative = new PerformativeHelpWithBox(null, this);
+                            Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
                             PerformativeManager.getDefault().execute(performative);
                         }
                     } catch (PlanNotFoundException e) {
@@ -143,7 +145,7 @@ public class AgentThread implements Runnable {
         do {
             if (this.lockDetector.isStuck())
                 throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
-            status = AgentThreadStatus.BUSY;
+            status = AgentThreadStatus.WORKING;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
@@ -161,13 +163,22 @@ public class AgentThread implements Runnable {
 
     private void idle() throws InterruptedException {
         setStatus(AgentThreadStatus.FREE);
-        if (this.helpRequests.isEmpty()) {
+        if (!hasHelpRequests()) {
             this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
             getServerResponse();
         } else {
-            setStatus(AgentThreadStatus.HELPING);
-            // TODO: should help
+            setStatus(AgentThreadStatus.WORKING);
+            Desire clearPathDesire = this.helpRequests.remove();
+            this.desires.enqueue(clearPathDesire, -2000);
         }
+    }
+
+    private boolean hasHelpRequests() {
+        return !this.helpRequests.isEmpty();
+    }
+
+    public void addHelpRequest(Desire clearPathDesire) {
+        this.helpRequests.add(clearPathDesire);
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {
@@ -182,6 +193,10 @@ public class AgentThread implements Runnable {
 
     public Agent getAgent() {
         return agent;
+    }
+
+    public LockDetector getLockDetector() {
+        return this.lockDetector;
     }
 
     /**

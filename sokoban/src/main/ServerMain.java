@@ -14,7 +14,7 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = "../../../environment/levels/example_levels/single_agent/easy/SACrunch.lvl";
+    private static final String level = "../../../environment/levels/example_levels/single_agent/difficult/SADillema.lvl";
     //private static final String level = "../../../environment/levels/SAtowersOfSaigon5.lvl";
     private static final String millisPerAction = "200";
     private static final String timeout = "3000";

@@ -7,11 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PerformativeManager {
-    private List<AgentThread> listeners;
 
     private static PerformativeManager instance;
+    private List<AgentThread> listeners;
 
-    private PerformativeManager() { listeners = new ArrayList<>(); }
+    private PerformativeManager() {
+        listeners = new ArrayList<>();
+    }
 
     public static PerformativeManager getDefault() {
         if (instance == null)
@@ -24,9 +26,9 @@ public class PerformativeManager {
     }
 
     public void execute(Performative performative) {
-        FibonacciHeap<AgentThread> helpers = performative.findBests(listeners,performative.getAsker());
-        while(!helpers.isEmpty()) {
-            AgentThread helper = helpers.dequeueMin().getValue();
+        FibonacciHeap<AgentThread> helpersWithPriorities = performative.findBests(listeners, performative.getCaller());
+        if (!helpersWithPriorities.isEmpty()) {
+            AgentThread helper = helpersWithPriorities.dequeueMin().getValue();
             performative.execute(helper);
         }
     }
