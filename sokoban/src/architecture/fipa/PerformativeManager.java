@@ -26,7 +26,7 @@ public class PerformativeManager {
     }
 
     public void execute(Performative performative) {
-        FibonacciHeap<AgentThread> helpersWithPriorities = performative.findBests(listeners, performative.getCaller());
+        FibonacciHeap<AgentThread> helpersWithPriorities = performative.findBestHelpers(listeners, performative.getCaller());
         if (!helpersWithPriorities.isEmpty()) {
             AgentThread helper = helpersWithPriorities.dequeueMin().getValue();
             performative.execute(helper);

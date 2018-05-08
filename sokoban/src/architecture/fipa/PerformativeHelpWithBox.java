@@ -24,7 +24,7 @@ public class PerformativeHelpWithBox extends Performative {
 
     @Override
     public void execute(AgentThread helper) {
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: helping Agent %c by clearing box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), box));
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen Agent %c as helper to clear box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), box));
         try {
             Desire clearPathDesire = helper.getLockDetector().handleBlockingBox(box);
             helper.addHelpRequest(clearPathDesire);
@@ -34,7 +34,7 @@ public class PerformativeHelpWithBox extends Performative {
     }
 
     @Override
-    public FibonacciHeap<AgentThread> findBests(List<AgentThread> helpers, AgentThread caller) {
+    public FibonacciHeap<AgentThread> findBestHelpers(List<AgentThread> helpers, AgentThread caller) {
         FibonacciHeap<AgentThread> bests = new FibonacciHeap<>();
 
         // Filter only agents that can move the box

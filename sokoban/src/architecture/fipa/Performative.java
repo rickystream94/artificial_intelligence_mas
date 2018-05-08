@@ -30,5 +30,5 @@ public abstract class Performative {
 
     public abstract void execute(AgentThread helper);
 
-    public abstract FibonacciHeap<AgentThread> findBests(List<AgentThread> agentThreadHelpers, AgentThread agentThread);
+    public abstract FibonacciHeap<AgentThread> findBestHelpers(List<AgentThread> agentThreadHelpers, AgentThread agentThread);
 }

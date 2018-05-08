@@ -44,7 +44,7 @@ public class AgentThread implements Runnable {
     private LockDetector lockDetector;
     private DesireHelper desireHelper;
     private AgentThreadStatus status;
-    private Queue<Desire> helpRequests; // TODO: will be used ideally by PerformativeManager to deliver performative events to the agents
+    private Queue<Desire> helpRequests;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -102,6 +102,10 @@ public class AgentThread implements Runnable {
                         // Action was rejected by server
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
+                        // TODO: re-enqueueing the same ClearPathDesire is theoretically wrong!
+                        // This way the new target won't be recomputed according to the clearing distance criteria
+                        // But it will still be the same --> Need of a new data structure in LockDetector to keep track of obstructing boxes
+                        // in a LIFO order and dynamically create ClearPathDesires
                         this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
                         try {
                             this.lockDetector.detectBlockingObject(e.getFailedAction(), desire, this.desires);
@@ -169,12 +173,16 @@ public class AgentThread implements Runnable {
 
     private void idle() throws InterruptedException {
         setStatus(AgentThreadStatus.FREE);
-        if (!this.helpRequests.isEmpty()) {
-            this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
-            getServerResponse();
+        if (this.helpRequests.isEmpty()) {
+            sendNoOp();
         } else {
             processHelpRequest();
         }
+    }
+
+    private void sendNoOp() throws InterruptedException {
+        this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
+        getServerResponse();
     }
 
     private void processHelpRequest() {
