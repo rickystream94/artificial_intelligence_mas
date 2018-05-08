@@ -92,7 +92,7 @@ public class Level {
     }
 
     public void addEmptyCell(Coordinate coordinate) {
-        emptyCells.add(new EmptyCell(Level.getAvailableObjectId(), coordinate.getRow(), coordinate.getCol()));
+        emptyCells.add(new EmptyCell(coordinate.getRow(), coordinate.getCol()));
     }
 
     public static int getWidth() {
@@ -107,6 +107,12 @@ public class Level {
         return this.emptyCells.stream().map(SokobanObject::getCoordinate).collect(Collectors.toSet());
     }
 
+    /**
+     * If the object in position coordinate is either a box or an agent (dynamic object), return it. Otherwise return null
+     *
+     * @param coordinate
+     * @return
+     */
     public SokobanObject dynamicObjectAt(Coordinate coordinate) {
         if (agentsMap.containsKey(coordinate))
             return agentsMap.get(coordinate);
@@ -115,19 +121,20 @@ public class Level {
         return null;
     }
 
-    public boolean isDesireAchieved(Desire desire) {
+    public static boolean isDesireAchieved(Desire desire) {
         Box box = desire.getBox();
         Coordinate targetPosition = desire.getTarget();
         return box.getCoordinate().equals(targetPosition);
     }
 
     private void sanityCheck() {
+        int fakeEmptyCells = 0;
 
         // NORTH
-        for(int col = 0; col<width; col++) {
-            for(int foundRow = 0; foundRow < height; foundRow++) {
-                if(this.wallsMap.containsKey(new Coordinate(foundRow, col))) {
-                    for(int row = foundRow - 1; row >= 0; row--)
+        for (int col = 0; col < width; col++) {
+            for (int foundRow = 0; foundRow < height; foundRow++) {
+                if (wallsMap.containsKey(new Coordinate(foundRow, col))) {
+                    for (int row = foundRow - 1; row >= 0; row--)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -135,10 +142,10 @@ public class Level {
         }
 
         //EAST
-        for(int row = 0; row < height; row++) {
-            for(int foundCol = 0; foundCol < width; foundCol++) {
-                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
-                    for(int col = foundCol - 1; col >= 0; col--)
+        for (int row = 0; row < height; row++) {
+            for (int foundCol = 0; foundCol < width; foundCol++) {
+                if (wallsMap.containsKey(new Coordinate(row, foundCol))) {
+                    for (int col = foundCol - 1; col >= 0; col--)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -146,10 +153,10 @@ public class Level {
         }
 
         // SOUTH
-        for(int col = 0; col < width; col++) {
-            for(int foundRow = height-1; foundRow>=0; foundRow--) {
-                if(this.wallsMap.containsKey(new Coordinate(foundRow,col))) {
-                    for(int row = foundRow; row < height; row++)
+        for (int col = 0; col < width; col++) {
+            for (int foundRow = height - 1; foundRow >= 0; foundRow--) {
+                if (wallsMap.containsKey(new Coordinate(foundRow, col))) {
+                    for (int row = foundRow; row < height; row++)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }
@@ -157,10 +164,10 @@ public class Level {
         }
 
         //WEST
-        for(int row = 0; row < height; row++) {
-            for(int foundCol = width - 1; foundCol >= 0; foundCol--) {
-                if(this.wallsMap.containsKey(new Coordinate(row,foundCol))) {
-                    for(int col = foundCol; col < width; col++)
+        for (int row = 0; row < height; row++) {
+            for (int foundCol = width - 1; foundCol >= 0; foundCol--) {
+                if (wallsMap.containsKey(new Coordinate(row, foundCol))) {
+                    for (int col = foundCol; col < width; col++)
                         removeEmptyCell(new Coordinate(row, col));
                     break;
                 }

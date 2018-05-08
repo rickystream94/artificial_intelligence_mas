@@ -27,14 +27,6 @@ public class Coordinate {
         return this.col;
     }
 
-    public void setRow(int row) {
-        this.row = row;
-    }
-
-    public void setCol(int col) {
-        this.col = col;
-    }
-
     public boolean isNeighbour(Coordinate other) {
         return Math.abs(this.row - other.row) + Math.abs(this.col - other.col) == 1;
     }
@@ -43,9 +35,9 @@ public class Coordinate {
         return Math.abs(c1.getRow() - c2.getRow()) + Math.abs(c1.getCol() - c2.getCol());
     }
 
-    public static List<Coordinate> getEmptyCellsWithFixedDistanceFrom(Coordinate from, int distance) {
+    public static Set<Coordinate> getEmptyCellsWithFixedDistanceFrom(Coordinate from, int distance) {
         Set<Coordinate> emptyCells = ClientManager.getInstance().getLevelManager().getLevel().getEmptyCellsPositions();
-        return emptyCells.stream().filter(to -> manhattanDistance(from, to) == distance).collect(Collectors.toList());
+        return emptyCells.stream().filter(to -> manhattanDistance(from, to) == distance).collect(Collectors.toSet());
     }
 
     public List<Coordinate> getClockwiseNeighbours() {
@@ -63,6 +55,34 @@ public class Coordinate {
             neighbours.add(new Coordinate(row, col - 1));
         }
         return neighbours;
+    }
+
+    /**
+     * An edge cell is a cell surrounded by at least 3 objects among walls and solved goals
+     * Don't consider goal cells!
+     *
+     * @param coordinate cell to be examined
+     * @return true if edge cell, false otherwise
+     */
+    public static boolean isEdgeCell(Coordinate coordinate) {
+        if (Level.isGoalCell(coordinate))
+            return false;
+        List<Coordinate> neighbours = coordinate.getClockwiseNeighbours();
+        Level level = ClientManager.getInstance().getLevelManager().getLevel();
+        int validNeighbours = 0;
+        for (Coordinate neighbour : neighbours) {
+            if (!Level.isNotWall(neighbour)) // Is wall
+                validNeighbours++;
+            SokobanObject object = level.dynamicObjectAt(neighbour);
+            if (object instanceof Box) {
+                if (!Level.isGoalCell(neighbour))
+                    validNeighbours++; // Is box on a non-goal cell
+            }
+            if (Level.isGoalCell(neighbour) && level.dynamicObjectAt(neighbour) == null) // Empty goal cell
+                validNeighbours--; // Avoid cells close to unsolved goals
+
+        }
+        return validNeighbours >= 3;
     }
 
     @Override

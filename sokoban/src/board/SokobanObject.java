@@ -7,9 +7,9 @@ public abstract class SokobanObject {
     private Coordinate coordinate;
     private int objectId;
 
-    public SokobanObject(int objectId, int row, int col) {
+    public SokobanObject(int row, int col) {
         this.coordinate = new Coordinate(row, col);
-        this.objectId = objectId;
+        this.objectId = Level.getAvailableObjectId(); // Each call to this method ensures that it will return a unique ID
     }
 
     /**
@@ -20,6 +20,10 @@ public abstract class SokobanObject {
     public SokobanObject(SokobanObject other) {
         this.coordinate = new Coordinate(other.coordinate);
         this.objectId = other.objectId;
+    }
+
+    public int getObjectId() {
+        return objectId;
     }
 
     public Coordinate getCoordinate() {

@@ -6,8 +6,8 @@ public class Goal extends SokobanObject {
 
     private char goalType;
 
-    public Goal(int id, int row, int col, char goalType) {
-        super(id, row, col);
+    public Goal(int row, int col, char goalType) {
+        super(row, col);
         this.goalType = goalType;
     }
 

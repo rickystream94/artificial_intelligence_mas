@@ -2,8 +2,8 @@ package board;
 
 public class Wall extends SokobanObject {
 
-    public Wall(int id, int row, int col) {
-        super(id, row, col);
+    public Wall(int row, int col) {
+        super(row, col);
     }
 
     @Override

@@ -2,8 +2,8 @@ package board;
 
 public class EmptyCell extends SokobanObject {
 
-    public EmptyCell(int id, int row, int col) {
-        super(id, row, col);
+    public EmptyCell(int row, int col) {
+        super(row, col);
     }
 
     @Override

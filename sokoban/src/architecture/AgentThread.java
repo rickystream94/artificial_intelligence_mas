@@ -1,11 +1,13 @@
 package architecture;
 
+import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
 import board.Agent;
 import exceptions.InvalidActionException;
+import exceptions.NoProgressException;
 import exceptions.PlanNotFoundException;
 import exceptions.StuckByForeignBoxException;
 import logging.ConsoleLogger;
@@ -57,21 +59,19 @@ public class AgentThread implements Runnable {
         try {
             while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty()) {
-                    // TODO: the same algorithm that generates the desires in BDIManager should be re-used here:
+                    // TODO: BDIManager's re-prioritization should be re-used here:
                     // Where to place it? --> before de-queueing next desire
                     // What's the reason for this? --> after X successful actions executed during executePlan
                     // there might be some desires now that have less priority than before
                     // and the agent will commit to them first
                     // How? --> Break plan execution, re-enqueue un-achieved desire and continue
-                    // TODO: currently, if the agent is stuck, it might go into a deadlock where two ClearPathDesires are alternated
-                    // re-prioritizing might be a solution
-                    // this.desires = bdiManager.calculatePriorities(...);
+                    // TODO: desires to be prioritized according to strict order (tunnels or dead-ends)
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
 
                     // Get next desire
-                    Desire desire = this.desireHelper.getNextDesire(this.desires);
+                    Desire desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
                     this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
 
@@ -94,6 +94,10 @@ public class AgentThread implements Runnable {
                         this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
                         try {
                             this.lockDetector.detectBlockingObject(e.getFailedAction(), desire, this.desires);
+                        } catch (NoProgressException ex) {
+                            // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
+                            ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                            this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
                         } catch (StuckByForeignBoxException ex) {
                             // TODO: needs help! This box is blocking me and I can't move it --> Communication
                             this.status = AgentThreadStatus.STUCK;
@@ -106,15 +110,15 @@ public class AgentThread implements Runnable {
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
-                        this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                         this.lockDetector.planFailed();
                         if (this.lockDetector.needsReplanning()) {
+                            this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         } else {
-                            // Planning keeps failing, unexpected exception --> Quit.
-                            ConsoleLogger.logError(LOGGER, e.getMessage());
-                            System.exit(1);
+                            // Plan keeps failing --> A fake empty cell has been set as target, remove it!
+                            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: removed fake empty cell %s", agent.getAgentId(), desire.getTarget()));
+                            levelManager.getLevel().removeEmptyCell(desire.getTarget());
                         }
                     }
                 }
