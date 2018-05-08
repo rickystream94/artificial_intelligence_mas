@@ -1,10 +1,7 @@
 package architecture.fipa;
 
-import architecture.AgentThread;
-import board.Agent;
-import board.Coordinate;
+import architecture.agent.AgentThread;
 import logging.ConsoleLogger;
-import main.ClientMain;
 import utils.FibonacciHeap;
 
 import java.util.List;

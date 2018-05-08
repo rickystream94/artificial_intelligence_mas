@@ -1,14 +1,10 @@
 package architecture.fipa;
 
-import architecture.AgentThread;
-import board.Color;
-import board.Coordinate;
-import logging.ConsoleLogger;
-import main.ClientMain;
+import architecture.agent.AgentThread;
 import utils.FibonacciHeap;
 
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PerformativeManager {
     private List<AgentThread> listeners;

@@ -1,4 +1,4 @@
-package architecture;
+package architecture.protocol;
 
 import board.Agent;
 import planning.actions.PrimitiveTask;

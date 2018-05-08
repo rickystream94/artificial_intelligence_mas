@@ -1,5 +1,7 @@
-package architecture;
+package architecture.protocol;
 
+import architecture.ClientManager;
+import architecture.LevelManager;
 import board.Agent;
 import logging.ConsoleLogger;
 import planning.actions.PrimitiveTask;
@@ -29,7 +31,7 @@ public class ActionSenderThread implements Runnable {
     private HashMap<Character, SendActionEvent> currentActions;
     private LevelManager levelManager;
 
-    ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
+    public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
         this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
         this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
