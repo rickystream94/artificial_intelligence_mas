@@ -74,10 +74,11 @@ public class AgentThread implements Runnable {
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
 
-                    // Check on status
-
                     // Check if there are any help requests I should commit to
-                    hasHelpRequests(); // TODO
+                    if (!this.helpRequests.isEmpty()) {
+                        processHelpRequest();
+                        continue;
+                    }
 
                     // Get next desire
                     Desire desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
@@ -108,11 +109,13 @@ public class AgentThread implements Runnable {
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                             this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
                         } catch (StuckByForeignBoxException ex) {
-                            // TODO: needs help! This box is blocking me and I can't move it --> Communication
-
-                            // Create the message and dispatch it on the Bus
-                            Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
-                            PerformativeManager.getDefault().execute(performative);
+                            // If the agent is not already stuck ask for help
+                            if (getStatus() != AgentThreadStatus.STUCK) {
+                                // Create the message and dispatch it on the Bus
+                                setStatus(AgentThreadStatus.STUCK);
+                                Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
+                                PerformativeManager.getDefault().execute(performative);
+                            }
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
@@ -145,12 +148,13 @@ public class AgentThread implements Runnable {
         do {
             if (this.lockDetector.isStuck())
                 throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
-            status = AgentThreadStatus.WORKING;
             this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
             try {
                 if (getServerResponse()) {
                     tasks.remove();
                     this.lockDetector.resetFailedActions();
+                    // If the agent was stuck and the action is successful, set back to WORKING state
+                    setStatus(AgentThreadStatus.WORKING);
                 } else {
                     this.lockDetector.actionFailed();
                 }
@@ -158,23 +162,22 @@ public class AgentThread implements Runnable {
                 e.printStackTrace();
             }
         } while (!tasks.isEmpty());
-        status = AgentThreadStatus.FREE; // TODO: must be placed properly where relevant
     }
 
     private void idle() throws InterruptedException {
         setStatus(AgentThreadStatus.FREE);
-        if (!hasHelpRequests()) {
+        if (!this.helpRequests.isEmpty()) {
             this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
             getServerResponse();
         } else {
-            setStatus(AgentThreadStatus.WORKING);
-            Desire clearPathDesire = this.helpRequests.remove();
-            this.desires.enqueue(clearPathDesire, -2000);
+            processHelpRequest();
         }
     }
 
-    private boolean hasHelpRequests() {
-        return !this.helpRequests.isEmpty();
+    private void processHelpRequest() {
+        setStatus(AgentThreadStatus.WORKING);
+        Desire clearPathDesire = this.helpRequests.remove();
+        this.desires.enqueue(clearPathDesire, -2000);
     }
 
     public void addHelpRequest(Desire clearPathDesire) {

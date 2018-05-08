@@ -37,14 +37,12 @@ public class PerformativeHelpWithBox extends Performative {
     public FibonacciHeap<AgentThread> findBests(List<AgentThread> helpers, AgentThread caller) {
         FibonacciHeap<AgentThread> bests = new FibonacciHeap<>();
 
-        for (AgentThread helper : helpers) {
-            if (!helper.getAgent().getColor().equals(box.getColor())) continue;
-            if (helper.equals(caller)) continue;
-            bests.enqueue(helper,
-                    Coordinate.manhattanDistance(box.getCoordinate(),
-                            helper.getAgent().getCoordinate()));
-        }
-
+        // Filter only agents that can move the box
+        helpers.stream().filter(h -> h.getAgent().getColor() == box.getColor() && !h.equals(caller))
+                .forEach(h -> {
+                    int priority = Coordinate.manhattanDistance(box.getCoordinate(), h.getAgent().getCoordinate()) + helperPriorityByStatus(h);
+                    bests.enqueue(h, priority);
+                });
         return bests;
     }
 }

@@ -17,6 +17,17 @@ public abstract class Performative {
         return caller;
     }
 
+    protected int helperPriorityByStatus(AgentThread helper) {
+        switch (helper.getStatus()) {
+            case FREE:
+                return -100;
+            case WORKING:
+                return 100;
+            default:
+                return 0;
+        }
+    }
+
     public abstract void execute(AgentThread helper);
 
     public abstract FibonacciHeap<AgentThread> findBests(List<AgentThread> agentThreadHelpers, AgentThread agentThread);
