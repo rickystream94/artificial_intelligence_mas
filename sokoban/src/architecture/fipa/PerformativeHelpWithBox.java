@@ -1,13 +1,11 @@
 package architecture.fipa;
 
-import architecture.AgentThread;
-import board.Agent;
+import architecture.agent.AgentThread;
 import board.Box;
 import board.Coordinate;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
-import java.io.Console;
 import java.util.List;
 
 public class PerformativeHelpWithBox extends Performative {

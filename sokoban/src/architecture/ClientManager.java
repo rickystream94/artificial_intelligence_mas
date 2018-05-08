@@ -1,8 +1,11 @@
 package architecture;
 
+import architecture.agent.AgentThread;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
 import architecture.fipa.PerformativeManager;
+import architecture.protocol.ActionSenderThread;
+import architecture.protocol.EventBus;
 import board.Agent;
 import board.BoardReader;
 import board.Level;

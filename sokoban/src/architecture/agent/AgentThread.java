@@ -1,10 +1,14 @@
-package architecture;
+package architecture.agent;
 
+import architecture.ClientManager;
+import architecture.LevelManager;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
+import architecture.protocol.ActionSenderThread;
+import architecture.protocol.ResponseEvent;
 import board.Agent;
 import exceptions.InvalidActionException;
 import exceptions.NoProgressException;

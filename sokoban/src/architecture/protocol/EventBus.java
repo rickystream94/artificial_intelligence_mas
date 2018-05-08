@@ -1,4 +1,6 @@
-package architecture;
+package architecture.protocol;
+
+import architecture.agent.AgentThread;
 
 import java.util.HashMap;
 import java.util.List;
