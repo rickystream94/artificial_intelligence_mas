@@ -99,6 +99,7 @@ public class AgentThread implements Runnable {
                         // If we reach this point, the desire is achieved. If goal desire, back it up
                         this.desireHelper.achievedDesire(this.lockDetector);
                     } catch (InvalidActionException e) {
+                        // Action was rejected by server
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
@@ -111,11 +112,13 @@ public class AgentThread implements Runnable {
                         } catch (StuckByForeignBoxException ex) {
                             // If the agent is not already stuck ask for help
                             if (getStatus() != AgentThreadStatus.STUCK) {
+                                ConsoleLogger.logInfo(LOGGER, ex.getMessage());
                                 // Create the message and dispatch it on the Bus
                                 setStatus(AgentThreadStatus.STUCK);
                                 Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
                                 PerformativeManager.getDefault().execute(performative);
-                            }
+                            } else
+                                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Waiting for help...", this.agent.getAgentId()));
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
