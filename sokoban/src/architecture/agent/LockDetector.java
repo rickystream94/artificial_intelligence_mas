@@ -13,7 +13,6 @@ import exceptions.StuckByForeignBoxException;
 import logging.ConsoleLogger;
 import planning.actions.Direction;
 import planning.actions.PrimitiveTask;
-import utils.FibonacciHeap;
 import utils.HashMapHelper;
 
 import java.util.*;
@@ -35,6 +34,7 @@ public class LockDetector {
     private int noProgressCounter;
     private Map<Box, Integer> boxClearingDistanceMap;
     private Map<Box, List<Coordinate>> chosenTargetsForClearBox;
+    private Deque<Box> blockingBoxes;
 
     public LockDetector(Agent agent) {
         this.agent = agent;
@@ -44,6 +44,7 @@ public class LockDetector {
         this.noProgressCounter = 0;
         this.boxClearingDistanceMap = new HashMap<>();
         this.chosenTargetsForClearBox = new HashMap<>();
+        this.blockingBoxes = new ArrayDeque<>();
     }
 
     public int getNumFailedPlans() {
@@ -84,8 +85,8 @@ public class LockDetector {
         return this.boxClearingDistanceMap.get(box);
     }
 
-    public void resetClearingDistance(Box box) {
-        this.boxClearingDistanceMap.remove(box);
+    public void restoreClearingDistancesForAllBoxes() {
+        this.boxClearingDistanceMap.clear();
     }
 
     /**
@@ -95,7 +96,7 @@ public class LockDetector {
      * @param failedAction  last action that failed
      * @param currentDesire current desire to achieve
      */
-    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire, FibonacciHeap<Desire> desires) throws StuckByForeignBoxException, NoProgressException {
+    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire) throws StuckByForeignBoxException, NoProgressException {
         Coordinate blockingCell = getBlockingCellByAction(failedAction, currentDesire);
         SokobanObject blockingObject = this.levelManager.getLevel().dynamicObjectAt(Objects.requireNonNull(blockingCell));
 
@@ -112,33 +113,38 @@ public class LockDetector {
                 if (needsToReprioritizeDesires())
                     throw new NoProgressException(agent);
 
-                // Create new desire
-                Desire clearPathDesire = handleBlockingBox(blockingBox);
-
-                // Avoid priority conflicts: increase all priorities by 1
-                List<FibonacciHeap.Entry<Desire>> tempDesires = new ArrayList<>();
-                while (!desires.isEmpty())
-                    tempDesires.add(desires.dequeueMin());
-                tempDesires.forEach(d -> desires.enqueue(d.getValue(), d.getPriority() + 1));
-
-                // Enqueue the new desire with maximum priority
-                desires.enqueue(clearPathDesire, -1000);
+                // Record the blocking box
+                // TODO: somehow hardcoded, but works, possibility of improvements
+                //if (this.blockingBoxes.stream().noneMatch(box -> box == blockingBox))
+                if (this.blockingBoxes.stream().filter(box -> box == blockingBox).count() <= 3)
+                    this.blockingBoxes.push(blockingBox);
             } else {
-                // Box of different color
+                // Box of different color --> Ask for help
                 throw new StuckByForeignBoxException(agent, blockingBox);
             }
         }
     }
 
-    public Desire handleBlockingBox(Box blockingBox) throws NoProgressException {
+    public Desire handleBlockingBox(Box blockingBox) {
         Coordinate chosenTarget = getTargetForBoxToClear(blockingBox);
-        // TODO not very good but it's to avoid NullPointerException when no more targets are available
-        if (chosenTarget == null) {
-            resetClearingDistance(blockingBox);
-            clearChosenTargets(blockingBox);
-            throw new NoProgressException(agent);
-        }
         return new ClearPathDesire(blockingBox, chosenTarget);
+    }
+
+    public void boxCleared() {
+        if (!this.blockingBoxes.isEmpty())
+            this.blockingBoxes.pop();
+    }
+
+    public boolean hasBoxesToClear() {
+        return !this.blockingBoxes.isEmpty();
+    }
+
+    public Box getNextBlockingBox() {
+        return this.blockingBoxes.peek();
+    }
+
+    public void clearBlockingBoxes() {
+        this.blockingBoxes.clear();
     }
 
     /**
@@ -176,6 +182,7 @@ public class LockDetector {
     private Coordinate getTargetForBoxToClear(Box blockingBox) {
         Map<Object, Integer> distances = new HashMap<>();
         int clearingDistance = getClearingDistance(blockingBox);
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: clearing distance for box %s is %d.", this.agent.getAgentId(), blockingBox, clearingDistance));
         Set<Coordinate> edgeCells = getEdgeCells();
         Set<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
         //potentialNewPositions.addAll(edgeCells);
@@ -184,6 +191,7 @@ public class LockDetector {
         // TODO: this value should be dynamic, depending on the level
         if (clearingDistance < 3 && !edgeCells.isEmpty()) {
             // Target --> Edge cell far away to the blocking box
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: edge cells chosen for box %s", this.agent.getAgentId(), blockingBox));
             edgeCells.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingBox.getCoordinate())));
             return (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
         }
@@ -209,8 +217,12 @@ public class LockDetector {
         return chosenTarget;
     }
 
-    public void clearChosenTargets(Box box) {
+    public void clearChosenTargetsForBox(Box box) {
         this.chosenTargetsForClearBox.remove(box);
+    }
+
+    public void clearChosenTargetsForAllBoxes() {
+        this.chosenTargetsForClearBox.clear();
     }
 
     private Set<Coordinate> getEdgeCells() {

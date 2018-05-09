@@ -14,9 +14,10 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = "../../../environment/levels/example_levels/single_agent/difficult/SADillema.lvl";
-    //private static final String level = "../../../environment/levels/SAtowersOfSaigon5.lvl";
-    private static final String millisPerAction = "200";
+    // TODO: debug SAAlpha
+    //private static final String level = "../../../environment/levels/example_levels/single_agent/medium/SAAlpha.lvl";
+    private static final String level = "../../../environment/levels/SAsokobanLevel96.lvl";
+    private static final String millisPerAction = "50";
     private static final String timeout = "3000";
 
     public static void main(String[] args) {

@@ -4,7 +4,6 @@ import architecture.agent.AgentThread;
 import architecture.bdi.Desire;
 import board.Box;
 import board.Coordinate;
-import exceptions.NoProgressException;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
@@ -25,12 +24,8 @@ public class PerformativeHelpWithBox extends Performative {
     @Override
     public void execute(AgentThread helper) {
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen Agent %c as helper to clear box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), box));
-        try {
-            Desire clearPathDesire = helper.getLockDetector().handleBlockingBox(box);
-            helper.addHelpRequest(clearPathDesire);
-        } catch (NoProgressException e) {
-            e.printStackTrace(); // TODO: should not occur... hopefully
-        }
+        Desire clearPathDesire = helper.getLockDetector().handleBlockingBox(box);
+        helper.addHelpRequest(clearPathDesire);
     }
 
     @Override

@@ -4,6 +4,7 @@ import architecture.ClientManager;
 import architecture.LevelManager;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
+import architecture.bdi.GoalDesire;
 import architecture.fipa.Performative;
 import architecture.fipa.PerformativeHelpWithBox;
 import architecture.fipa.PerformativeManager;
@@ -81,9 +82,18 @@ public class AgentThread implements Runnable {
                     }
 
                     // Get next desire
-                    Desire desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
+                    Desire desire;
+                    try {
+                        desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
+                    } catch (NoProgressException e) {
+                        ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                        freshRestart();
+                        continue;
+                    }
+
+                    // Desire is valid: proceed to prepare and execute planning
                     this.agent.setCurrentTargetBox(desire.getBox());
-                    ConsoleLogger.logInfo(LOGGER, "Agent " + this.agent.getAgentId() + " committing to desire " + desire);
+                    ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: committing to desire %s", this.agent.getAgentId(), desire));
 
                     // Get percepts
                     Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.lockDetector.getNumFailedPlans());
@@ -102,17 +112,14 @@ public class AgentThread implements Runnable {
                         // Action was rejected by server
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // Current desire wasn't achieved --> add it back to the heap!
-                        // TODO: re-enqueueing the same ClearPathDesire is theoretically wrong!
-                        // This way the new target won't be recomputed according to the clearing distance criteria
-                        // But it will still be the same --> Need of a new data structure in LockDetector to keep track of obstructing boxes
-                        // in a LIFO order and dynamically create ClearPathDesires
-                        this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
+                        if (desire instanceof GoalDesire)
+                            this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
                         try {
-                            this.lockDetector.detectBlockingObject(e.getFailedAction(), desire, this.desires);
+                            this.lockDetector.detectBlockingObject(e.getFailedAction(), desire);
                         } catch (NoProgressException ex) {
                             // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
-                            ConsoleLogger.logInfo(LOGGER, e.getMessage());
-                            this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
+                            ConsoleLogger.logInfo(LOGGER, ex.getMessage());
+                            freshRestart();
                         } catch (StuckByForeignBoxException ex) {
                             // If the agent is not already stuck ask for help
                             if (getStatus() != AgentThreadStatus.STUCK) {
@@ -128,7 +135,8 @@ public class AgentThread implements Runnable {
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.lockDetector.planFailed();
                         if (this.lockDetector.needsReplanning()) {
-                            this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
+                            if (desire instanceof GoalDesire)
+                                this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                             // First failed attempt allowed, will switch to new relaxation
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         } else {
@@ -147,6 +155,13 @@ public class AgentThread implements Runnable {
             e.printStackTrace();
             System.exit(1);
         }
+    }
+
+    private void freshRestart() {
+        //lockDetector.restoreClearingDistancesForAllBoxes();
+        //lockDetector.clearChosenTargetsForAllBoxes();
+        lockDetector.clearBlockingBoxes();
+        this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
     }
 
     private void executePlan(PrimitivePlan plan) throws InvalidActionException {

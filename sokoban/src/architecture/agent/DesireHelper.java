@@ -5,10 +5,13 @@ import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
 import board.Agent;
 import board.Level;
+import exceptions.NoProgressException;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class DesireHelper {
@@ -17,15 +20,12 @@ public class DesireHelper {
 
     private Agent agent;
     private Map<Desire, Double> achievedGoalDesiresPriorityMap;
-    private Set<Desire> clearPathDesiresAchieved;
     private Desire currentDesire;
     private double currentDesirePriority;
-    private Desire lastAchievedDesire;
 
     public DesireHelper(Agent agent) {
         this.agent = agent;
         this.achievedGoalDesiresPriorityMap = new HashMap<>();
-        this.clearPathDesiresAchieved = new HashSet<>();
     }
 
     /**
@@ -35,37 +35,46 @@ public class DesireHelper {
      * @param desires Heap of all desires
      * @return next desire to process
      */
-    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) {
+    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) throws NoProgressException {
         FibonacciHeap.Entry<Desire> entry;
         Desire desire;
         int skippedDesires = 0;
-        boolean shouldBreakLoop;
+        int priority;
+        boolean shouldSkipDesire;
         do {
+            // Check first if there are any boxes that need to be cleared
+            if (lockDetector.hasBoxesToClear()) {
+                desire = lockDetector.handleBlockingBox(lockDetector.getNextBlockingBox());
+                priority = -1000; // By default
+                shouldSkipDesire = false;
+                continue;
+            }
             entry = desires.dequeueMin();
             final Desire finalDesire = entry.getValue();
+            priority = (int) entry.getPriority();
             desire = finalDesire;
 
-            // Verify loop-breaking conditions
-            boolean shouldSkipDesire = desire instanceof ClearPathDesire;
-            shouldSkipDesire = shouldSkipDesire && lastAchievedDesire instanceof GoalDesire;
-            shouldSkipDesire = shouldSkipDesire && this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget());
-            shouldSkipDesire = shouldSkipDesire || Level.isDesireAchieved(desire);
+            // Verify loop-breaking condition --> Is desire already achieved?
+            shouldSkipDesire = Level.isDesireAchieved(desire);
+            if (shouldSkipDesire)
+                skippedDesires++;
+
+            // Check if current desire is GoalDesire and already achieved
             if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
                 // We have to back-up the achieved goal desire!
                 this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
-                this.clearPathDesiresAchieved.forEach(d -> lockDetector.resetClearingDistance(d.getBox()));
-                this.clearPathDesiresAchieved.clear();
+                //lockDetector.restoreClearingDistancesForAllBoxes();
             }
+        } while (shouldSkipDesire && !desires.isEmpty());
+        if (skippedDesires > 0)
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d redundant desires", this.agent.getAgentId(), skippedDesires));
 
-            if (shouldSkipDesire) {
-                skippedDesires++;
-                shouldBreakLoop = false;
-            } else shouldBreakLoop = true;
-        }
-        while (!shouldBreakLoop && !desires.isEmpty());
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d redundant desires", this.agent.getAgentId(), skippedDesires));
+        // Check if desire is valid (there is progress)
+        if (desire.getTarget() == null)
+            throw new NoProgressException(this.agent);
+
         this.currentDesire = desire;
-        this.currentDesirePriority = entry.getPriority();
+        this.currentDesirePriority = priority;
         return this.currentDesire;
     }
 
@@ -82,7 +91,8 @@ public class DesireHelper {
                 // Avoid picking the same desire if its priority is the lowest!
                 // Penalize the desire (+100)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Goal desire %s has to be achieved again!", this.agent.getAgentId(), desire));
-                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 100);
+                // TODO: this punishment is currently hardcoded
+                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 10);
                 it.remove();
             }
         }
@@ -96,14 +106,14 @@ public class DesireHelper {
     public void achievedDesire(LockDetector lockDetector) {
         if (currentDesire instanceof GoalDesire) {
             this.achievedGoalDesiresPriorityMap.put(currentDesire, currentDesirePriority);
-            this.clearPathDesiresAchieved.forEach(d -> lockDetector.resetClearingDistance(d.getBox()));
-            this.clearPathDesiresAchieved.clear();
+            lockDetector.restoreClearingDistancesForAllBoxes();
+            lockDetector.clearChosenTargetsForAllBoxes();
         } else if (currentDesire instanceof ClearPathDesire) {
-            this.clearPathDesiresAchieved.add(currentDesire);
-            lockDetector.clearChosenTargets(currentDesire.getBox());
+            lockDetector.clearChosenTargetsForBox(currentDesire.getBox());
+            //lockDetector.resetClearingDistanceForBox(currentDesire.getBox());
             lockDetector.progressPerformed();
+            lockDetector.boxCleared();
         }
-        this.lastAchievedDesire = currentDesire;
     }
 
     public Desire getCurrentDesire() {
