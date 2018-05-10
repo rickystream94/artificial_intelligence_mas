@@ -1,7 +1,6 @@
 package architecture.fipa;
 
 import architecture.agent.AgentThread;
-import utils.FibonacciHeap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +25,7 @@ public class PerformativeManager {
     }
 
     public synchronized void dispatchPerformative(HelpRequest helpRequest) {
-        FibonacciHeap<AgentThread> helpersWithPriorities = helpRequest.findBestHelpers(listeners, helpRequest.getCaller());
-        if (!helpersWithPriorities.isEmpty()) {
-            AgentThread helper = helpersWithPriorities.dequeueMin().getValue();
-            helpRequest.chooseHelper(helper);
-        }
+        AgentThread bestHelper = helpRequest.findBestHelper(listeners);
+        helpRequest.chooseHelper(bestHelper);
     }
 }

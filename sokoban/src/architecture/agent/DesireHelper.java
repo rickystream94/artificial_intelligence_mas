@@ -1,6 +1,6 @@
 package architecture.agent;
 
-import architecture.bdi.ClearPathDesire;
+import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
 import board.Agent;
@@ -29,7 +29,7 @@ public class DesireHelper {
     }
 
     /**
-     * Get the next desire the agent should commit to. If the agent has just achieved a ClearPathDesire successfully,
+     * Get the next desire the agent should commit to. If the agent has just achieved a ClearBoxDesire successfully,
      * discard the previous ones that have been enqueued willing to clear the same box.
      *
      * @param desires Heap of all desires
@@ -43,8 +43,8 @@ public class DesireHelper {
         boolean shouldSkipDesire;
         do {
             // Check first if there are any boxes that need to be cleared
-            if (lockDetector.hasBoxesToClear()) {
-                desire = lockDetector.handleBlockingBox(lockDetector.getNextBlockingBox());
+            if (lockDetector.hasObjectsToClear()) {
+                desire = lockDetector.handleBlockingObject(lockDetector.getNextBlockingObject());
                 priority = -1000; // By default
                 shouldSkipDesire = false;
                 continue;
@@ -63,7 +63,7 @@ public class DesireHelper {
             if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
                 // We have to back-up the achieved goal desire!
                 this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
-                //lockDetector.restoreClearingDistancesForAllBoxes();
+                //lockDetector.restoreClearingDistancesForAllObjects();
             }
         } while (shouldSkipDesire && !desires.isEmpty());
         if (skippedDesires > 0)
@@ -107,13 +107,13 @@ public class DesireHelper {
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: achieved desire %s", this.agent.getAgentId(), currentDesire));
         if (currentDesire instanceof GoalDesire) {
             this.achievedGoalDesiresPriorityMap.put(currentDesire, currentDesirePriority);
-            lockDetector.restoreClearingDistancesForAllBoxes();
-            lockDetector.clearChosenTargetsForAllBoxes();
-        } else if (currentDesire instanceof ClearPathDesire) {
-            lockDetector.clearChosenTargetsForBox(currentDesire.getBox());
+            lockDetector.restoreClearingDistancesForAllObjects();
+            lockDetector.clearChosenTargetsForAllObjects();
+        } else if (currentDesire instanceof ClearBoxDesire) {
+            lockDetector.clearChosenTargetsForObject(currentDesire.getBox());
             //lockDetector.resetClearingDistanceForBox(currentDesire.getBox());
             lockDetector.progressPerformed();
-            lockDetector.boxCleared();
+            lockDetector.objectCleared();
         }
     }
 

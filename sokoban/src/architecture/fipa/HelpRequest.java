@@ -1,33 +1,39 @@
 package architecture.fipa;
 
 import architecture.agent.AgentThread;
-import architecture.agent.AgentThreadStatus;
-import utils.FibonacciHeap;
+import board.AgentStatus;
+import board.SokobanObject;
 
 import java.util.List;
 
 public abstract class HelpRequest {
 
-    protected AgentThread caller;
+    private AgentThread caller;
+    private SokobanObject blockingObject;
 
-    protected HelpRequest(AgentThread caller) {
+    protected HelpRequest(AgentThread caller, SokobanObject blockingObject) {
         this.caller = caller;
+        this.blockingObject = blockingObject;
     }
 
     protected abstract void chooseHelper(AgentThread helper);
 
-    protected abstract FibonacciHeap<AgentThread> findBestHelpers(List<AgentThread> agentThreadHelpers, AgentThread agentThread);
+    protected abstract AgentThread findBestHelper(List<AgentThread> helpers);
 
     protected AgentThread getCaller() {
         return caller;
     }
 
+    protected SokobanObject getBlockingObject() {
+        return blockingObject;
+    }
+
     protected boolean doneHelpingCaller() {
-        return this.caller.getStatus() != AgentThreadStatus.STUCK;
+        return this.caller.getAgent().getStatus() != AgentStatus.STUCK;
     }
 
     protected int helperPriorityByStatus(AgentThread helper) {
-        switch (helper.getStatus()) {
+        switch (helper.getAgent().getStatus()) {
             case FREE:
                 return -100;
             case WORKING:

@@ -24,7 +24,7 @@ public class ClearPathFromBoxTask extends CompoundTask {
 
     @Override
     public boolean isAchieved(HTNWorldState currentWorldState) {
-        return currentWorldState.getBoxPosition().equals(currentWorldState.getBoxTarget());
+        return currentWorldState.getBoxPosition().equals(currentWorldState.getTarget());
     }
 
     @Override

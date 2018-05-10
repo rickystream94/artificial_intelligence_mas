@@ -2,12 +2,10 @@ package architecture.agent;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
-import architecture.bdi.ClearPathDesire;
+import architecture.bdi.ClearBoxDesire;
+import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
-import board.Agent;
-import board.Box;
-import board.Coordinate;
-import board.SokobanObject;
+import board.*;
 import exceptions.NoProgressException;
 import exceptions.StuckByAgentException;
 import exceptions.StuckByForeignBoxException;
@@ -24,7 +22,7 @@ public class LockDetector {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(LockDetector.class.getSimpleName());
     private static final int MAX_PLAN_RETRIES = 2;
-    private static final int MAX_ACTION_RETRIES = 1;
+    private static final int MAX_ACTION_RETRIES = ClientManager.getInstance().getNumberOfAgents() == 1 ? 1 : 3;
     private static final int DEFAULT_CLEARING_DISTANCE = 1;
     private static final int MAX_NO_PROGRESS_COUNTER = 3;
 
@@ -33,9 +31,9 @@ public class LockDetector {
     private int numFailedPlans;
     private int numFailedActions;
     private int noProgressCounter;
-    private Map<Box, Integer> boxClearingDistanceMap;
-    private Map<Box, List<Coordinate>> chosenTargetsForClearBox;
-    private Deque<Box> blockingBoxes;
+    private Map<SokobanObject, Integer> objectClearingDistanceMap;
+    private Map<SokobanObject, Set<Coordinate>> chosenTargetsForObjectToClear;
+    private Deque<SokobanObject> blockingObjects;
 
     public LockDetector(Agent agent) {
         this.agent = agent;
@@ -43,9 +41,9 @@ public class LockDetector {
         this.numFailedPlans = 0;
         this.numFailedActions = 0;
         this.noProgressCounter = 0;
-        this.boxClearingDistanceMap = new HashMap<>();
-        this.chosenTargetsForClearBox = new HashMap<>();
-        this.blockingBoxes = new ArrayDeque<>();
+        this.objectClearingDistanceMap = new HashMap<>();
+        this.chosenTargetsForObjectToClear = new HashMap<>();
+        this.blockingObjects = new ArrayDeque<>();
     }
 
     public int getNumFailedPlans() {
@@ -66,6 +64,7 @@ public class LockDetector {
 
     public void actionFailed() {
         this.numFailedActions++;
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: action failed, attempt %d/%d", agent.getAgentId(), numFailedActions, MAX_ACTION_RETRIES));
     }
 
     public void resetFailedActions() {
@@ -76,18 +75,18 @@ public class LockDetector {
         return this.numFailedActions == MAX_ACTION_RETRIES;
     }
 
-    private int getClearingDistance(Box box) {
-        if (!this.boxClearingDistanceMap.containsKey(box)) {
-            this.boxClearingDistanceMap.put(box, DEFAULT_CLEARING_DISTANCE);
+    private int getClearingDistance(SokobanObject object) {
+        if (!this.objectClearingDistanceMap.containsKey(object)) {
+            this.objectClearingDistanceMap.put(object, DEFAULT_CLEARING_DISTANCE);
             return DEFAULT_CLEARING_DISTANCE;
         }
-        // If box was already stored, increase the clearing distance
-        this.boxClearingDistanceMap.put(box, this.boxClearingDistanceMap.get(box) + 1);
-        return this.boxClearingDistanceMap.get(box);
+        // If object was already stored, increase the clearing distance
+        this.objectClearingDistanceMap.put(object, this.objectClearingDistanceMap.get(object) + 1);
+        return this.objectClearingDistanceMap.get(object);
     }
 
-    public void restoreClearingDistancesForAllBoxes() {
-        this.boxClearingDistanceMap.clear();
+    public void restoreClearingDistancesForAllObjects() {
+        this.objectClearingDistanceMap.clear();
     }
 
     /**
@@ -103,8 +102,13 @@ public class LockDetector {
 
         // Analyze blocking object and decide
         if (blockingObject instanceof Agent) {
-            // Ask for help
             Agent blockingAgent = (Agent) blockingObject;
+            if (blockingAgent.getStatus() == AgentStatus.STUCK) {
+                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, found stuck agent %c. I'll recalculate my target...", this.agent.getAgentId(), blockingAgent.getAgentId()));
+                return;
+            }
+
+            // Ask for help
             throw new StuckByAgentException(agent, blockingAgent);
         } else if (blockingObject instanceof Box) {
             Box blockingBox = (Box) blockingObject;
@@ -117,10 +121,7 @@ public class LockDetector {
                     throw new NoProgressException(agent);
 
                 // Record the blocking box
-                // TODO: somehow hardcoded, but works, possibility of improvements
-                //if (this.blockingBoxes.stream().noneMatch(box -> box == blockingBox))
-                if (this.blockingBoxes.stream().filter(box -> box == blockingBox).count() <= 3)
-                    addBlockingBox(blockingBox);
+                addBlockingObject(blockingBox);
             } else {
                 // Box of different color --> Ask for help
                 throw new StuckByForeignBoxException(agent, blockingBox);
@@ -128,30 +129,39 @@ public class LockDetector {
         }
     }
 
-    public Desire handleBlockingBox(Box blockingBox) {
-        Coordinate chosenTarget = getTargetForBoxToClear(blockingBox);
-        return new ClearPathDesire(blockingBox, chosenTarget);
+    public Desire handleBlockingObject(SokobanObject blockingObject) {
+        Coordinate chosenTarget = getTargetForObjectToClear(blockingObject);
+
+        if (blockingObject instanceof Box)
+            return new ClearBoxDesire((Box) blockingObject, chosenTarget);
+        else if (blockingObject instanceof Agent)
+            return new ClearCellDesire((Agent) blockingObject, chosenTarget);
+
+        return null;
     }
 
-    public void boxCleared() {
-        if (!this.blockingBoxes.isEmpty())
-            this.blockingBoxes.pop();
+    public void objectCleared() {
+        if (!this.blockingObjects.isEmpty())
+            this.blockingObjects.pop();
     }
 
-    public boolean hasBoxesToClear() {
-        return !this.blockingBoxes.isEmpty();
+    public boolean hasObjectsToClear() {
+        return !this.blockingObjects.isEmpty();
     }
 
-    public Box getNextBlockingBox() {
-        return this.blockingBoxes.peek();
+    public SokobanObject getNextBlockingObject() {
+        return this.blockingObjects.peek();
     }
 
-    public void clearBlockingBoxes() {
-        this.blockingBoxes.clear();
+    public void clearBlockingObjects() {
+        this.blockingObjects.clear();
     }
 
-    public void addBlockingBox(Box blockingBox) {
-        this.blockingBoxes.push(blockingBox);
+    public void addBlockingObject(SokobanObject blockingObject) {
+        // TODO: somehow hardcoded, but works, possibility of improvements
+        //if (this.blockingObjects.stream().noneMatch(object -> object == blockingObject))
+        if (this.blockingObjects.stream().filter(object -> object == blockingObject).count() <= 3)
+            this.blockingObjects.push(blockingObject);
     }
 
     /**
@@ -183,30 +193,30 @@ public class LockDetector {
     /**
      * Finds the cell where the blocking box should be moved
      *
-     * @param blockingBox blocking box
-     * @return coordinate where the box should be moved
+     * @param blockingObject blocking object (box or agent)
+     * @return coordinate where the object should be moved
      */
-    private Coordinate getTargetForBoxToClear(Box blockingBox) {
+    private Coordinate getTargetForObjectToClear(SokobanObject blockingObject) {
         Map<Object, Integer> distances = new HashMap<>();
-        int clearingDistance = getClearingDistance(blockingBox);
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: clearing distance for box %s is %d.", this.agent.getAgentId(), blockingBox, clearingDistance));
+        int clearingDistance = getClearingDistance(blockingObject);
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: clearing distance for %s is %d.", this.agent.getAgentId(), blockingObject, clearingDistance));
         Set<Coordinate> edgeCells = getEdgeCells();
-        Set<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingBox.getCoordinate(), clearingDistance);
+        Set<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), clearingDistance);
         //potentialNewPositions.addAll(edgeCells);
 
         // Prefer edge cells if it's the first attempt to clear this box
         // TODO: this value should be dynamic, depending on the level
         if (clearingDistance < 3 && !edgeCells.isEmpty()) {
             // Target --> Edge cell far away to the blocking box
-            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: edge cells chosen for box %s", this.agent.getAgentId(), blockingBox));
-            edgeCells.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingBox.getCoordinate())));
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: edge cells chosen for %s", this.agent.getAgentId(), blockingObject));
+            edgeCells.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingObject.getCoordinate())));
             return (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
         }
 
-        // Target --> More distant among the cells with fixed distance from the blocking box
+        // Target --> More distant among the cells with fixed distance from the blocking object
         potentialNewPositions.add(this.agent.getCoordinate());
         //potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, desire.getTarget())));
-        potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingBox.getCoordinate())));
+        potentialNewPositions.forEach(p -> distances.put(p, Coordinate.manhattanDistance(p, blockingObject.getCoordinate())));
 
         // Avoid choosing the same clearing target if it was already chosen in a previous (failed) iteration
         Coordinate chosenTarget;
@@ -214,28 +224,28 @@ public class LockDetector {
             chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
             distances.remove(chosenTarget);
         }
-        while (this.chosenTargetsForClearBox.containsKey(blockingBox) && this.chosenTargetsForClearBox.get(blockingBox).contains(chosenTarget) && chosenTarget != null);
-        if (!this.chosenTargetsForClearBox.containsKey(blockingBox)) {
-            List<Coordinate> chosenTargets = new ArrayList<>();
-            this.chosenTargetsForClearBox.put(blockingBox, chosenTargets);
+        while (this.chosenTargetsForObjectToClear.containsKey(blockingObject) && this.chosenTargetsForObjectToClear.get(blockingObject).contains(chosenTarget) && chosenTarget != null);
+        if (!this.chosenTargetsForObjectToClear.containsKey(blockingObject)) {
+            Set<Coordinate> chosenTargets = new HashSet<>();
+            this.chosenTargetsForObjectToClear.put(blockingObject, chosenTargets);
         }
-        this.chosenTargetsForClearBox.get(blockingBox).add(chosenTarget);
+        this.chosenTargetsForObjectToClear.get(blockingObject).add(chosenTarget);
 
         // Invalid target, will throw NoProgressException
         if (chosenTarget == null) {
-            this.chosenTargetsForClearBox.remove(blockingBox);
-            this.restoreClearingDistancesForAllBoxes();
+            this.chosenTargetsForObjectToClear.remove(blockingObject);
+            this.restoreClearingDistancesForAllObjects();
         }
 
         return chosenTarget;
     }
 
-    public void clearChosenTargetsForBox(Box box) {
-        this.chosenTargetsForClearBox.remove(box);
+    public void clearChosenTargetsForObject(SokobanObject object) {
+        this.chosenTargetsForObjectToClear.remove(object);
     }
 
-    public void clearChosenTargetsForAllBoxes() {
-        this.chosenTargetsForClearBox.clear();
+    public void clearChosenTargetsForAllObjects() {
+        this.chosenTargetsForObjectToClear.clear();
     }
 
     private Set<Coordinate> getEdgeCells() {

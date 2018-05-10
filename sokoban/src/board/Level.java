@@ -1,5 +1,6 @@
 package board;
 
+import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
 
 import java.util.*;
@@ -122,8 +123,10 @@ public class Level {
     }
 
     public static boolean isDesireAchieved(Desire desire) {
-        Box box = desire.getBox();
         Coordinate targetPosition = desire.getTarget();
+        if (desire instanceof ClearCellDesire)
+            return ((ClearCellDesire) desire).getAgent().getCoordinate().equals(targetPosition);
+        Box box = desire.getBox();
         return box.getCoordinate().equals(targetPosition);
     }
 

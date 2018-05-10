@@ -7,11 +7,11 @@ import board.Coordinate;
  * Only considers walls and boxes of the same color (doesn't consider other agents and boxes of different color):
  * ideal for MA environment if there are only a few agents of the same color
  */
-public class NoForeignBoxesRelaxation extends OnlyWallsRelaxation {
+public class MyBoxesAndWallsRelaxation extends OnlyWallsRelaxation {
 
     private final Color myColor;
 
-    protected NoForeignBoxesRelaxation(Color myColor) {
+    protected MyBoxesAndWallsRelaxation(Color myColor) {
         this.myColor = myColor;
     }
 

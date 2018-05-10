@@ -9,6 +9,7 @@ import architecture.fipa.HelpRequestResolver;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.ResponseEvent;
 import board.Agent;
+import board.AgentStatus;
 import exceptions.*;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
@@ -19,10 +20,7 @@ import planning.relaxations.Relaxation;
 import planning.relaxations.RelaxationFactory;
 import utils.FibonacciHeap;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
@@ -39,15 +37,14 @@ public class AgentThread implements Runnable {
     private LockDetector lockDetector;
     private DesireHelper desireHelper;
     private HelpRequestResolver helpRequestResolver;
-    private AgentThreadStatus status;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
+        this.agent.setStatus(AgentStatus.WORKING);
         this.desires = desires;
         this.actionSenderThread = ClientManager.getInstance().getActionSenderThread();
         this.responseEvents = new ArrayBlockingQueue<>(1);
         this.levelManager = ClientManager.getInstance().getLevelManager();
-        setStatus(AgentThreadStatus.WORKING);
         this.lockDetector = new LockDetector(agent);
         this.desireHelper = new DesireHelper(agent);
         this.helpRequestResolver = new HelpRequestResolver(agent);
@@ -87,7 +84,8 @@ public class AgentThread implements Runnable {
                     }
 
                     // Desire is valid: proceed to prepare and execute planning
-                    this.agent.setCurrentTargetBox(desire.getBox());
+                    if (desire.getBox() != null)
+                        this.agent.setCurrentTargetBox(desire.getBox());
                     ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: committing to desire %s", this.agent.getAgentId(), desire));
 
                     // Get percepts
@@ -145,51 +143,57 @@ public class AgentThread implements Runnable {
     }
 
     private void freshRestart() {
-        //lockDetector.restoreClearingDistancesForAllBoxes();
-        //lockDetector.clearChosenTargetsForAllBoxes();
-        lockDetector.clearBlockingBoxes();
+        //lockDetector.restoreClearingDistancesForAllObjects();
+        //lockDetector.clearChosenTargetsForAllObjects();
+        lockDetector.clearBlockingObjects();
         this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
     }
 
     private void executePlan(PrimitivePlan plan) throws InvalidActionException {
         Queue<PrimitiveTask> tasks = plan.getTasks();
         this.lockDetector.resetFailedActions();
-        do {
-            if (this.lockDetector.isStuck())
-                throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
-            this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
-            try {
+        try {
+            if (tasks.isEmpty()) {
+                sendNoOp();
+                getServerResponse();
+                return;
+            }
+            do {
+                if (this.lockDetector.isStuck())
+                    throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
+                this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
                 if (getServerResponse()) {
                     tasks.remove();
                     this.lockDetector.resetFailedActions();
                     // If the agent was stuck and the action is successful, set back to WORKING state
-                    setStatus(AgentThreadStatus.WORKING);
+                    this.agent.setStatus(AgentStatus.WORKING);
                 } else {
                     this.lockDetector.actionFailed();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        } while (!tasks.isEmpty());
+            } while (!tasks.isEmpty());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     private void idle() throws InterruptedException {
-        if (getStatus() == AgentThreadStatus.WORKING) {
-            setStatus(AgentThreadStatus.FREE);
+        if (this.agent.getStatus() == AgentStatus.WORKING) {
+            this.agent.setStatus(AgentStatus.FREE);
             ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: WORK DONE!", this.agent.getAgentId()));
         }
         this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
         if (!this.helpRequestResolver.hasRequestsToProcess()) {
             sendNoOp();
+            getServerResponse();
         } else {
-            setStatus(AgentThreadStatus.WORKING);
+            this.agent.setStatus(AgentStatus.WORKING);
             this.helpRequestResolver.processHelpRequest(this.lockDetector);
         }
     }
 
-    private void sendNoOp() throws InterruptedException {
+    private void sendNoOp() {
         this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
-        getServerResponse();
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {
@@ -210,19 +214,6 @@ public class AgentThread implements Runnable {
         return helpRequestResolver;
     }
 
-    /**
-     * The status should be queried synchronously
-     *
-     * @return current Agent's status
-     */
-    public synchronized AgentThreadStatus getStatus() {
-        return this.status;
-    }
-
-    public void setStatus(AgentThreadStatus status) {
-        this.status = status;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -235,5 +226,20 @@ public class AgentThread implements Runnable {
         }
         entries.forEach(entry -> this.desires.enqueue(entry.getValue(), entry.getPriority()));
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof AgentThread))
+            return false;
+        AgentThread other = (AgentThread) o;
+        return other.agent.equals(this.agent);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.agent);
     }
 }
