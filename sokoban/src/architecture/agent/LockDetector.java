@@ -9,6 +9,7 @@ import board.Box;
 import board.Coordinate;
 import board.SokobanObject;
 import exceptions.NoProgressException;
+import exceptions.StuckByAgentException;
 import exceptions.StuckByForeignBoxException;
 import logging.ConsoleLogger;
 import planning.actions.Direction;
@@ -96,13 +97,15 @@ public class LockDetector {
      * @param failedAction  last action that failed
      * @param currentDesire current desire to achieve
      */
-    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire) throws StuckByForeignBoxException, NoProgressException {
+    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire) throws StuckByForeignBoxException, NoProgressException, StuckByAgentException {
         Coordinate blockingCell = getBlockingCellByAction(failedAction, currentDesire);
         SokobanObject blockingObject = this.levelManager.getLevel().dynamicObjectAt(Objects.requireNonNull(blockingCell));
 
         // Analyze blocking object and decide
         if (blockingObject instanceof Agent) {
-            // TODO: the blocking agent's color doesn't matter, in either case it needs to free the cell
+            // Ask for help
+            Agent blockingAgent = (Agent) blockingObject;
+            throw new StuckByAgentException(agent, blockingAgent);
         } else if (blockingObject instanceof Box) {
             Box blockingBox = (Box) blockingObject;
             if (blockingBox.getColor() == this.agent.getColor()) {

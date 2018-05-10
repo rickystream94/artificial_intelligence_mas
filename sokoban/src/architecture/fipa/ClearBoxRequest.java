@@ -9,13 +9,13 @@ import utils.FibonacciHeap;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class HelpWithBoxRequest extends HelpRequest {
+public class ClearBoxRequest extends HelpRequest {
 
     protected static final Logger LOGGER = ConsoleLogger.getLogger(HelpRequest.class.getSimpleName());
 
     private Box blockingBox;
 
-    public HelpWithBoxRequest(Box blockingBox, AgentThread caller) {
+    public ClearBoxRequest(Box blockingBox, AgentThread caller) {
         super(caller);
         this.blockingBox = blockingBox;
     }

@@ -5,17 +5,11 @@ import architecture.LevelManager;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
-import architecture.fipa.HelpRequest;
 import architecture.fipa.HelpRequestResolver;
-import architecture.fipa.HelpWithBoxRequest;
-import architecture.fipa.PerformativeManager;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.ResponseEvent;
 import board.Agent;
-import exceptions.InvalidActionException;
-import exceptions.NoProgressException;
-import exceptions.PlanNotFoundException;
-import exceptions.StuckByForeignBoxException;
+import exceptions.*;
 import logging.ConsoleLogger;
 import planning.HTNPlanner;
 import planning.HTNWorldState;
@@ -121,17 +115,8 @@ public class AgentThread implements Runnable {
                             // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
                             ConsoleLogger.logInfo(LOGGER, ex.getMessage());
                             freshRestart();
-                        } catch (StuckByForeignBoxException ex) {
-                            // If the agent is not already stuck ask for help
-                            if (getStatus() != AgentThreadStatus.STUCK) {
-                                ConsoleLogger.logInfo(LOGGER, ex.getMessage());
-                                // Create the message and dispatch it on the Bus
-                                setStatus(AgentThreadStatus.STUCK);
-                                HelpRequest helpRequest = new HelpWithBoxRequest(ex.getBox(), this);
-                                PerformativeManager.getDefault().dispatchPerformative(helpRequest);
-                            } else {
-                                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Waiting for help...", this.agent.getAgentId()));
-                            }
+                        } catch (StuckByForeignBoxException | StuckByAgentException ex) {
+                            helpRequestResolver.askForHelp(this, ex);
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
@@ -234,7 +219,7 @@ public class AgentThread implements Runnable {
         return this.status;
     }
 
-    private void setStatus(AgentThreadStatus status) {
+    public void setStatus(AgentThreadStatus status) {
         this.status = status;
     }
 
