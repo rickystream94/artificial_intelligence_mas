@@ -78,11 +78,11 @@ public class Coordinate {
                 if (!Level.isGoalCell(neighbour))
                     validNeighbours++; // Is box on a non-goal cell
             }
-            if (Level.isGoalCell(neighbour) && level.dynamicObjectAt(neighbour) == null) // Empty goal cell
-                validNeighbours--; // Avoid cells close to unsolved goals
+            //if (Level.isGoalCell(neighbour) && level.dynamicObjectAt(neighbour) == null) // Empty goal cell
+            //    validNeighbours--; // Avoid cells close to unsolved goals
 
         }
-        return validNeighbours >= 3;
+        return validNeighbours == 3; // If 4, cell is unreachable!
     }
 
     @Override

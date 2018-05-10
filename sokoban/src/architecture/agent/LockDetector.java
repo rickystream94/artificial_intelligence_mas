@@ -211,12 +211,18 @@ public class LockDetector {
             chosenTarget = (Coordinate) HashMapHelper.getKeyByMaxIntValue(distances);
             distances.remove(chosenTarget);
         }
-        while (this.chosenTargetsForClearBox.containsKey(blockingBox) && this.chosenTargetsForClearBox.get(blockingBox).contains(chosenTarget));
+        while (this.chosenTargetsForClearBox.containsKey(blockingBox) && this.chosenTargetsForClearBox.get(blockingBox).contains(chosenTarget) && chosenTarget != null);
         if (!this.chosenTargetsForClearBox.containsKey(blockingBox)) {
             List<Coordinate> chosenTargets = new ArrayList<>();
             this.chosenTargetsForClearBox.put(blockingBox, chosenTargets);
         }
         this.chosenTargetsForClearBox.get(blockingBox).add(chosenTarget);
+
+        // Invalid target, will throw NoProgressException
+        if (chosenTarget == null) {
+            this.chosenTargetsForClearBox.remove(blockingBox);
+            this.restoreClearingDistancesForAllBoxes();
+        }
 
         return chosenTarget;
     }
