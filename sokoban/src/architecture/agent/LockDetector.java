@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class LockDetector {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(LockDetector.class.getSimpleName());
-    private static final int MAX_PLAN_RETRIES = 1;
+    private static final int MAX_PLAN_RETRIES = 2;
     private static final int MAX_ACTION_RETRIES = 1;
     private static final int DEFAULT_CLEARING_DISTANCE = 1;
     private static final int MAX_NO_PROGRESS_COUNTER = 3;
@@ -59,8 +59,8 @@ public class LockDetector {
         this.numFailedPlans = 0;
     }
 
-    public boolean needsReplanning() {
-        return this.numFailedPlans == MAX_PLAN_RETRIES;
+    public boolean shouldChangeRelaxation() {
+        return this.numFailedPlans <= MAX_PLAN_RETRIES;
     }
 
     public void actionFailed() {
@@ -117,7 +117,7 @@ public class LockDetector {
                 // TODO: somehow hardcoded, but works, possibility of improvements
                 //if (this.blockingBoxes.stream().noneMatch(box -> box == blockingBox))
                 if (this.blockingBoxes.stream().filter(box -> box == blockingBox).count() <= 3)
-                    this.blockingBoxes.push(blockingBox);
+                    addBlockingBox(blockingBox);
             } else {
                 // Box of different color --> Ask for help
                 throw new StuckByForeignBoxException(agent, blockingBox);
@@ -145,6 +145,10 @@ public class LockDetector {
 
     public void clearBlockingBoxes() {
         this.blockingBoxes.clear();
+    }
+
+    public void addBlockingBox(Box blockingBox) {
+        this.blockingBoxes.push(blockingBox);
     }
 
     /**

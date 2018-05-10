@@ -1,7 +1,7 @@
 package architecture.fipa;
 
 import architecture.agent.AgentThread;
-import architecture.bdi.Desire;
+import architecture.agent.HelpWithBoxRequest;
 import board.Box;
 import board.Coordinate;
 import logging.ConsoleLogger;
@@ -14,18 +14,17 @@ public class PerformativeHelpWithBox extends Performative {
 
     protected static final Logger LOGGER = ConsoleLogger.getLogger(Performative.class.getSimpleName());
 
-    private Box box;
+    private Box blockingBox;
 
-    public PerformativeHelpWithBox(Box box, AgentThread caller) {
+    public PerformativeHelpWithBox(Box blockingBox, AgentThread caller) {
         super(caller);
-        this.box = box;
+        this.blockingBox = blockingBox;
     }
 
     @Override
     public void execute(AgentThread helper) {
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen Agent %c as helper to clear box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), box));
-        Desire clearPathDesire = helper.getLockDetector().handleBlockingBox(box);
-        helper.addHelpRequest(clearPathDesire);
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen Agent %c as helper to clear box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), blockingBox));
+        helper.getHelpRequestResolver().addHelpRequest(new HelpWithBoxRequest(blockingBox, getCaller()));
     }
 
     @Override
@@ -33,9 +32,9 @@ public class PerformativeHelpWithBox extends Performative {
         FibonacciHeap<AgentThread> bests = new FibonacciHeap<>();
 
         // Filter only agents that can move the box
-        helpers.stream().filter(h -> h.getAgent().getColor() == box.getColor() && !h.equals(caller))
+        helpers.stream().filter(h -> h.getAgent().getColor() == blockingBox.getColor() && !h.equals(caller))
                 .forEach(h -> {
-                    int priority = Coordinate.manhattanDistance(box.getCoordinate(), h.getAgent().getCoordinate()) + helperPriorityByStatus(h);
+                    int priority = Coordinate.manhattanDistance(blockingBox.getCoordinate(), h.getAgent().getCoordinate()) + helperPriorityByStatus(h);
                     bests.enqueue(h, priority);
                 });
         return bests;

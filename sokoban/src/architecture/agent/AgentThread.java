@@ -26,10 +26,10 @@ import utils.FibonacciHeap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 
 public class AgentThread implements Runnable {
@@ -41,11 +41,10 @@ public class AgentThread implements Runnable {
     private ActionSenderThread actionSenderThread;
     private BlockingQueue<ResponseEvent> responseEvents;
     private LevelManager levelManager;
-
     private LockDetector lockDetector;
     private DesireHelper desireHelper;
+    private HelpRequestResolver helpRequestResolver;
     private AgentThreadStatus status;
-    private Queue<Desire> helpRequests;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -56,14 +55,14 @@ public class AgentThread implements Runnable {
         setStatus(AgentThreadStatus.WORKING);
         this.lockDetector = new LockDetector(agent);
         this.desireHelper = new DesireHelper(agent);
-        this.helpRequests = new ConcurrentLinkedDeque<>();
+        this.helpRequestResolver = new HelpRequestResolver(agent);
     }
 
     @Override
     public void run() {
         try {
             while (!this.levelManager.isLevelSolved()) {
-                while (!this.desires.isEmpty()) {
+                while (!this.desires.isEmpty() || this.helpRequestResolver.hasRequestsToProcess()) {
                     // TODO: BDIManager's re-prioritization should be re-used here:
                     // Where to place it? --> before de-queueing next desire
                     // What's the reason for this? --> after X successful actions executed during executePlan
@@ -76,9 +75,8 @@ public class AgentThread implements Runnable {
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
 
                     // Check if there are any help requests I should commit to
-                    if (!this.helpRequests.isEmpty()) {
-                        processHelpRequest();
-                        continue;
+                    if (this.helpRequestResolver.hasRequestsToProcess()) {
+                        this.helpRequestResolver.processHelpRequest(this.lockDetector);
                     }
 
                     // Get next desire
@@ -89,6 +87,8 @@ public class AgentThread implements Runnable {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         freshRestart();
                         continue;
+                    } catch (NoSuchElementException e) {
+                        break;
                     }
 
                     // Desire is valid: proceed to prepare and execute planning
@@ -96,7 +96,7 @@ public class AgentThread implements Runnable {
                     ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: committing to desire %s", this.agent.getAgentId(), desire));
 
                     // Get percepts
-                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent.getColor(), desire, this.lockDetector.getNumFailedPlans());
+                    Relaxation planningRelaxation = RelaxationFactory.getBestPlanningRelaxation(this.agent, this.lockDetector.getNumFailedPlans());
                     HTNWorldState worldState = new HTNWorldState(this.agent, desire, planningRelaxation);
 
                     try {
@@ -128,13 +128,14 @@ public class AgentThread implements Runnable {
                                 setStatus(AgentThreadStatus.STUCK);
                                 Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
                                 PerformativeManager.getDefault().execute(performative);
-                            } else
+                            } else {
                                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Waiting for help...", this.agent.getAgentId()));
+                            }
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.lockDetector.planFailed();
-                        if (this.lockDetector.needsReplanning()) {
+                        if (this.lockDetector.shouldChangeRelaxation()) {
                             if (desire instanceof GoalDesire)
                                 this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                             // First failed attempt allowed, will switch to new relaxation
@@ -187,27 +188,22 @@ public class AgentThread implements Runnable {
     }
 
     private void idle() throws InterruptedException {
-        setStatus(AgentThreadStatus.FREE);
-        if (this.helpRequests.isEmpty()) {
+        if (getStatus() == AgentThreadStatus.WORKING) {
+            setStatus(AgentThreadStatus.FREE);
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: WORK DONE!", this.agent.getAgentId()));
+        }
+        this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
+        if (!this.helpRequestResolver.hasRequestsToProcess()) {
             sendNoOp();
         } else {
-            processHelpRequest();
+            setStatus(AgentThreadStatus.WORKING);
+            this.helpRequestResolver.processHelpRequest(this.lockDetector);
         }
     }
 
     private void sendNoOp() throws InterruptedException {
         this.actionSenderThread.addPrimitiveAction(new PrimitiveTask(), this.agent);
         getServerResponse();
-    }
-
-    private void processHelpRequest() {
-        setStatus(AgentThreadStatus.WORKING);
-        Desire clearPathDesire = this.helpRequests.remove();
-        this.desires.enqueue(clearPathDesire, -2000);
-    }
-
-    public void addHelpRequest(Desire clearPathDesire) {
-        this.helpRequests.add(clearPathDesire);
     }
 
     public void sendServerResponse(ResponseEvent responseEvent) {
@@ -224,8 +220,8 @@ public class AgentThread implements Runnable {
         return agent;
     }
 
-    public LockDetector getLockDetector() {
-        return this.lockDetector;
+    public HelpRequestResolver getHelpRequestResolver() {
+        return helpRequestResolver;
     }
 
     /**

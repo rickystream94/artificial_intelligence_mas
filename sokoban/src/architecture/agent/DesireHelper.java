@@ -104,6 +104,7 @@ public class DesireHelper {
      * the clearing distance may be restored to default.
      */
     public void achievedDesire(LockDetector lockDetector) {
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: achieved desire %s", this.agent.getAgentId(), currentDesire));
         if (currentDesire instanceof GoalDesire) {
             this.achievedGoalDesiresPriorityMap.put(currentDesire, currentDesirePriority);
             lockDetector.restoreClearingDistancesForAllBoxes();
