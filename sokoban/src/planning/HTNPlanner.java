@@ -94,19 +94,21 @@ public class HTNPlanner {
      * Function used to backtrack when a compound task cannot be decomposed or a primitive action leads to an already explored state
      */
     private void restoreToLastDecomposedTask() throws PlanNotFoundException {
-        HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
+        if (!this.decompositionHistory.isEmpty()) {
+            HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
 
-        // Restore
-        this.strategy.setTasksToProcess(lastSoundPlanningState.getTasksToProcess());
-        this.finalPlan = lastSoundPlanningState.getFinalPlan();
-        this.currentWorldState = lastSoundPlanningState.getWorldState();
-        Refinement refinement = lastSoundPlanningState.getRefinement();
-        this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
-        this.strategy.updateStatus(this.currentWorldState);
-        this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
+            // Restore
+            this.strategy.setTasksToProcess(lastSoundPlanningState.getTasksToProcess());
+            this.finalPlan = lastSoundPlanningState.getFinalPlan();
+            this.currentWorldState = lastSoundPlanningState.getWorldState();
+            Refinement refinement = lastSoundPlanningState.getRefinement();
+            this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
+            this.strategy.updateStatus(this.currentWorldState);
+            this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
-        // Blacklist refinement (avoid choosing same refinement --> infinite loops)
-        this.strategy.addRefinementToBlacklist(refinement);
+            // Blacklist refinement (avoid choosing same refinement --> infinite loops)
+            this.strategy.addRefinementToBlacklist(refinement);
+        }
 
         // Check if we brought planningStep back to 0 --> No plan can be found --> Throw
         if (this.planningStep >= -1 && this.planningStep <= 1) {

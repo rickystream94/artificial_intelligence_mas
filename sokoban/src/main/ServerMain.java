@@ -18,7 +18,7 @@ public class ServerMain {
     //private static final String level = "../../../environment/levels/example_levels/single_agent/medium/SAAlpha.lvl";
     //private static final String level = "../../../environment/levels/custom_levels/MAStuckByBox.lvl";
     //private static final String level = "../../../environment/levels/competition_levels/SAByteMe.lvl";
-    private static final String level = "../../../environment/levels/MAchallenge.lvl";
+    private static final String level = "../../../environment/levels/MAsimple5.lvl";
     private static final String millisPerAction = "50";
     private static final String timeout = "3000";
 

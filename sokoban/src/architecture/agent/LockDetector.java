@@ -136,6 +136,7 @@ public class LockDetector {
             return new ClearBoxDesire((Box) blockingObject, chosenTarget);
         else if (blockingObject instanceof Agent)
             return new ClearCellDesire((Agent) blockingObject, chosenTarget);
+        // TODO the agent might not be able to free the cell without moving a box! Check the neighbours
 
         return null;
     }
