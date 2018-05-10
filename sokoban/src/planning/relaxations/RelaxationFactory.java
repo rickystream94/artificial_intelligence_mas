@@ -1,8 +1,7 @@
 package planning.relaxations;
 
 import architecture.ClientManager;
-import architecture.bdi.Desire;
-import board.Color;
+import board.Agent;
 import logging.ConsoleLogger;
 
 import java.util.logging.Logger;
@@ -11,25 +10,37 @@ public class RelaxationFactory {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(RelaxationFactory.class.getSimpleName());
 
-    public static Relaxation getBestPlanningRelaxation(Color agentColor, Desire desire, int planFailureCounter) {
+    // TODO: this is not beautiful, it can be improved
+    public static Relaxation getBestPlanningRelaxation(Agent agent, int planFailureCounter) {
         if (ClientManager.getInstance().getNumberOfAgents() == 1) {
             // Single-Agent
-            if (planFailureCounter == 0) {
-                // First planning attempt with regular recommended relaxation
-                logInfo(NoForeignBoxesRelaxation.class.getSimpleName());
-                return new NoForeignBoxesRelaxation(agentColor);
+            switch (planFailureCounter) {
+                case 0:
+                    logInfo(agent, NoForeignBoxesRelaxation.class.getSimpleName());
+                    return new NoForeignBoxesRelaxation(agent.getColor());
+                default:
+                    logInfo(agent, OnlyWallsRelaxation.class.getSimpleName());
+                    return new OnlyWallsRelaxation();
             }
-            // If planning with the above relaxation fails, we relax even more to detect the blocking object
-            logInfo(OnlyWallsRelaxation.class.getSimpleName());
-            return new OnlyWallsRelaxation();
         }
 
         // Multi-Agent
-        logInfo(NoForeignBoxesRelaxation.class.getSimpleName());
-        return new NoForeignBoxesRelaxation(agentColor);
+        switch (planFailureCounter) {
+            case 0:
+                logInfo(agent, AllObjectsRelaxation.class.getSimpleName());
+                return new AllObjectsRelaxation();
+            case 1:
+                logInfo(agent, NoForeignBoxesRelaxation.class.getSimpleName());
+                return new NoForeignBoxesRelaxation(agent.getColor());
+            case 2:
+                logInfo(agent, OnlyWallsRelaxation.class.getSimpleName());
+                return new OnlyWallsRelaxation();
+            default:
+                return new OnlyWallsRelaxation();
+        }
     }
 
-    private static void logInfo(String relaxationName) {
-        ConsoleLogger.logInfo(LOGGER, "Relaxation type set to " + relaxationName);
+    private static void logInfo(Agent agent, String relaxationName) {
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Relaxation type set to %s", agent.getAgentId(), relaxationName));
     }
 }

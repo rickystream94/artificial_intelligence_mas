@@ -121,6 +121,10 @@ public class HTNWorldState {
         return this.agent.getCoordinate();
     }
 
+    public char getAgentId() {
+        return this.agent.getAgentId();
+    }
+
     public Coordinate getBoxPosition() {
         return this.box.getCoordinate();
     }
