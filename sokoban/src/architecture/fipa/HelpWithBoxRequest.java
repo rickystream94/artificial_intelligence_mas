@@ -1,7 +1,6 @@
 package architecture.fipa;
 
 import architecture.agent.AgentThread;
-import architecture.agent.HelpWithBoxRequest;
 import board.Box;
 import board.Coordinate;
 import logging.ConsoleLogger;
@@ -10,21 +9,21 @@ import utils.FibonacciHeap;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class PerformativeHelpWithBox extends Performative {
+public class HelpWithBoxRequest extends HelpRequest {
 
-    protected static final Logger LOGGER = ConsoleLogger.getLogger(Performative.class.getSimpleName());
+    protected static final Logger LOGGER = ConsoleLogger.getLogger(HelpRequest.class.getSimpleName());
 
     private Box blockingBox;
 
-    public PerformativeHelpWithBox(Box blockingBox, AgentThread caller) {
+    public HelpWithBoxRequest(Box blockingBox, AgentThread caller) {
         super(caller);
         this.blockingBox = blockingBox;
     }
 
     @Override
-    public void execute(AgentThread helper) {
+    public void chooseHelper(AgentThread helper) {
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen Agent %c as helper to clear box %s.", getCaller().getAgent().getAgentId(), helper.getAgent().getAgentId(), blockingBox));
-        helper.getHelpRequestResolver().addHelpRequest(new HelpWithBoxRequest(blockingBox, getCaller()));
+        helper.getHelpRequestResolver().addHelpRequest(this);
     }
 
     @Override
@@ -38,5 +37,9 @@ public class PerformativeHelpWithBox extends Performative {
                     bests.enqueue(h, priority);
                 });
         return bests;
+    }
+
+    public Box getBlockingBox() {
+        return blockingBox;
     }
 }

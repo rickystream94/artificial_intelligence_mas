@@ -5,8 +5,9 @@ import architecture.LevelManager;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
-import architecture.fipa.Performative;
-import architecture.fipa.PerformativeHelpWithBox;
+import architecture.fipa.HelpRequest;
+import architecture.fipa.HelpRequestResolver;
+import architecture.fipa.HelpWithBoxRequest;
 import architecture.fipa.PerformativeManager;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.ResponseEvent;
@@ -126,8 +127,8 @@ public class AgentThread implements Runnable {
                                 ConsoleLogger.logInfo(LOGGER, ex.getMessage());
                                 // Create the message and dispatch it on the Bus
                                 setStatus(AgentThreadStatus.STUCK);
-                                Performative performative = new PerformativeHelpWithBox(ex.getBox(), this);
-                                PerformativeManager.getDefault().execute(performative);
+                                HelpRequest helpRequest = new HelpWithBoxRequest(ex.getBox(), this);
+                                PerformativeManager.getDefault().dispatchPerformative(helpRequest);
                             } else {
                                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Waiting for help...", this.agent.getAgentId()));
                             }

@@ -1,5 +1,6 @@
-package architecture.agent;
+package architecture.fipa;
 
+import architecture.agent.LockDetector;
 import board.Agent;
 import logging.ConsoleLogger;
 
@@ -12,32 +13,34 @@ public class HelpRequestResolver {
     private static final Logger LOGGER = ConsoleLogger.getLogger(HelpRequestResolver.class.getSimpleName());
 
     private Agent agent;
-    private Queue<HelpWithBoxRequest> helpWithBoxRequests;
+    private Queue<HelpRequest> helpRequests;
 
     public HelpRequestResolver(Agent agent) {
         this.agent = agent;
-        this.helpWithBoxRequests = new ArrayDeque<>();
+        this.helpRequests = new ArrayDeque<>();
     }
 
     public boolean hasRequestsToProcess() {
-        return !this.helpWithBoxRequests.isEmpty();
+        return !this.helpRequests.isEmpty();
     }
 
     public void processHelpRequest(LockDetector lockDetector) {
-        HelpWithBoxRequest request = this.helpWithBoxRequests.peek();
+        HelpRequest request = this.helpRequests.peek();
         if (request != null) {
             if (request.doneHelpingCaller()) {
                 // Caller is no more stuck, we can safely discard the help request
-                this.helpWithBoxRequests.remove();
+                this.helpRequests.remove();
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: thanks to my help, agent %c is no more stuck.", this.agent.getAgentId(), request.getCaller().getAgent().getAgentId()));
             } else {
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: agent %c is still stuck, keep helping him!", this.agent.getAgentId(), request.getCaller().getAgent().getAgentId()));
-                lockDetector.addBlockingBox(request.getBlockingBox());
+
+                if (request instanceof HelpWithBoxRequest)
+                    lockDetector.addBlockingBox(((HelpWithBoxRequest) request).getBlockingBox());
             }
         }
     }
 
-    public void addHelpRequest(HelpWithBoxRequest helpWithBoxRequest) {
-        this.helpWithBoxRequests.add(helpWithBoxRequest);
+    public void addHelpRequest(HelpRequest helpRequest) {
+        this.helpRequests.add(helpRequest);
     }
 }

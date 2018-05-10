@@ -25,11 +25,11 @@ public class PerformativeManager {
         listeners.add(agentThread);
     }
 
-    public void execute(Performative performative) {
-        FibonacciHeap<AgentThread> helpersWithPriorities = performative.findBestHelpers(listeners, performative.getCaller());
+    public synchronized void dispatchPerformative(HelpRequest helpRequest) {
+        FibonacciHeap<AgentThread> helpersWithPriorities = helpRequest.findBestHelpers(listeners, helpRequest.getCaller());
         if (!helpersWithPriorities.isEmpty()) {
             AgentThread helper = helpersWithPriorities.dequeueMin().getValue();
-            performative.execute(helper);
+            helpRequest.chooseHelper(helper);
         }
     }
 }
