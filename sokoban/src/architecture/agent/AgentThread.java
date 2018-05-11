@@ -78,6 +78,7 @@ public class AgentThread implements Runnable {
                     } catch (NoProgressException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         freshRestart();
+                        //lockDetector.incrementMaxNoProgressCounter();
                         continue;
                     } catch (NoSuchElementException e) {
                         break;
@@ -112,6 +113,7 @@ public class AgentThread implements Runnable {
                         } catch (NoProgressException ex) {
                             // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
                             ConsoleLogger.logInfo(LOGGER, ex.getMessage());
+                            //lockDetector.incrementMaxNoProgressCounter();
                             freshRestart();
                         } catch (StuckByForeignBoxException | StuckByAgentException ex) {
                             helpRequestResolver.askForHelp(this, ex);

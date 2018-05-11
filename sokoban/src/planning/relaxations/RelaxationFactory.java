@@ -33,6 +33,9 @@ public class RelaxationFactory {
                 logInfo(agent, MyBoxesAndWallsRelaxation.class.getSimpleName());
                 return new MyBoxesAndWallsRelaxation(agent.getColor());
             case 2:
+                logInfo(agent, ForeignBoxesAndWallsRelaxation.class.getSimpleName());
+                return new ForeignBoxesAndWallsRelaxation(agent.getColor());
+            case 3:
                 logInfo(agent, OnlyWallsRelaxation.class.getSimpleName());
                 return new OnlyWallsRelaxation();
             default:

@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 public class LockDetector {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(LockDetector.class.getSimpleName());
-    private static final int MAX_PLAN_RETRIES = 2;
+    private static final int MAX_PLAN_RETRIES = 3;
     private static final int MAX_ACTION_RETRIES = ClientManager.getInstance().getNumberOfAgents() == 1 ? 1 : 3;
     private static final int DEFAULT_CLEARING_DISTANCE = 1;
-    private static final int MAX_NO_PROGRESS_COUNTER = 3;
+    private static int MAX_NO_PROGRESS_COUNTER = 3;
 
     private Agent agent;
     private LevelManager levelManager;
@@ -262,10 +262,16 @@ public class LockDetector {
         this.noProgressCounter++;
     }
 
+    public void incrementMaxNoProgressCounter() {
+        MAX_NO_PROGRESS_COUNTER++;
+    }
+
     private boolean needsToReprioritizeDesires() {
         boolean result = this.noProgressCounter == MAX_NO_PROGRESS_COUNTER;
-        if (result)
+        if (result) {
             progressPerformed();
+            //incrementMaxNoProgressCounter();
+        }
         return result;
     }
 }
