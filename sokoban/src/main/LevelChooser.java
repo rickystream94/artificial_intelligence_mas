@@ -23,7 +23,7 @@ public class LevelChooser {
     public static final String MApacman = rootPath + "MApacman" + ext;
     public static final String MAchallenge = rootPath + "MAchallenge" + ext;
     public static final String MAhelp = rootPath + "custom_levels/MAhelp" + ext;
-    public static final String MAstuckByBox = rootPath + "custom_levels/MAstuckByBox" + ext;
+    public static final String MAStuckByBox = rootPath + "custom_levels/MAStuckByBox" + ext;
     public static final String MAByteMe = rootPath + "competition_levels/MAByteMe" + ext;
     public static final String SAByteMe = rootPath + "competition_levels/SAByteMe" + ext;
     public static final String SAAlpha = rootPath + "example_levels/single_agent/medium/SAAlpha" + ext;
