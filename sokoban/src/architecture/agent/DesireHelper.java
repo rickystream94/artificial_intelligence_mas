@@ -1,11 +1,12 @@
 package architecture.agent;
 
 import architecture.bdi.ClearBoxDesire;
+import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
 import board.Agent;
 import board.Level;
-import exceptions.NoProgressException;
+import exceptions.NoAvailableTargetsException;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
@@ -17,6 +18,8 @@ import java.util.logging.Logger;
 public class DesireHelper {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(DesireHelper.class.getSimpleName());
+    private static final int UNSOLVED_GOAL_PENALTY = 10;
+    private static final int BLOCKING_OBJECT_PRIORITY = -1000;
 
     private Agent agent;
     private Map<Desire, Double> achievedGoalDesiresPriorityMap;
@@ -34,8 +37,9 @@ public class DesireHelper {
      *
      * @param desires Heap of all desires
      * @return next desire to process
+     * @throws NoAvailableTargetsException If next desire is coming from a blocking object and there are no more targets available (needs to switch relaxation or increase clearing distance)
      */
-    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) throws NoProgressException {
+    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) throws NoAvailableTargetsException {
         FibonacciHeap.Entry<Desire> entry;
         Desire desire;
         int skippedDesires = 0;
@@ -44,8 +48,8 @@ public class DesireHelper {
         do {
             // Check first if there are any boxes that need to be cleared
             if (lockDetector.hasObjectsToClear()) {
-                desire = lockDetector.handleBlockingObject(lockDetector.getNextBlockingObject());
-                priority = -1000; // By default
+                desire = lockDetector.getDesireFromBlockingObject(lockDetector.getNextBlockingObject());
+                priority = BLOCKING_OBJECT_PRIORITY; // By default
                 shouldSkipDesire = false;
                 continue;
             }
@@ -63,15 +67,10 @@ public class DesireHelper {
             if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
                 // We have to back-up the achieved goal desire!
                 this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
-                //lockDetector.restoreClearingDistancesForAllObjects();
             }
         } while (shouldSkipDesire && !desires.isEmpty());
         if (skippedDesires > 0)
-            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d redundant desires", this.agent.getAgentId(), skippedDesires));
-
-        // Check if desire is valid (there is progress)
-        if (desire.getTarget() == null)
-            throw new NoProgressException(this.agent);
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d already achieved desires", this.agent.getAgentId(), skippedDesires));
 
         this.currentDesire = desire;
         this.currentDesirePriority = priority;
@@ -91,17 +90,15 @@ public class DesireHelper {
                 // Avoid picking the same desire if its priority is the lowest!
                 // Penalize the desire (+100)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Goal desire %s has to be achieved again!", this.agent.getAgentId(), desire));
-                // TODO: this punishment is currently hardcoded
-                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 10);
+                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + UNSOLVED_GOAL_PENALTY);
                 it.remove();
             }
         }
     }
 
     /**
-     * Backup achieved goal desires and reset clearing distance for previously achieved clear path desires
-     * Indeed, if we have now achieved a goal desire after the previous clear path desire was achieved as well,
-     * the clearing distance may be restored to default.
+     * When achieves GoalDesire, back it up and reset clearing distance and targets for blocking objects
+     * If ClearX Desire, record progress and remove blocking object.
      */
     public void achievedDesire(LockDetector lockDetector) {
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: achieved desire %s", this.agent.getAgentId(), currentDesire));
@@ -109,9 +106,7 @@ public class DesireHelper {
             this.achievedGoalDesiresPriorityMap.put(currentDesire, currentDesirePriority);
             lockDetector.restoreClearingDistancesForAllObjects();
             lockDetector.clearChosenTargetsForAllObjects();
-        } else if (currentDesire instanceof ClearBoxDesire) {
-            lockDetector.clearChosenTargetsForObject(currentDesire.getBox());
-            //lockDetector.resetClearingDistanceForBox(currentDesire.getBox());
+        } else if (currentDesire instanceof ClearBoxDesire || currentDesire instanceof ClearCellDesire) {
             lockDetector.progressPerformed();
             lockDetector.objectCleared();
         }

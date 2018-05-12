@@ -46,6 +46,12 @@ public class HelpRequestResolver {
         this.helpRequests.add(helpRequest);
     }
 
+    /**
+     * Sets agent's status to stuck, and asks for help if not already asked previously.
+     *
+     * @param caller
+     * @param ex
+     */
     public void askForHelp(AgentThread caller, Exception ex) {
         // If the agent is not already stuck ask for help
         if (caller.getAgent().getStatus() != AgentStatus.STUCK) {
@@ -62,7 +68,7 @@ public class HelpRequestResolver {
                     helpRequest = new ClearCellRequest(caller, ((StuckByAgentException) ex).getBlockingAgent());
                 else {
                     ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: CONFLICT with agent %c!", this.agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
-                    // TODO: conflict!
+                    // TODO: conflict! agent with least priority could send a clear cell request to the blocking agent
                     return;
                 }
             }
