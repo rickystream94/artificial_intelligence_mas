@@ -5,7 +5,10 @@ import architecture.LevelManager;
 import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
-import board.*;
+import board.Agent;
+import board.Box;
+import board.Coordinate;
+import board.SokobanObject;
 import exceptions.NoAvailableTargetsException;
 import exceptions.NoProgressException;
 import exceptions.StuckByAgentException;
@@ -76,7 +79,7 @@ public class LockDetector {
         if (blockingObject instanceof Agent) {
             Agent blockingAgent = (Agent) blockingObject;
             /*if (blockingAgent.getStatus() == AgentStatus.STUCK) {
-                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, found stuck agent %c. I'll recalculate my target...", this.agent.getAgentId(), blockingAgent.getAgentId()));
+                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, found stuck agent %c.", this.agent.getAgentId(), blockingAgent.getAgentId()));
                 return;
             }*/ // TODO: temp removed: should check here if the blocking agent is the one I'm currently in conflict with
 
@@ -127,12 +130,8 @@ public class LockDetector {
      */
     private Box findNeighbourBlockingBox(Agent blockingAgent) {
         List<Coordinate> neighbours = blockingAgent.getCoordinate().getClockwiseNeighbours();
-        int blockingNeighbours = 0;
-        for (Coordinate neighbour : neighbours) {
-            if (levelManager.getLevel().dynamicObjectAt(neighbour) != null || !Level.isNotWall(neighbour))
-                blockingNeighbours++;
-        }
-        if (blockingNeighbours == 4) {
+        int emptyNeighbours = levelManager.getLevel().countEmptyNeighbours(blockingAgent.getCoordinate());
+        if (emptyNeighbours == 0) {
             for (Coordinate neighbour : neighbours) {
                 SokobanObject object = levelManager.getLevel().dynamicObjectAt(neighbour);
                 if (object instanceof Box && ((Box) object).getColor() == blockingAgent.getColor())

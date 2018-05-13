@@ -60,12 +60,7 @@ public class AgentThread implements Runnable {
         try {
             while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty() || this.helpRequestResolver.hasRequestsToProcess()) {
-                    // TODO: BDIManager's re-prioritization should be re-used here:
-                    // Where to place it? --> before de-queueing next desire
-                    // What's the reason for this? --> after X successful actions executed during executePlan
-                    // there might be some desires now that have less priority than before
-                    // and the agent will commit to them first
-                    // How? --> Break plan execution, re-enqueue un-achieved desire and continue
+                    // TODO: could include freshRestart() after X successful actions
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
