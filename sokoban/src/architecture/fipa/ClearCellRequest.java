@@ -26,4 +26,17 @@ public class ClearCellRequest extends HelpRequest {
     protected AgentThread findBestHelper(List<AgentThread> helpers) {
         return helpers.stream().filter(helper -> helper.getAgent().equals(getBlockingObject())).collect(Collectors.toList()).get(0);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(super.equals(o)))
+            return false;
+        if (!(o instanceof ClearCellRequest))
+            return false;
+        ClearCellRequest request = (ClearCellRequest) o;
+        Agent blockingAgent = (Agent) request.getBlockingObject();
+        return blockingAgent.equals(this.getBlockingObject());
+    }
 }

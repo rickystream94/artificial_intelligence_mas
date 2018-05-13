@@ -44,4 +44,12 @@ public abstract class HelpRequest {
                 return 0;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof HelpRequest)) return false;
+        HelpRequest helpRequest = (HelpRequest) o;
+        return helpRequest.caller.equals(this.caller) && helpRequest.blockingObject.equals(this.blockingObject);
+    }
 }
