@@ -4,8 +4,8 @@ public class LevelChooser {
 
     private static final String rootPath = "../../../environment/levels/";
     private static final String ext = ".lvl";
-    public static final String SAPyramid = rootPath + "competition_levels/SAPyramid" + ext;
-    public static final String SAPikachu = rootPath + "competition_levels/SAPikachu" + ext;
+    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
+    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
     public static final String SAchoice = rootPath + "SAchoice" + ext;
     public static final String SAanagram = rootPath + "SAanagram" + ext;
     public static final String SApushing = rootPath + "SApushing" + ext;
