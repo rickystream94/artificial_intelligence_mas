@@ -14,7 +14,7 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = LevelChooser.MAsimple5;
+    private static final String level = LevelChooser.MAchallenge;
     private static final String millisPerAction = "50";
     private static final String timeout = "3000";
 

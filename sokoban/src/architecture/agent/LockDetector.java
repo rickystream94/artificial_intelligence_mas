@@ -5,10 +5,7 @@ import architecture.LevelManager;
 import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
-import board.Agent;
-import board.Box;
-import board.Coordinate;
-import board.SokobanObject;
+import board.*;
 import exceptions.NoAvailableTargetsException;
 import exceptions.NoProgressException;
 import exceptions.StuckByAgentException;
@@ -109,10 +106,39 @@ public class LockDetector {
 
         if (blockingObject instanceof Box)
             return new ClearBoxDesire((Box) blockingObject, chosenTarget);
-        else if (blockingObject instanceof Agent)
-            return new ClearCellDesire((Agent) blockingObject, chosenTarget);
-        // TODO the agent might not be able to free the cell without moving a box! Check the neighbours (should fix MAsimple5)
+        else if (blockingObject instanceof Agent) {
+            Box potentialBlockingBox = findNeighbourBlockingBox((Agent) blockingObject);
+            if (potentialBlockingBox == null) {
+                // Agent can free the cell without the need of clearing a box
+                return new ClearCellDesire((Agent) blockingObject, chosenTarget);
+            } else {
+                // Agent can't move alone, it has to move a box
+                return new ClearBoxDesire(potentialBlockingBox, chosenTarget);
+            }
+        }
+        return null; // Unreachable
+    }
 
+    /**
+     * If the agent has a neighbour blocking box he can move, return it. Otherwise return null
+     *
+     * @param blockingAgent
+     * @return
+     */
+    private Box findNeighbourBlockingBox(Agent blockingAgent) {
+        List<Coordinate> neighbours = blockingAgent.getCoordinate().getClockwiseNeighbours();
+        int blockingNeighbours = 0;
+        for (Coordinate neighbour : neighbours) {
+            if (levelManager.getLevel().dynamicObjectAt(neighbour) != null || !Level.isNotWall(neighbour))
+                blockingNeighbours++;
+        }
+        if (blockingNeighbours == 4) {
+            for (Coordinate neighbour : neighbours) {
+                SokobanObject object = levelManager.getLevel().dynamicObjectAt(neighbour);
+                if (object instanceof Box && ((Box) object).getColor() == blockingAgent.getColor())
+                    return (Box) object;
+            }
+        }
         return null;
     }
 
