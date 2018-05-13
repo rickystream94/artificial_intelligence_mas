@@ -3,6 +3,7 @@ package architecture;
 import architecture.agent.AgentThread;
 import architecture.bdi.BDIManager;
 import architecture.bdi.Desire;
+import architecture.conflicts.GlobalConflictResolver;
 import architecture.fipa.PerformativeManager;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.EventBus;
@@ -53,6 +54,10 @@ public class ClientManager {
         // Instantiate LevelManager
         this.levelManager = new LevelManager(level);
         this.numberOfAgents = this.levelManager.getLevel().getAgents().size();
+
+        // Instantiate GlobalConflictResolver
+        GlobalConflictResolver globalConflictResolver = GlobalConflictResolver.getInstance();
+        new Thread(globalConflictResolver).start();
 
         // Instantiate and launch ActionSenderThread
         this.actionSenderThread = new ActionSenderThread(this.numberOfAgents, serverInMessages, serverOutMessages);

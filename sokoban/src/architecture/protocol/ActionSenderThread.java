@@ -43,7 +43,7 @@ public class ActionSenderThread implements Runnable {
 
         // Each loop iteration represents a turn
         // By the end of the current iteration, a single joint action is sent to the server
-        while (true) {
+        while (!levelManager.isLevelSolved()) {
             // Wait for all agent threads to push their actions in the queue
             synchronized (lock) {
                 while (this.eventsOrdered.size() != this.numberOfAgents) {

@@ -2,9 +2,8 @@ package architecture.agent;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
-import architecture.bdi.BDIManager;
-import architecture.bdi.Desire;
-import architecture.bdi.GoalDesire;
+import architecture.bdi.*;
+import architecture.conflicts.ConflictResponseGatherer;
 import architecture.fipa.HelpRequestResolver;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.ResponseEvent;
@@ -39,6 +38,7 @@ public class AgentThread implements Runnable {
     private HelpRequestResolver helpRequestResolver;
     private PlanningHelper planningHelper;
     private ActionHelper actionHelper;
+    private ConflictResponseGatherer conflictResponseGatherer;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -52,6 +52,7 @@ public class AgentThread implements Runnable {
         this.helpRequestResolver = new HelpRequestResolver(agent);
         this.planningHelper = new PlanningHelper(agent);
         this.actionHelper = new ActionHelper(agent);
+        this.conflictResponseGatherer = new ConflictResponseGatherer();
     }
 
     @Override
@@ -82,7 +83,6 @@ public class AgentThread implements Runnable {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         lockDetector.clearChosenTargetsForObject(e.getBlockingObject());
                         lockDetector.incrementClearingDistance(e.getBlockingObject());
-                        //freshRestart(); // TODO: temporarily removed
                         continue;
                     } catch (NoSuchElementException e) {
                         // Occurs if no more desires are available
@@ -115,24 +115,29 @@ public class AgentThread implements Runnable {
                             this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
                         try {
                             this.lockDetector.detectBlockingObject(e.getFailedAction(), desire);
-                        /*} catch (NoProgressException ex) { TODO: might not be needed anymore
+                        } catch (NoProgressException ex) {
                             // Agent is experiencing a deadlock among ClearPathDesires --> Cleanup and Re-prioritize desires!
                             ConsoleLogger.logInfo(LOGGER, ex.getMessage());
-                            freshRestart();*/
+                            freshRestart();
                         } catch (StuckByForeignBoxException | StuckByAgentException ex) {
                             helpRequestResolver.askForHelp(this, ex);
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
                         this.planningHelper.planFailed(desire, lockDetector);
+                        if (desire instanceof GoalDesire)
+                            this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                         if (this.planningHelper.canChangeRelaxation()) {
-                            if (desire instanceof GoalDesire)
-                                this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                             ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         } else {
                             // Plan keeps failing --> A fake empty cell has been set as target, remove it!
-                            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: removed fake empty cell %s", agent.getAgentId(), desire.getTarget()));
-                            levelManager.getLevel().removeEmptyCell(desire.getTarget());
+                            if (desire instanceof ClearCellDesire || desire instanceof ClearBoxDesire) {
+                                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: removed fake empty cell %s", agent.getAgentId(), desire.getTarget()));
+                                levelManager.getLevel().removeEmptyCell(desire.getTarget());
+                            } else {
+                                ConsoleLogger.logError(LOGGER, "Couldn't find a plan!");
+                                System.exit(1);
+                            }
                         }
                     }
                 }
@@ -147,7 +152,6 @@ public class AgentThread implements Runnable {
         }
     }
 
-    // TODO: might not be needed anymore
     private void freshRestart() {
         lockDetector.clearBlockingObjects();
         this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
@@ -221,6 +225,10 @@ public class AgentThread implements Runnable {
 
     public HelpRequestResolver getHelpRequestResolver() {
         return helpRequestResolver;
+    }
+
+    public ConflictResponseGatherer getConflictResponseGatherer() {
+        return this.conflictResponseGatherer;
     }
 
     @Override
