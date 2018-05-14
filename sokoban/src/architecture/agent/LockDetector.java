@@ -5,8 +5,12 @@ import architecture.LevelManager;
 import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
-import board.*;
+import board.Agent;
+import board.Box;
+import board.Coordinate;
+import board.SokobanObject;
 import exceptions.NoAvailableTargetsException;
+import exceptions.NoProgressException;
 import exceptions.StuckByAgentException;
 import exceptions.StuckByForeignBoxException;
 import logging.ConsoleLogger;
@@ -22,7 +26,7 @@ public class LockDetector {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(LockDetector.class.getSimpleName());
     private static final int DEFAULT_CLEARING_DISTANCE = 1;
-    private static final int MAX_NO_PROGRESS_COUNTER = 3;
+    private static final int MAX_NO_PROGRESS_COUNTER = 50;
     private static final int CLEARING_DISTANCE_THRESHOLD = 3;
 
     private Agent agent;
@@ -67,18 +71,17 @@ public class LockDetector {
      * @param failedAction  last action that failed
      * @param currentDesire current desire to achieve
      */
-    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire) throws StuckByForeignBoxException, StuckByAgentException {
+    public void detectBlockingObject(PrimitiveTask failedAction, Desire currentDesire) throws StuckByForeignBoxException, StuckByAgentException, NoProgressException {
         Coordinate blockingCell = getBlockingCellByAction(failedAction, currentDesire);
         SokobanObject blockingObject = this.levelManager.getLevel().dynamicObjectAt(Objects.requireNonNull(blockingCell));
 
         // Analyze blocking object and decide
         if (blockingObject instanceof Agent) {
             Agent blockingAgent = (Agent) blockingObject;
-            if (blockingAgent.getStatus() == AgentStatus.STUCK) {
-                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, found stuck agent %c. I'll recalculate my target...", this.agent.getAgentId(), blockingAgent.getAgentId()));
-                // TODO: actually won't recalculate anything... TO FIX!
+            /*if (blockingAgent.getStatus() == AgentStatus.STUCK) {
+                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, found stuck agent %c.", this.agent.getAgentId(), blockingAgent.getAgentId()));
                 return;
-            }
+            }*/ // TODO: temp removed: should check here if the blocking agent is the one I'm currently in conflict with
 
             // Ask for help
             throw new StuckByAgentException(agent, blockingAgent);
@@ -89,8 +92,8 @@ public class LockDetector {
                 noProgress();
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found blocking box %s", this.agent.getAgentId(), blockingBox));
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: %d failed actions since last successful progress", this.agent.getAgentId(), this.noProgressCounter));
-                //if (needsToReprioritizeDesires()) // TODO: might not be needed anymore, keep until confirmation
-                //    throw new NoProgressException(agent);
+                if (needsToReprioritizeDesires())
+                    throw new NoProgressException(agent);
 
                 // Record the blocking box
                 addBlockingObject(blockingBox);
@@ -106,10 +109,35 @@ public class LockDetector {
 
         if (blockingObject instanceof Box)
             return new ClearBoxDesire((Box) blockingObject, chosenTarget);
-        else if (blockingObject instanceof Agent)
-            return new ClearCellDesire((Agent) blockingObject, chosenTarget);
-        // TODO the agent might not be able to free the cell without moving a box! Check the neighbours
+        else if (blockingObject instanceof Agent) {
+            Box potentialBlockingBox = findNeighbourBlockingBox((Agent) blockingObject);
+            if (potentialBlockingBox == null) {
+                // Agent can free the cell without the need of clearing a box
+                return new ClearCellDesire((Agent) blockingObject, chosenTarget);
+            } else {
+                // Agent can't move alone, it has to move a box
+                return new ClearBoxDesire(potentialBlockingBox, chosenTarget);
+            }
+        }
+        return null; // Unreachable
+    }
 
+    /**
+     * If the agent has a neighbour blocking box he can move, return it. Otherwise return null
+     *
+     * @param blockingAgent
+     * @return
+     */
+    private Box findNeighbourBlockingBox(Agent blockingAgent) {
+        List<Coordinate> neighbours = blockingAgent.getCoordinate().getClockwiseNeighbours();
+        int emptyNeighbours = levelManager.getLevel().countEmptyNeighbours(blockingAgent.getCoordinate());
+        if (emptyNeighbours == 0) {
+            for (Coordinate neighbour : neighbours) {
+                SokobanObject object = levelManager.getLevel().dynamicObjectAt(neighbour);
+                if (object instanceof Box && ((Box) object).getColor() == blockingAgent.getColor())
+                    return (Box) object;
+            }
+        }
         return null;
     }
 
@@ -262,7 +290,6 @@ public class LockDetector {
         this.noProgressCounter++;
     }
 
-    // TODO: might not be needed anymore
     private boolean needsToReprioritizeDesires() {
         boolean result = this.noProgressCounter == MAX_NO_PROGRESS_COUNTER;
         if (result) {

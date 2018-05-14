@@ -2,6 +2,10 @@ package architecture.fipa;
 
 import architecture.agent.AgentThread;
 import architecture.agent.LockDetector;
+import architecture.conflicts.Conflict;
+import architecture.conflicts.ConflictResponse;
+import architecture.conflicts.ConflictResponseGatherer;
+import architecture.conflicts.GlobalConflictResolver;
 import board.Agent;
 import board.AgentStatus;
 import exceptions.StuckByAgentException;
@@ -43,7 +47,8 @@ public class HelpRequestResolver {
     }
 
     public void addHelpRequest(HelpRequest helpRequest) {
-        this.helpRequests.add(helpRequest);
+        if (!this.helpRequests.contains(helpRequest)) // Avoid inserting duplicates
+            this.helpRequests.add(helpRequest);
     }
 
     /**
@@ -65,10 +70,23 @@ public class HelpRequestResolver {
             else if (ex instanceof StuckByAgentException) {
                 StuckByAgentException exception = (StuckByAgentException) ex;
                 if (exception.getBlockingAgent().getStatus() == AgentStatus.FREE)
-                    helpRequest = new ClearCellRequest(caller, ((StuckByAgentException) ex).getBlockingAgent());
+                    helpRequest = new ClearCellRequest(caller, exception.getBlockingAgent());
                 else {
-                    ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: CONFLICT with agent %c!", this.agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
-                    // TODO: conflict! agent with least priority could send a clear cell request to the blocking agent
+                    ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: CONFLICT with agent %c! Wait for global resolver...", this.agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
+
+                    // Send conflict to centralized component and wait for reply
+                    GlobalConflictResolver.getInstance().registerConflict(new Conflict(caller, exception.getBlockingAgent()));
+                    ConflictResponseGatherer conflictResponseGatherer = caller.getConflictResponseGatherer();
+                    ConflictResponse conflictResponse = conflictResponseGatherer.waitForConflictResponse();
+
+                    // Process reply: master will still be stuck, slave will be asked to free the cell --> WORKING!
+                    String message;
+                    if (!conflictResponse.isMaster()) {
+                        message = "Agent %c: I am the SLAVE helping agent %c";
+                        caller.getAgent().setStatus(AgentStatus.WORKING);
+                    } else
+                        message = "Agent %c: I am the MASTER being helped by agent %c";
+                    ConsoleLogger.logInfo(LOGGER, String.format(message, agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
                     return;
                 }
             }

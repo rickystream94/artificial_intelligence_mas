@@ -71,11 +71,15 @@ public class HTNPlanner {
             }
             this.planningStep++;
 
-            // Check if planning is taking too long
-            if (planningStep % 1000 == 0 && planningStep != 0) {
+            // Keep track of memory usage
+            if (planningStep % 500 == 0 && planningStep != 0) {
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Planning step: %d", this.currentWorldState.getAgentId(), planningStep));
                 ConsoleLogger.logInfo(LOGGER, Memory.stringRep());
             }
+
+            // Check if planning is taking too long
+            if (planningStep >= 10000)
+                throw new PlanNotFoundException(this.currentWorldState.getAgentId());
         }
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found plan!", this.currentWorldState.getAgentId()));
         return this.finalPlan;

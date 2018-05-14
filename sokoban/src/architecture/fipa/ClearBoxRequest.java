@@ -35,4 +35,17 @@ public class ClearBoxRequest extends HelpRequest {
                 });
         return bests.dequeueMin().getValue();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(super.equals(o)))
+            return false;
+        if (!(o instanceof ClearBoxRequest))
+            return false;
+        ClearBoxRequest request = (ClearBoxRequest) o;
+        Box blockingBox = (Box) request.getBlockingObject();
+        return blockingBox.equals(this.getBlockingObject());
+    }
 }

@@ -14,7 +14,7 @@ public class PerformativeManager {
         listeners = new ArrayList<>();
     }
 
-    public static PerformativeManager getDefault() {
+    public synchronized static PerformativeManager getDefault() {
         if (instance == null)
             instance = new PerformativeManager();
         return instance;

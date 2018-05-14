@@ -122,6 +122,10 @@ public class Level {
         return null;
     }
 
+    public int countEmptyNeighbours(Coordinate coordinate) {
+        return (int) coordinate.getClockwiseNeighbours().stream().filter(this::isCellEmpty).count();
+    }
+
     public static boolean isDesireAchieved(Desire desire) {
         Coordinate targetPosition = desire.getTarget();
         if (desire instanceof ClearCellDesire)

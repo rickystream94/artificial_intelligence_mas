@@ -27,15 +27,18 @@ public class RelaxationFactory {
         // Multi-Agent
         switch (planFailureCounter) {
             case 0:
+                logInfo(agent, AllObjectsRelaxation.class.getSimpleName());
+                return new AllObjectsRelaxation();
+            case 1:
                 logInfo(agent, NoAgentsRelaxation.class.getSimpleName());
                 return new NoAgentsRelaxation();
-            case 1:
+            case 2:
                 logInfo(agent, MyBoxesAndWallsRelaxation.class.getSimpleName());
                 return new MyBoxesAndWallsRelaxation(agent.getColor());
-            case 2:
+            case 3:
                 logInfo(agent, ForeignBoxesAndWallsRelaxation.class.getSimpleName());
                 return new ForeignBoxesAndWallsRelaxation(agent.getColor());
-            case 3:
+            case 4:
                 logInfo(agent, OnlyWallsRelaxation.class.getSimpleName());
                 return new OnlyWallsRelaxation();
             default:

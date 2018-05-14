@@ -4,12 +4,17 @@ public class LevelChooser {
 
     private static final String rootPath = "../../../environment/levels/";
     private static final String ext = ".lvl";
+    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
+    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
+    public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
+    public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
     public static final String SAchoice = rootPath + "SAchoice" + ext;
     public static final String SAanagram = rootPath + "SAanagram" + ext;
     public static final String SApushing = rootPath + "SApushing" + ext;
     public static final String SAsimple1 = rootPath + "SAsimple1" + ext;
     public static final String SAsimple2 = rootPath + "SAsimple2" + ext;
     public static final String SAsoko1_12 = rootPath + "SAsoko1_12" + ext;
+    public static final String SAbispebjergHospital = rootPath + "SAbispebjergHospital" + ext;
     public static final String SAsokobanLevel96 = rootPath + "SAsokobanLevel96" + ext;
     public static final String SAtest = rootPath + "SAtest" + ext;
     public static final String SAtowersOfSaigon5 = rootPath + "SAtowersOfSaigon5" + ext;
@@ -19,6 +24,7 @@ public class LevelChooser {
     public static final String MAsimple4 = rootPath + "MAsimple4" + ext;
     public static final String MAsimple5 = rootPath + "MAsimple5" + ext;
     public static final String MAthomasAppartment = rootPath + "MAthomasAppartment" + ext;
+    public static final String MAbispebjergHospital = rootPath + "MAbispebjergHospital" + ext;
     public static final String MAmultiagentSort = rootPath + "MAmultiagentSort" + ext;
     public static final String MApacman = rootPath + "MApacman" + ext;
     public static final String MAchallenge = rootPath + "MAchallenge" + ext;
