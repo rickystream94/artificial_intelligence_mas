@@ -18,7 +18,7 @@ public abstract class CompoundTask implements Task<CompoundTaskType> {
     protected Refinement getSimpleRefinement(HTNWorldState worldState, int planningStep) {
         LinkedList<Task> subTasks = new LinkedList<>();
         subTasks.add(new GoToLocationTask(worldState.getBoxPosition()));
-        subTasks.add(new MoveBoxToLocationTask(worldState.getBoxTarget()));
+        subTasks.add(new MoveBoxToLocationTask(worldState.getTarget()));
         HighLevelPlan highLevelPlan = new HighLevelPlan(subTasks);
         return new Refinement(this, highLevelPlan, planningStep);
     }

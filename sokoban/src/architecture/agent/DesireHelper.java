@@ -1,71 +1,79 @@
-package architecture;
+package architecture.agent;
 
-import architecture.bdi.ClearPathDesire;
+import architecture.bdi.ClearBoxDesire;
+import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
 import board.Agent;
 import board.Level;
+import exceptions.NoAvailableTargetsException;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class DesireHelper {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(DesireHelper.class.getSimpleName());
+    private static final int UNSOLVED_GOAL_PENALTY = 10;
+    private static final int BLOCKING_OBJECT_PRIORITY = -1000;
 
     private Agent agent;
     private Map<Desire, Double> achievedGoalDesiresPriorityMap;
-    private Set<Desire> clearPathDesiresAchieved;
     private Desire currentDesire;
     private double currentDesirePriority;
-    private Desire lastAchievedDesire;
 
     public DesireHelper(Agent agent) {
         this.agent = agent;
         this.achievedGoalDesiresPriorityMap = new HashMap<>();
-        this.clearPathDesiresAchieved = new HashSet<>();
     }
 
     /**
-     * Get the next desire the agent should commit to. If the agent has just achieved a ClearPathDesire successfully,
+     * Get the next desire the agent should commit to. If the agent has just achieved a ClearBoxDesire successfully,
      * discard the previous ones that have been enqueued willing to clear the same box.
      *
      * @param desires Heap of all desires
      * @return next desire to process
+     * @throws NoAvailableTargetsException If next desire is coming from a blocking object and there are no more targets available (needs to switch relaxation or increase clearing distance)
      */
-    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) {
+    public Desire getNextDesire(FibonacciHeap<Desire> desires, LockDetector lockDetector) throws NoAvailableTargetsException {
         FibonacciHeap.Entry<Desire> entry;
         Desire desire;
         int skippedDesires = 0;
-        boolean shouldBreakLoop;
+        int priority;
+        boolean shouldSkipDesire;
         do {
+            // Check first if there are any boxes that need to be cleared
+            if (lockDetector.hasObjectsToClear()) {
+                desire = lockDetector.getDesireFromBlockingObject(lockDetector.getNextBlockingObject());
+                priority = BLOCKING_OBJECT_PRIORITY; // By default
+                shouldSkipDesire = false;
+                continue;
+            }
             entry = desires.dequeueMin();
             final Desire finalDesire = entry.getValue();
+            priority = (int) entry.getPriority();
             desire = finalDesire;
 
-            // Verify loop-breaking conditions
-            boolean shouldSkipDesire = desire instanceof ClearPathDesire;
-            shouldSkipDesire = shouldSkipDesire && lastAchievedDesire instanceof GoalDesire;
-            shouldSkipDesire = shouldSkipDesire && this.clearPathDesiresAchieved.stream().anyMatch(d -> d.getBox().getObjectId() == finalDesire.getBox().getObjectId() || d.getTarget() == finalDesire.getTarget());
-            shouldSkipDesire = shouldSkipDesire || Level.isDesireAchieved(desire);
+            // Verify loop-breaking condition --> Is desire already achieved?
+            shouldSkipDesire = Level.isDesireAchieved(desire);
+            if (shouldSkipDesire)
+                skippedDesires++;
+
+            // Check if current desire is GoalDesire and already achieved
             if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
                 // We have to back-up the achieved goal desire!
                 this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
-                this.clearPathDesiresAchieved.forEach(d -> lockDetector.resetClearingDistance(d.getBox()));
-                this.clearPathDesiresAchieved.clear();
             }
+        } while (shouldSkipDesire && !desires.isEmpty());
+        if (skippedDesires > 0)
+            ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d already achieved desires", this.agent.getAgentId(), skippedDesires));
 
-            if (shouldSkipDesire) {
-                skippedDesires++;
-                shouldBreakLoop = false;
-            } else shouldBreakLoop = true;
-        }
-        while (!shouldBreakLoop && !desires.isEmpty());
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Skipped %d redundant desires", this.agent.getAgentId(), skippedDesires));
         this.currentDesire = desire;
-        this.currentDesirePriority = entry.getPriority();
+        this.currentDesirePriority = priority;
         return this.currentDesire;
     }
 
@@ -82,28 +90,26 @@ public class DesireHelper {
                 // Avoid picking the same desire if its priority is the lowest!
                 // Penalize the desire (+100)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Goal desire %s has to be achieved again!", this.agent.getAgentId(), desire));
-                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + 100);
+                desires.enqueue(desire, this.achievedGoalDesiresPriorityMap.get(desire) + UNSOLVED_GOAL_PENALTY);
                 it.remove();
             }
         }
     }
 
     /**
-     * Backup achieved goal desires and reset clearing distance for previously achieved clear path desires
-     * Indeed, if we have now achieved a goal desire after the previous clear path desire was achieved as well,
-     * the clearing distance may be restored to default.
+     * When achieves GoalDesire, back it up and reset clearing distance and targets for blocking objects
+     * If ClearX Desire, record progress and remove blocking object.
      */
     public void achievedDesire(LockDetector lockDetector) {
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: achieved desire %s", this.agent.getAgentId(), currentDesire));
         if (currentDesire instanceof GoalDesire) {
             this.achievedGoalDesiresPriorityMap.put(currentDesire, currentDesirePriority);
-            this.clearPathDesiresAchieved.forEach(d -> lockDetector.resetClearingDistance(d.getBox()));
-            this.clearPathDesiresAchieved.clear();
-        } else if (currentDesire instanceof ClearPathDesire) {
-            this.clearPathDesiresAchieved.add(currentDesire);
-            lockDetector.clearChosenTargets(currentDesire.getBox());
+            lockDetector.restoreClearingDistancesForAllObjects();
+            lockDetector.clearChosenTargetsForAllObjects();
+        } else if (currentDesire instanceof ClearBoxDesire || currentDesire instanceof ClearCellDesire) {
             lockDetector.progressPerformed();
+            lockDetector.objectCleared();
         }
-        this.lastAchievedDesire = currentDesire;
     }
 
     public Desire getCurrentDesire() {

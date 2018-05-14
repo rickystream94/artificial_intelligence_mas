@@ -71,15 +71,15 @@ public class ClientManager {
         });
     }
 
-    public LevelManager getLevelManager() {
+    public synchronized LevelManager getLevelManager() {
         return this.levelManager;
     }
 
-    public int getNumberOfAgents() {
+    public synchronized int getNumberOfAgents() {
         return this.numberOfAgents;
     }
 
-    public ActionSenderThread getActionSenderThread() {
+    public synchronized ActionSenderThread getActionSenderThread() {
         return actionSenderThread;
     }
 }

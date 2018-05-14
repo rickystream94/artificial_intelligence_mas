@@ -14,7 +14,7 @@ public class InvalidActionException extends Exception {
 
     @Override
     public String getMessage() {
-        return String.format("Agent %c: Action %s was not accepted by server!", agentId, failedAction);
+        return String.format("Agent %c: Max number of retries for action %s. Detecting issue...", agentId, failedAction);
     }
 
     public PrimitiveTask getFailedAction() {

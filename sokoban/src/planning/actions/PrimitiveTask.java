@@ -34,9 +34,9 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
             case Move:
                 return getMoveEffect(currAgentPosition);
             case Push:
-                return getPushEffect(currAgentPosition, currBoxPosition);
+                return getPushEffect(currAgentPosition, Objects.requireNonNull(currBoxPosition));
             case Pull:
-                return getPullEffect(currAgentPosition, currBoxPosition);
+                return getPullEffect(currAgentPosition, Objects.requireNonNull(currBoxPosition));
             case NoOp:
                 return null;
             default:
@@ -91,8 +91,11 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         worldState.applyEffect(getEffect(worldState.getAgentPosition(), worldState.getBoxPosition()));
 
         // Manhattan Distance from box to goal and from agent to box
-        cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getBoxTarget());
-        cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
+        if (worldState.getBoxPosition() != null) {
+            cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getTarget());
+            cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
+        } else
+            cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getTarget());
         return cost;
     }
 

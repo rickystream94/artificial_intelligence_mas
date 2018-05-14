@@ -76,6 +76,7 @@ public class BDIManager {
         ConsoleLogger.logInfo(LOGGER, "Step 3: Done mapping boxes and goals to their type");
 
         // Step 4: Assign Desires  to agents keeping the workload well spread among them
+        // TODO: desires to be prioritized according to strict order (tunnels or dead-ends)
         while (!desires.isEmpty()) {
             Desire currentGoalDesire = desires.remove(0);
             List<Agent> agentsOfColor = agents.stream().filter(agent -> agent.getColor() == currentGoalDesire.getBox().getColor()).collect(Collectors.toList());

@@ -6,12 +6,12 @@ import planning.actions.ClearPathFromBoxTask;
 
 import java.util.Objects;
 
-public class ClearPathDesire implements Desire {
+public class ClearBoxDesire implements Desire {
 
     private Box box;
     private Coordinate target;
 
-    public ClearPathDesire(Box box, Coordinate target) {
+    public ClearBoxDesire(Box box, Coordinate target) {
         this.box = box;
         this.target = target;
     }
@@ -33,15 +33,15 @@ public class ClearPathDesire implements Desire {
 
     @Override
     public String toString() {
-        return "ClearPathFromBox{" + this.box.toString() + " --> " + this.target + "}";
+        return "ClearBox{" + this.box.toString() + " --> " + this.target + "}";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ClearPathDesire)) return false;
-        ClearPathDesire clearPathDesire = (ClearPathDesire) o;
-        return target.equals(clearPathDesire.target) && box.equals(clearPathDesire.box);
+        if (!(o instanceof ClearBoxDesire)) return false;
+        ClearBoxDesire clearBoxDesire = (ClearBoxDesire) o;
+        return target.equals(clearBoxDesire.target) && box.equals(clearBoxDesire.box);
     }
 
     @Override

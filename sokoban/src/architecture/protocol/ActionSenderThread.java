@@ -9,12 +9,7 @@ import planning.actions.PrimitiveTask;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.StringJoiner;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,10 +17,11 @@ import java.util.stream.IntStream;
 public class ActionSenderThread implements Runnable {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(ActionSenderThread.class.getSimpleName());
+    private static final Object lock = new Object();
 
     private int numberOfAgents;
-    private BlockingQueue<SendActionEvent> eventsCollector;
-    private BlockingQueue<SendActionEvent> eventsOrdered;
+    private int jointActionsSent;
+    private Queue<SendActionEvent> eventsOrdered;
     private BufferedReader serverInMessages;
     private BufferedWriter serverOutMessages;
     private HashMap<Character, SendActionEvent> currentActions;
@@ -33,53 +29,58 @@ public class ActionSenderThread implements Runnable {
 
     public ActionSenderThread(int numberOfAgents, BufferedReader serverInMessages, BufferedWriter serverOutMessages) {
         this.numberOfAgents = numberOfAgents;
-        this.eventsCollector = new ArrayBlockingQueue<>(numberOfAgents);
-        this.eventsOrdered = new PriorityBlockingQueue<>(numberOfAgents, new SendActionEventComparator());
+        this.eventsOrdered = new PriorityQueue<>(numberOfAgents, new SendActionEventComparator());
         this.serverInMessages = serverInMessages;
         this.serverOutMessages = serverOutMessages;
         this.currentActions = new HashMap<>();
         this.levelManager = ClientManager.getInstance().getLevelManager();
+        this.jointActionsSent = 0;
     }
 
     @Override
     public void run() {
         StringJoiner jointAction;
-        int polledActions;
 
         // Each loop iteration represents a turn
         // By the end of the current iteration, a single joint action is sent to the server
         while (true) {
-            jointAction = new StringJoiner(",", "[", "]");
-            polledActions = 0;
-            while (polledActions != this.numberOfAgents) {
-                try {
-                    // take() will wait until an element becomes available in the queue
-                    SendActionEvent sendActionEvent = this.eventsOrdered.take();
-                    jointAction.add(sendActionEvent.getAction().toString());
-                    this.currentActions.put(sendActionEvent.getAgent().getAgentId(), sendActionEvent);
-                    polledActions++;
-                } catch (InterruptedException e) {
-                    ConsoleLogger.logError(LOGGER, e.getMessage());
+            // Wait for all agent threads to push their actions in the queue
+            synchronized (lock) {
+                while (this.eventsOrdered.size() != this.numberOfAgents) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
                 }
+            }
+            // All agents have sent their actions: build joint action
+            jointAction = new StringJoiner(",", "[", "]");
+            while (!this.eventsOrdered.isEmpty()) {
+                SendActionEvent sendActionEvent = this.eventsOrdered.remove();
+                jointAction.add(sendActionEvent.getAction().toString());
+                this.currentActions.put(sendActionEvent.getAgent().getAgentId(), sendActionEvent);
             }
             // At this point, every agent has put its action in the queue
             // Send joint action to server and process response
             try {
                 String response = sendToServer(jointAction.toString());
+                jointActionsSent++;
+                ConsoleLogger.logInfo(LOGGER, String.format("*** SENT ACTION #%d: %s TO SERVER ***", jointActionsSent, jointAction.toString()));
                 processResponse(response);
             } catch (IOException e) {
                 ConsoleLogger.logError(LOGGER, e.getMessage());
+                e.printStackTrace();
                 System.exit(1);
             }
         }
     }
 
     public void addPrimitiveAction(PrimitiveTask action, Agent agent) {
-        this.eventsCollector.add(new SendActionEvent(action, agent));
-
-        if (this.eventsCollector.size() == numberOfAgents) {
-            // Drain elements to priority queue (they will be automatically sorted by agentID once inserted)
-            this.eventsCollector.drainTo(this.eventsOrdered);
+        synchronized (lock) {
+            this.eventsOrdered.add(new SendActionEvent(action, agent));
+            lock.notify();
         }
     }
 

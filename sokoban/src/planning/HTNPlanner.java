@@ -72,12 +72,12 @@ public class HTNPlanner {
             this.planningStep++;
 
             // Check if planning is taking too long
-            if (planningStep % 100 == 0 && planningStep != 0) {
-                ConsoleLogger.logInfo(LOGGER, String.format("Planning step: %d", planningStep));
+            if (planningStep % 1000 == 0 && planningStep != 0) {
+                ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Planning step: %d", this.currentWorldState.getAgentId(), planningStep));
                 ConsoleLogger.logInfo(LOGGER, Memory.stringRep());
             }
         }
-        ConsoleLogger.logInfo(LOGGER, "Found plan!");
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found plan!", this.currentWorldState.getAgentId()));
         return this.finalPlan;
     }
 
@@ -94,25 +94,27 @@ public class HTNPlanner {
      * Function used to backtrack when a compound task cannot be decomposed or a primitive action leads to an already explored state
      */
     private void restoreToLastDecomposedTask() throws PlanNotFoundException {
-        HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
+        if (!this.decompositionHistory.isEmpty()) {
+            HTNDecompositionRecord lastSoundPlanningState = this.decompositionHistory.pop();
 
-        // Restore
-        this.strategy.setTasksToProcess(lastSoundPlanningState.getTasksToProcess());
-        this.finalPlan = lastSoundPlanningState.getFinalPlan();
-        this.currentWorldState = lastSoundPlanningState.getWorldState();
-        Refinement refinement = lastSoundPlanningState.getRefinement();
-        this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
-        this.strategy.updateStatus(this.currentWorldState);
-        this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
+            // Restore
+            this.strategy.setTasksToProcess(lastSoundPlanningState.getTasksToProcess());
+            this.finalPlan = lastSoundPlanningState.getFinalPlan();
+            this.currentWorldState = lastSoundPlanningState.getWorldState();
+            Refinement refinement = lastSoundPlanningState.getRefinement();
+            this.strategy.addTaskToProcess(refinement.getOwningCompoundTask());
+            this.strategy.updateStatus(this.currentWorldState);
+            this.planningStep = refinement.getPlanningStep() - 1; // Will be increased again at the end of the loop
 
-        // Blacklist refinement (avoid choosing same refinement --> infinite loops)
-        this.strategy.addRefinementToBlacklist(refinement);
+            // Blacklist refinement (avoid choosing same refinement --> infinite loops)
+            this.strategy.addRefinementToBlacklist(refinement);
+        }
 
         // Check if we brought planningStep back to 0 --> No plan can be found --> Throw
         if (this.planningStep >= -1 && this.planningStep <= 1) {
             this.planFailureCounter++;
             if (this.planFailureCounter > 50) // Threshold high enough
-                throw new PlanNotFoundException();
+                throw new PlanNotFoundException(this.currentWorldState.getAgentId());
         } else
             this.planFailureCounter = 0;
     }

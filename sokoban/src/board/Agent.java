@@ -7,6 +7,7 @@ public class Agent extends SokobanObject {
     private char agentId;
     private Color color;
     private Box currentTargetBox;
+    private AgentStatus status;
 
     public Agent(int row, int col, char agentId, Color color) {
         super(row, col);
@@ -39,6 +40,19 @@ public class Agent extends SokobanObject {
 
     public void setCurrentTargetBox(Box currentTargetBox) {
         this.currentTargetBox = currentTargetBox;
+    }
+
+    /**
+     * The status should be queried synchronously
+     *
+     * @return current Agent's status
+     */
+    public synchronized AgentStatus getStatus() {
+        return this.status;
+    }
+
+    public void setStatus(AgentStatus status) {
+        this.status = status;
     }
 
     @Override

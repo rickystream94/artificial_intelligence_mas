@@ -21,7 +21,7 @@ public class HTNWorldState {
 
     private Agent agent;
     private Box box;
-    private Coordinate boxTarget;
+    private Coordinate target;
     private LevelManager levelManager;
     private Relaxation relaxation;
 
@@ -37,8 +37,9 @@ public class HTNWorldState {
         this.agent = new Agent(agent);
         this.relaxation = relaxation;
         this.levelManager = ClientManager.getInstance().getLevelManager();
-        this.box = new Box(desire.getBox());
-        this.boxTarget = desire.getTarget();
+        if (desire.getBox() != null)
+            this.box = new Box(desire.getBox());
+        this.target = desire.getTarget();
     }
 
     /**
@@ -49,8 +50,9 @@ public class HTNWorldState {
     public HTNWorldState(HTNWorldState other) {
         this.levelManager = other.levelManager;
         this.agent = new Agent(other.agent);
-        this.box = new Box(other.box);
-        this.boxTarget = other.boxTarget;
+        if (other.box != null)
+            this.box = new Box(other.box);
+        this.target = other.target;
         this.relaxation = other.relaxation;
     }
 
@@ -121,12 +123,18 @@ public class HTNWorldState {
         return this.agent.getCoordinate();
     }
 
-    public Coordinate getBoxPosition() {
-        return this.box.getCoordinate();
+    public char getAgentId() {
+        return this.agent.getAgentId();
     }
 
-    public Coordinate getBoxTarget() {
-        return this.boxTarget;
+    public Coordinate getBoxPosition() {
+        if (this.box != null)
+            return this.box.getCoordinate();
+        return null;
+    }
+
+    public Coordinate getTarget() {
+        return this.target;
     }
 
     @Override
@@ -136,12 +144,16 @@ public class HTNWorldState {
         if (!(o instanceof HTNWorldState))
             return false;
         HTNWorldState s = (HTNWorldState) o;
-        return this.agent.getCoordinate().equals(s.agent.getCoordinate()) &&
-                this.box.getCoordinate().equals(s.box.getCoordinate());
+        if (this.box != null)
+            return this.agent.getCoordinate().equals(s.agent.getCoordinate()) &&
+                    this.box.getCoordinate().equals(s.box.getCoordinate());
+        return this.agent.getCoordinate().equals(s.agent.getCoordinate());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate());
+        if (this.box != null)
+            return Objects.hash(this.agent.getCoordinate(), this.box.getCoordinate());
+        else return Objects.hash(this.agent.getCoordinate());
     }
 }
