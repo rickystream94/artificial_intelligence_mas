@@ -27,7 +27,6 @@ public class LockDetector {
     private static final Logger LOGGER = ConsoleLogger.getLogger(LockDetector.class.getSimpleName());
     private static final int DEFAULT_CLEARING_DISTANCE = 1;
     private static final int MAX_NO_PROGRESS_COUNTER = 50;
-    private static final int CLEARING_DISTANCE_THRESHOLD = 3;
 
     private Agent agent;
     private LevelManager levelManager;
@@ -131,13 +130,19 @@ public class LockDetector {
     private Box findNeighbourBlockingBox(Agent blockingAgent) {
         List<Coordinate> neighbours = blockingAgent.getCoordinate().getClockwiseNeighbours();
         int emptyNeighbours = levelManager.getLevel().countEmptyNeighbours(blockingAgent.getCoordinate());
+        Agent helpingAgent = null;
+        Box blockingBox = null;
         if (emptyNeighbours == 0) {
             for (Coordinate neighbour : neighbours) {
                 SokobanObject object = levelManager.getLevel().dynamicObjectAt(neighbour);
                 if (object instanceof Box && ((Box) object).getColor() == blockingAgent.getColor())
-                    return (Box) object;
+                    blockingBox = (Box) object;
+                if (object instanceof Agent)
+                    helpingAgent = (Agent) object;
             }
         }
+        if (helpingAgent == null && blockingBox != null)
+            return blockingBox;
         return null;
     }
 
@@ -208,8 +213,8 @@ public class LockDetector {
             ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: clearing distance for %s is %d.", this.agent.getAgentId(), blockingObject, clearingDistance));
         Set<Coordinate> edgeCells = getEmptyEdgeCells();
 
-        // Prefer edge cells if it's the first attempt to clear this box
-        if (clearingDistance < CLEARING_DISTANCE_THRESHOLD && !edgeCells.isEmpty()) {
+        // Prefer edge cells if still possible
+        if (!edgeCells.isEmpty()) {
             // Target --> Edge cell far away to the blocking box
             if (shouldLog)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: edge cells chosen for %s", this.agent.getAgentId(), blockingObject));
@@ -223,7 +228,7 @@ public class LockDetector {
         // If no edge cells are available or are not valid, calculate the targets
         // with fixed distance from the blocking object
         Set<Coordinate> potentialNewPositions = Coordinate.getEmptyCellsWithFixedDistanceFrom(blockingObject.getCoordinate(), clearingDistance);
-        potentialNewPositions.add(this.agent.getCoordinate());
+        //potentialNewPositions.add(this.agent.getCoordinate()); // TODO: temp removed
         chosenTarget = chooseAndValidateBestTarget(blockingObject, potentialNewPositions);
 
         // Check if the target is valid
@@ -258,15 +263,19 @@ public class LockDetector {
         while (this.chosenTargetsForObjectToClear.containsKey(blockingObject) && this.chosenTargetsForObjectToClear.get(blockingObject).contains(chosenTarget) && chosenTarget != null);
 
         // Back-up choice of target
-        if (chosenTarget != null) {
-            if (!this.chosenTargetsForObjectToClear.containsKey(blockingObject)) {
-                Set<Coordinate> chosenTargets = new HashSet<>();
-                this.chosenTargetsForObjectToClear.put(blockingObject, chosenTargets);
-            }
-            this.chosenTargetsForObjectToClear.get(blockingObject).add(chosenTarget);
-        }
+        saveChoiceOfTargetForObjectToClear(blockingObject, chosenTarget);
 
         return chosenTarget;
+    }
+
+    public void saveChoiceOfTargetForObjectToClear(SokobanObject object, Coordinate target) {
+        if (target != null) {
+            if (!this.chosenTargetsForObjectToClear.containsKey(object)) {
+                Set<Coordinate> chosenTargets = new HashSet<>();
+                this.chosenTargetsForObjectToClear.put(object, chosenTargets);
+            }
+            this.chosenTargetsForObjectToClear.get(object).add(target);
+        }
     }
 
     public void clearChosenTargetsForAllObjects() {

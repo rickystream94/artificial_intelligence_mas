@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 
 public class PlanningHelper {
 
+    public static final int MAX_CLEARING_DISTANCE = 20;
     private static final Logger LOGGER = ConsoleLogger.getLogger(PlanningHelper.class.getSimpleName());
     private static final int MAX_PLAN_RETRIES = RelaxationType.values().length - 1;
-    private static final int MAX_CLEARING_DISTANCE = 20;
 
     private int numFailedPlans;
     private Agent agent;
@@ -58,6 +58,10 @@ public class PlanningHelper {
                 lockDetector.clearChosenTargetsForObject(e.getBlockingObject());
             }
         }
+    }
+
+    public void noMoreTargets() {
+        this.numFailedPlans++;
     }
 
     public void planSuccessful() {

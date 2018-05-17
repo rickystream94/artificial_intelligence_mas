@@ -39,6 +39,7 @@ public class AgentThread implements Runnable {
     private PlanningHelper planningHelper;
     private ActionHelper actionHelper;
     private ConflictResponseGatherer conflictResponseGatherer;
+    private int sentActions;
 
     public AgentThread(Agent agent, FibonacciHeap<Desire> desires) {
         this.agent = agent;
@@ -61,14 +62,15 @@ public class AgentThread implements Runnable {
             while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty() || this.helpRequestResolver.hasRequestsToProcess()) {
                     // TODO: could include freshRestart() after X successful actions
+                    if (sentActions == 500)
+                        this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
                     this.desireHelper.checkAndEnqueueUnsolvedGoalDesires(this.desires);
 
                     // Check if there are any help requests I should commit to
-                    if (this.helpRequestResolver.hasRequestsToProcess()) {
+                    if (this.helpRequestResolver.hasRequestsToProcess())
                         this.helpRequestResolver.processHelpRequest(this.lockDetector);
-                    }
 
                     // Get next desire
                     Desire desire;
@@ -76,8 +78,13 @@ public class AgentThread implements Runnable {
                         desire = this.desireHelper.getNextDesire(this.desires, lockDetector);
                     } catch (NoAvailableTargetsException e) {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
+                        if (lockDetector.getClearingDistance(e.getBlockingObject()) < PlanningHelper.MAX_CLEARING_DISTANCE)
+                            lockDetector.incrementClearingDistance(e.getBlockingObject());
+                        else {
+                            lockDetector.restoreClearingDistanceForObject(e.getBlockingObject());
+                            this.planningHelper.noMoreTargets();
+                        }
                         lockDetector.clearChosenTargetsForObject(e.getBlockingObject());
-                        lockDetector.incrementClearingDistance(e.getBlockingObject());
                         continue;
                     } catch (NoSuchElementException e) {
                         // Occurs if no more desires are available

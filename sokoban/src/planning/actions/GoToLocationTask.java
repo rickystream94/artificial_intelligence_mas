@@ -43,7 +43,12 @@ public class GoToLocationTask extends CompoundTask {
 
     @Override
     public boolean isAchieved(HTNWorldState currentWorldState) {
-        return currentWorldState.getAgentPosition().isNeighbour(this.destination);
+        // If box position is not null it means we're tracking a box as well and the desire is GoalDesire
+        // Agent is moving towards the box and needs to be neighbour
+        if (currentWorldState.getBoxPosition() != null)
+            return currentWorldState.getAgentPosition().isNeighbour(this.destination);
+        // Otherwise, I'm clearing a cell and I want to reach the exact destination
+        return currentWorldState.getAgentPosition().equals(this.destination);
     }
 
     @Override
