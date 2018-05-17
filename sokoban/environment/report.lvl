@@ -1,0 +1,39 @@
+MAAlphaOne.log  -- PLANNING TOO LONG
+MABeTrayEd.log  -- PLANNING TOO LONG
+MADaVinci.log   -- ISLAND
+MAKarlMarx.log  -- ISLAND, TOO BIG, CRAZY
+MAAIFather.log  -- CONFLICT AMONG AGENTS
+MACybot.log     -- CONFLICT AMONG AGENTS
+MANavy.log      -- ISLAND
+MAJMAI.log      -- CONFLICT AMONG AGENTS
+MAPushPush.log  -- CONFLICT AMONG AGENTS
+MAZEROagent.log -- CONFLICT AMONG AGENTS
+MAora.log       -- CONFLICT AMONG AGENTS
+MAAntsStar.log  -- CONFLICT AMONG AGENTS AND BOXES WITHOUT GOALS
+MALobot.log     -- CONFLICT AMONG AGENTS
+SABeTrayEd.log  -- CANNOT CLEAR BOX
+MAAiMasTers.log -- CONFLICT AMONG AGENTS || CHECK THIS
+SADaVinci.log   -- ISLAND || CHECK THIS
+MAbongu.log     -- BLOCKING BOX
+SAAlphaOne.log  -- CANNOT CLEAR BOX || CHECK THIS
+SAAIFather.log  -- CANNOT CLEAR BOX || CHECK THIS
+SANikrima.log   -- MISSING WALL || CHECK THIS
+SAAiMasTers.log -- CANNOT CLEAR BOX
+MAdashen.log    -- CONFLICT AMONG AGENTS
+SAKaldi.log     -- PLANNING TOO LONG
+SAdashen.log    -- EXECUTION OF PLAN IS TAKING TO LONG
+SAKarlMarx.log  -- CORNER CLEAR NOT WORKING
+SAEasyPeasy.log -- CANNOT CLEAR BOX
+SANavy.log      -- CANNOT CLEAR BOX
+SAPushPush.log  -- PRIORITIZING ISSUE
+
+Explanation:
+
+    PLANNING TOO LONG - We have a maximum of 180 seconds to complete the Level. But in this case the planning is taking to long since the map is either huge or too complex to be solved.
+    CONFLICT AMONG AGENTS - Agents are getting stuck, can be because of a chain of conflicts or sometimes simple conflicts like one blocking the other.
+    ISLAND, TOO BIG, CRAZY - This level is insane. I would not worry about it.
+    ISLAND - Island is a group or one box that cannot be reached since it is surrounded by walls. And we are trying to find a plan for it and failing.
+    CANNOT CLEAR BOX - Some time we are not able to clear a box and we get some crazy behaviour, probably because of the very relaxed relaxation that we have as last resource
+    BOXES WITHOUT GOALS - There are boxes without goals but there are agents that can move then. But they are with 'work done' since they dont have a box to goal to perform. But they are also not helping the other.
+    PRIORITIZING ISSUE - We are having a deadlock because of the priority of boxes, which should be done first.
+    CHECK THIS - These are levels that might not be simple. BUT if we solve then, we might solve others as consequence, because they have key aspects.
