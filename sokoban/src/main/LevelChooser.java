@@ -50,6 +50,34 @@ public class LevelChooser {
     public static final String SARyther = rootPath + "example_levels/single_agent/easy/SARyther" + ext;
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
 
-    
+    public static final String MAAlphaOne = competitionPath + "MAAlphaOne" + ext;
+    public static final String MABeTrayEd = competitionPath + "MABeTrayEd" + ext;
+    public static final String MADaVinci = competitionPath + "MADaVinci" + ext;
+    public static final String MAKarlMarx = competitionPath + "MAKarlMarx" + ext;
+    public static final String MAAIFather = competitionPath + "MAAIFather" + ext;
+    public static final String MACybot = competitionPath + "MACybot" + ext;
+    public static final String MANavy = competitionPath + "MANavy" + ext;
+    public static final String MAJMAI = competitionPath + "MAJMAI" + ext;
+    public static final String MAPushPush = competitionPath + "MAPushPush" + ext;
+    public static final String MAZEROagent = competitionPath + "MAZEROagent" + ext;
+    public static final String MAora = competitionPath + "MAora" + ext;
+    public static final String MAAntsStar = competitionPath + "MAAntsStar" + ext;
+    public static final String MALobot = competitionPath + "MALobot" + ext;
+    public static final String SABeTrayEd = competitionPath + "SABeTrayEd" + ext;
+    public static final String MAAiMasTers = competitionPath + "MAAiMasTers" + ext;
+    public static final String SADaVinci = competitionPath + "SADaVinci" + ext;
+    public static final String MAbongu = competitionPath + "MAbongu" + ext;
+    public static final String SAAlphaOne = competitionPath + "SAAlphaOne" + ext;
+    public static final String SAAIFather = competitionPath + "SAAIFather" + ext;
+    public static final String SANikrima = competitionPath + "SANikrima" + ext;
+    public static final String SAAiMasTers = competitionPath + "SAAiMasTers" + ext;
+    public static final String MAdashen = competitionPath + "MAdashen" + ext;
+    public static final String SAKaldi = competitionPath + "SAKaldi" + ext;
+    public static final String SAdashen = competitionPath + "SAdashen" + ext;
+    public static final String SAKarlMarx = competitionPath + "SAKarlMarx" + ext;
+    public static final String SAEasyPeasy = competitionPath + "SAEasyPeasy" + ext;
+    public static final String SANavy = competitionPath + "SANavy" + ext;
+    public static final String SAPushPush = competitionPath + "SAPushPush" + ext;
+
 
 }

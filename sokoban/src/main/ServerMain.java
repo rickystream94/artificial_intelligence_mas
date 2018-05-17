@@ -15,7 +15,7 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = LevelChooser.MAByteMe;
+    private static final String level = LevelChooser.SAPushPush;
     private static final String millisPerAction = "50";
     private static final String timeout = "3000";
 
