@@ -122,7 +122,7 @@ public class AgentThread implements Runnable {
                             ConsoleLogger.logInfo(LOGGER, ex.getMessage());
                             freshRestart();
                         } catch (StuckByForeignBoxException | StuckByAgentException ex) {
-                            helpRequestResolver.askForHelp(this, ex);
+                            helpRequestResolver.askForHelp(this, ex, desire, lockDetector);
                         }
                     } catch (PlanNotFoundException e) {
                         // Current desire wasn't achieved --> add it back to the heap!
@@ -172,6 +172,7 @@ public class AgentThread implements Runnable {
                 if (this.actionHelper.isStuck())
                     throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
                 this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
+                sentActions++;
                 if (getServerResponse()) {
                     tasks.remove();
                     this.actionHelper.resetFailedActions();

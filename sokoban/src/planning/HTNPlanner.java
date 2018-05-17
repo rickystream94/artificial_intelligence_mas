@@ -81,6 +81,10 @@ public class HTNPlanner {
             if (planningStep >= 10000)
                 throw new PlanNotFoundException(this.currentWorldState.getAgentId());
         }
+
+        if (this.finalPlan.getTasks().isEmpty())
+            throw new PlanNotFoundException(this.currentWorldState.getAgentId());
+
         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found plan!", this.currentWorldState.getAgentId()));
         return this.finalPlan;
     }

@@ -2,6 +2,9 @@ package architecture.fipa;
 
 import architecture.agent.AgentThread;
 import architecture.agent.LockDetector;
+import architecture.bdi.ClearBoxDesire;
+import architecture.bdi.ClearCellDesire;
+import architecture.bdi.Desire;
 import architecture.conflicts.Conflict;
 import architecture.conflicts.ConflictResponse;
 import architecture.conflicts.ConflictResponseGatherer;
@@ -57,7 +60,7 @@ public class HelpRequestResolver {
      * @param caller
      * @param ex
      */
-    public void askForHelp(AgentThread caller, Exception ex) {
+    public void askForHelp(AgentThread caller, Exception ex, Desire desire, LockDetector lockDetector) {
         // If the agent is not already stuck ask for help
         if (caller.getAgent().getStatus() != AgentStatus.STUCK) {
             ConsoleLogger.logInfo(LOGGER, ex.getMessage());
@@ -72,6 +75,16 @@ public class HelpRequestResolver {
                 if (exception.getBlockingAgent().getStatus() == AgentStatus.FREE)
                     helpRequest = new ClearCellRequest(caller, exception.getBlockingAgent());
                 else {
+                    // Should check if the blocking agent is an agent I'm currently supposed to help
+                    if (helpRequests.stream().anyMatch(x -> x.getCaller().getAgent().equals(exception.getBlockingAgent()))) {
+                        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: False alarm, I was blocked by agent %c that I'm currently supposed to help", this.agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
+                        if (desire instanceof ClearCellDesire)
+                            lockDetector.saveChoiceOfTargetForObjectToClear(caller.getAgent(), desire.getTarget());
+                        else if (desire instanceof ClearBoxDesire)
+                            lockDetector.saveChoiceOfTargetForObjectToClear(desire.getBox(), desire.getTarget());
+                        return;
+                    }
+
                     ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: CONFLICT with agent %c! Wait for global resolver...", this.agent.getAgentId(), exception.getBlockingAgent().getAgentId()));
 
                     // Send conflict to centralized component and wait for reply
