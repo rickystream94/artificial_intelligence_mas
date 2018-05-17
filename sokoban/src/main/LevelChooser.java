@@ -4,6 +4,7 @@ public class LevelChooser {
 
     private static final String rootPath = "../../../environment/levels/";
     private static final String ext = ".lvl";
+    public static final String competitionPath = rootPath + "competition_levels/";
     public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
     public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
     public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
@@ -48,4 +49,7 @@ public class LevelChooser {
     public static final String SAgroup42 = rootPath + "example_levels/single_agent/easy/SAgroup42" + ext;
     public static final String SARyther = rootPath + "example_levels/single_agent/easy/SARyther" + ext;
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
+
+    
+
 }

@@ -15,10 +15,10 @@ public class ConsoleLogger {
     }
 
     public static void logInfo(Logger logger, String message) {
-        logger.info(message);
+        /*logger.info(message);*/
     }
 
     public static void logError(Logger logger, String message) {
-        logger.severe(message);
+        /*logger.severe(message);*/
     }
 }
