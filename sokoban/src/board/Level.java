@@ -1,5 +1,6 @@
 package board;
 
+import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
 
@@ -122,21 +123,36 @@ public class Level {
         return null;
     }
 
+    public static Goal goalAt(Coordinate coordinate) {
+        return goalsMap.getOrDefault(coordinate, null);
+    }
+
     public int countEmptyNeighbours(Coordinate coordinate) {
         return (int) coordinate.getClockwiseNeighbours().stream().filter(this::isCellEmpty).count();
     }
 
-    public static boolean isDesireAchieved(Desire desire) {
+    public boolean isDesireAchieved(Desire desire) {
         Coordinate targetPosition = desire.getTarget();
         if (desire instanceof ClearCellDesire)
             return ((ClearCellDesire) desire).getAgent().getCoordinate().equals(targetPosition);
-        Box box = desire.getBox();
-        return box.getCoordinate().equals(targetPosition);
+        if (desire instanceof ClearBoxDesire)
+            return desire.getBox().getCoordinate().equals(desire.getTarget());
+
+        // A goal desire is achieved if a box of the correct type is placed on the goal (not necessarily the tracked box)
+        Goal goal = goalsMap.get(targetPosition);
+        return isGoalSolved(goal);
+    }
+
+    public boolean isGoalSolved(Goal goal) {
+        SokobanObject object = dynamicObjectAt(goal.getCoordinate());
+        if (object instanceof Box) {
+            Box box = (Box) object;
+            return Character.toLowerCase(box.getBoxType()) == goal.getGoalType();
+        }
+        return false;
     }
 
     private void sanityCheck() {
-        int fakeEmptyCells = 0;
-
         // NORTH
         for (int col = 0; col < width; col++) {
             for (int foundRow = 0; foundRow < height; foundRow++) {

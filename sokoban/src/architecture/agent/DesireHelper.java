@@ -1,19 +1,22 @@
 package architecture.agent;
 
+import architecture.ClientManager;
+import architecture.LevelManager;
 import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
 import architecture.bdi.GoalDesire;
 import board.Agent;
+import board.Coordinate;
+import board.Goal;
 import board.Level;
 import exceptions.NoAvailableTargetsException;
 import logging.ConsoleLogger;
 import utils.FibonacciHeap;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class DesireHelper {
 
@@ -25,10 +28,12 @@ public class DesireHelper {
     private Map<Desire, Double> achievedGoalDesiresPriorityMap;
     private Desire currentDesire;
     private double currentDesirePriority;
+    private LevelManager levelManager;
 
     public DesireHelper(Agent agent) {
         this.agent = agent;
         this.achievedGoalDesiresPriorityMap = new HashMap<>();
+        this.levelManager = ClientManager.getInstance().getLevelManager();
     }
 
     /**
@@ -54,17 +59,19 @@ public class DesireHelper {
                 continue;
             }
             entry = desires.dequeueMin();
-            final Desire finalDesire = entry.getValue();
+            desire = entry.getValue();
+            if (desire instanceof GoalDesire) {
+                desire = getBestTargetForGoalDesire(desire);
+            }
             priority = (int) entry.getPriority();
-            desire = finalDesire;
 
             // Verify loop-breaking condition --> Is desire already achieved?
-            shouldSkipDesire = Level.isDesireAchieved(desire);
+            shouldSkipDesire = this.levelManager.getLevel().isDesireAchieved(desire);
             if (shouldSkipDesire)
                 skippedDesires++;
 
             // Check if current desire is GoalDesire and already achieved
-            if (desire instanceof GoalDesire && Level.isDesireAchieved(desire)) {
+            if (desire instanceof GoalDesire && shouldSkipDesire) {
                 // We have to back-up the achieved goal desire!
                 this.achievedGoalDesiresPriorityMap.put(desire, entry.getPriority());
             }
@@ -86,7 +93,7 @@ public class DesireHelper {
         Iterator<Desire> it = this.achievedGoalDesiresPriorityMap.keySet().iterator();
         while (it.hasNext()) {
             Desire desire = it.next();
-            if (!Level.isDesireAchieved(desire)) {
+            if (!this.levelManager.getLevel().isDesireAchieved(desire)) {
                 // Avoid picking the same desire if its priority is the lowest!
                 // Penalize the desire (+100)
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Goal desire %s has to be achieved again!", this.agent.getAgentId(), desire));
@@ -118,5 +125,41 @@ public class DesireHelper {
 
     public double getCurrentDesirePriority() {
         return currentDesirePriority;
+    }
+
+    /**
+     * If goal desire, should check that the currently assigned target is the best one. Otherwise, re-assign target
+     *
+     * @param desire
+     * @return
+     */
+    private Desire getBestTargetForGoalDesire(Desire desire) {
+        Goal goal = Objects.requireNonNull(Level.goalAt(desire.getTarget()));
+        List<Goal> goalsOfSameType = Level.getGoals().stream()
+                .filter(g -> g.getGoalType() == goal.getGoalType())
+                .collect(Collectors.toList());
+
+        // If there's only one goal for this type, just return the same desire
+        if (goalsOfSameType.size() == 1)
+            return desire;
+
+        // Check which is the best goal at runtime:
+        // Prefer goals close to solved goals and in edge cells
+        FibonacciHeap<Goal> goalsByPriority = new FibonacciHeap<>();
+        goalsOfSameType.forEach(g -> {
+            int priority = 0;
+            if (Coordinate.isEdgeCell(g.getCoordinate()))
+                priority--;
+            List<Coordinate> neighbours = g.getCoordinate().getClockwiseNeighbours();
+            for (Coordinate c : neighbours) {
+                Goal neighbourGoal = Level.goalAt(c);
+                if (neighbourGoal != null && this.levelManager.getLevel().isGoalSolved(neighbourGoal))
+                    priority--;
+            }
+            goalsByPriority.enqueue(g, priority);
+        });
+        Goal bestGoal = goalsByPriority.dequeueMin().getValue();
+        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: chosen new best goal %s for Box %s", this.agent.getAgentId(), bestGoal, desire.getBox()));
+        return new GoalDesire(desire.getBox(), bestGoal);
     }
 }

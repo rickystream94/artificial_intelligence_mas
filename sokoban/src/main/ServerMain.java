@@ -1,7 +1,7 @@
 package main;
 
-import server.Runner;
 import server.CompetitionRunner;
+import server.Runner;
 
 import java.util.Scanner;
 
@@ -15,7 +15,7 @@ public class ServerMain {
     private static final String clientMainClass = ClientMain.class.getCanonicalName();
 
     // Server options
-    private static final String level = LevelChooser.SAPushPush;
+    private static final String level = LevelChooser.SAmultibox;
     private static final String millisPerAction = "50";
     private static final String timeout = "3000";
 

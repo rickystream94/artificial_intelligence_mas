@@ -5,10 +5,8 @@ public class LevelChooser {
     private static final String rootPath = "../../../environment/levels/";
     private static final String ext = ".lvl";
     public static final String competitionPath = rootPath + "competition_levels/";
-    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
-    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
-    public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
-    public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
+
+    // Example levels
     public static final String SAchoice = rootPath + "SAchoice" + ext;
     public static final String SAanagram = rootPath + "SAanagram" + ext;
     public static final String SApushing = rootPath + "SApushing" + ext;
@@ -50,6 +48,7 @@ public class LevelChooser {
     public static final String SARyther = rootPath + "example_levels/single_agent/easy/SARyther" + ext;
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
 
+    // Competition levels
     public static final String MAAlphaOne = competitionPath + "MAAlphaOne" + ext;
     public static final String MABeTrayEd = competitionPath + "MABeTrayEd" + ext;
     public static final String MADaVinci = competitionPath + "MADaVinci" + ext;
@@ -79,5 +78,10 @@ public class LevelChooser {
     public static final String SANavy = competitionPath + "SANavy" + ext;
     public static final String SAPushPush = competitionPath + "SAPushPush" + ext;
 
-
+    // Custom made levels
+    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
+    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
+    public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
+    public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
+    public static final String SAmultibox = rootPath + "custom_levels/SAmultibox" + ext;
 }
