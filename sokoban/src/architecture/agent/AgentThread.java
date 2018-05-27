@@ -61,8 +61,8 @@ public class AgentThread implements Runnable {
         try {
             while (!this.levelManager.isLevelSolved()) {
                 while (!this.desires.isEmpty() || this.helpRequestResolver.hasRequestsToProcess()) {
-                    // TODO: could include freshRestart() after X successful actions
-                    if (sentActions == 500)
+                    // Try to re-prioritize every 500 sent actions
+                    if (sentActions % 500 == 0 && sentActions > 0)
                         this.desires = BDIManager.recomputeDesiresForAgent(agent, this.desires);
 
                     // If some previously solved goals are now unsolved (because the box has been cleared), re-enqueue them!
@@ -114,7 +114,7 @@ public class AgentThread implements Runnable {
                         ConsoleLogger.logInfo(LOGGER, e.getMessage());
                         // If goal desire wasn't achieved --> add it back to the heap!
                         if (desire instanceof GoalDesire)
-                            this.desires.enqueue(desire, desireHelper.getCurrentDesirePriority());
+                            this.desires.enqueue(desireHelper.getCurrentDesire(), desireHelper.getCurrentDesirePriority());
                         try {
                             this.lockDetector.detectBlockingObject(e.getFailedAction(), desire);
                         } catch (NoProgressException ex) {
@@ -169,6 +169,9 @@ public class AgentThread implements Runnable {
                 return;
             }
             do {
+                // Break plan execution if the current desire is already achieved (maybe by another agent?)
+                if (this.levelManager.getLevel().isDesireAchieved(this.desireHelper.getCurrentDesire()))
+                    return;
                 if (this.actionHelper.isStuck())
                     throw new InvalidActionException(this.agent.getAgentId(), tasks.peek());
                 this.actionSenderThread.addPrimitiveAction(tasks.peek(), this.agent);
