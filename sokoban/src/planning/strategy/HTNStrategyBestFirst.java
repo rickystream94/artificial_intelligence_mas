@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
-public class StrategyBestFirst extends Strategy {
+public class HTNStrategyBestFirst extends HTNStrategy {
 
     private Comparator<Refinement> refinementComparator;
 
-    public StrategyBestFirst(Comparator<Refinement> refinementComparator, Desire desire) {
+    public HTNStrategyBestFirst(Comparator<Refinement> refinementComparator, Desire desire) {
         super(desire);
         this.refinementComparator = refinementComparator;
     }

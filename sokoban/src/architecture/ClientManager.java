@@ -2,20 +2,16 @@ package architecture;
 
 import architecture.agent.AgentThread;
 import architecture.bdi.BDIManager;
-import architecture.bdi.Desire;
 import architecture.conflicts.GlobalConflictResolver;
 import architecture.fipa.PerformativeManager;
 import architecture.protocol.ActionSenderThread;
 import architecture.protocol.EventBus;
-import board.Agent;
 import board.BoardReader;
 import board.Level;
 import logging.ConsoleLogger;
-import utils.FibonacciHeap;
 
 import java.io.*;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -65,10 +61,10 @@ public class ClientManager {
 
         // Instantiate BDI Manager and computes desires
         this.bdiManager = new BDIManager();
-        Map<Agent, FibonacciHeap<Desire>> desires = this.bdiManager.generateDesires();
+        //Map<Agent, FibonacciHeap<Desire>> desires = this.bdiManager.generateDesires();
 
         // Instantiate agent threads, register them to the EventBus (Publisher) and launch them
-        List<AgentThread> agentThreads = this.levelManager.getLevel().getAgents().stream().map(agent -> new AgentThread(agent, desires.get(agent))).collect(Collectors.toList());
+        List<AgentThread> agentThreads = this.levelManager.getLevel().getAgents().stream().map(AgentThread::new).collect(Collectors.toList());
         agentThreads.forEach(agentThread -> {
             EventBus.getDefault().register(agentThread);
             PerformativeManager.getDefault().register(agentThread);
@@ -86,5 +82,9 @@ public class ClientManager {
 
     public synchronized ActionSenderThread getActionSenderThread() {
         return actionSenderThread;
+    }
+
+    public BDIManager getBdiManager() {
+        return bdiManager;
     }
 }

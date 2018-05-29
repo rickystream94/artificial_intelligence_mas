@@ -1,12 +1,18 @@
 package architecture.bdi;
 
 import architecture.ClientManager;
+import architecture.LevelManager;
+import architecture.search.Node;
+import architecture.search.Search;
 import board.*;
+import exceptions.NoAvailableBoxesException;
+import exceptions.NoAvailableGoalsException;
+import exceptions.NotLowestPriorityGoalException;
 import logging.ConsoleLogger;
-import utils.FibonacciHeap;
 import utils.HashMapHelper;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -14,158 +20,214 @@ public class BDIManager {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(BDIManager.class.getSimpleName());
 
-    public Map<Agent, FibonacciHeap<Desire>> generateDesires() {
-        ConsoleLogger.logInfo(LOGGER, "Generating desires...");
+    private Set<Goal> unsolvedGoals;
+    private Set<Desire> achievedGoalDesires;
+    private Map<Agent, Desire> agentDesireMap;
+    private LevelManager levelManager;
+    private Queue<Goal> globalGoalPriorities;
+    private Map<Agent, Set<Box>> agentBoxesMap;
+    private Map<Agent, Set<Goal>> agentGoalsMap;
+    private Map<Box, Set<Goal>> boxGoalsMap;
 
-        // Step 0: Prepare
-        Map<Agent, FibonacciHeap<Desire>> agentDesiresMap = new HashMap<>();
-        Level level = ClientManager.getInstance().getLevelManager().getLevel();
-        Set<Agent> agents = new HashSet<>(level.getAgents());
-        Set<Goal> goals = new HashSet<>(Level.getGoals());
-        Set<Box> boxes = new HashSet<>(level.getBoxes());
-        List<Desire> desires = new ArrayList<>();
-        agents.forEach(agent -> agentDesiresMap.put(agent, new FibonacciHeap<>()));
-
-        // Step 1: Map each type to the list of boxes/goals belonging to that type
-        Map<Character, List<Box>> boxesPerTypeMap = new HashMap<>();
-        Map<Character, List<Goal>> goalsPerTypeMap = new HashMap<>();
-        for (Box box : boxes) {
-            char boxType = Character.toLowerCase(box.getBoxType());
-            if (!boxesPerTypeMap.containsKey(boxType))
-                boxesPerTypeMap.put(boxType, new ArrayList<>());
-            boxesPerTypeMap.get(boxType).add(box);
-        }
-        for (Goal goal : goals) {
-            char goalType = goal.getGoalType();
-            if (!goalsPerTypeMap.containsKey(goalType))
-                goalsPerTypeMap.put(goalType, new ArrayList<>());
-            goalsPerTypeMap.get(goalType).add(goal);
-        }
-        ConsoleLogger.logInfo(LOGGER, "Step 1: Done mapping boxes and goals to their type");
-
-        // Step 2: Box-Goal assignment --> Which box goes to which goal? --> Output = List of Desires
-        for (Character type : goalsPerTypeMap.keySet()) {
-            // Create a desire for each goal
-            while (!goalsPerTypeMap.get(type).isEmpty()) {
-                Map<Object, Integer> desireCostMap = new HashMap<>();
-                for (Box box : boxesPerTypeMap.get(type)) {
-                    for (Goal goal : goalsPerTypeMap.get(type)) {
-                        int cost = getCostBetweenObjects(box, goal);
-                        cost += getDiscount(goal);
-                        desireCostMap.put(new GoalDesire(box, goal), cost);
-                    }
-                }
-                Desire minCostGoalDesire = (Desire) HashMapHelper.getKeyByMinIntValue(desireCostMap);
-                desires.add(minCostGoalDesire);
-
-                // Remove occurrence of chosen box and goal for the current desire
-                boxesPerTypeMap.get(type).remove(minCostGoalDesire.getBox());
-                goalsPerTypeMap.get(type).remove(((GoalDesire) minCostGoalDesire).getGoal());
-            }
-        }
-        // Testing purposes --> All goals should be assigned to a box (there can be, instead, a box not assigned to any goal)
-        assert goalsPerTypeMap.values().stream().allMatch(List::isEmpty);
-        ConsoleLogger.logInfo(LOGGER, "Step 2: Done creating desires as Box-Goal mappings");
-
-        // Step 3: Create support data structure to keep track of workload of each agent
-        Map<Color, Map<Object, Integer>> workloadOfAgentsByColor = new HashMap<>();
-        for (Color c : agents.stream().map(Agent::getColor).collect(Collectors.toList())) {
-            workloadOfAgentsByColor.put(c, new HashMap<>());
-            agents.stream().filter(agent -> agent.getColor() == c).forEach(agent -> workloadOfAgentsByColor.get(c).put(agent, 0));
-        }
-        ConsoleLogger.logInfo(LOGGER, "Step 3: Done mapping boxes and goals to their type");
-
-        // Step 4: Assign Desires  to agents keeping the workload well spread among them
-        // TODO: desires to be prioritized according to strict order (tunnels or dead-ends)
-        while (!desires.isEmpty()) {
-            Desire currentGoalDesire = desires.remove(0);
-            List<Agent> agentsOfColor = agents.stream().filter(agent -> agent.getColor() == currentGoalDesire.getBox().getColor()).collect(Collectors.toList());
-            Map<Object, Integer> desireCostByAgent = new HashMap<>(); // Each agent's cost to reach the desire's box
-            agentsOfColor.forEach(agent -> desireCostByAgent.put(agent, getCostBetweenObjects(agent, currentGoalDesire.getBox()) + getDiscount(((GoalDesire) currentGoalDesire).getGoal())));
-            Agent chosenAgent = (Agent) HashMapHelper.getKeyByMinIntValue(desireCostByAgent);
-
-            // Check if current workload of chosen agent is above the minimum
-            Map<Object, Integer> agentsWorkload = workloadOfAgentsByColor.get(currentGoalDesire.getBox().getColor());
-            if (agentsWorkload.get(chosenAgent) > agentsWorkload.values().stream().min(Integer::compareTo).get()) {
-                // GoalDesire is assigned to the agent with the lowest workload
-                chosenAgent = (Agent) HashMapHelper.getKeyByMinIntValue(agentsWorkload);
-            }
-
-            // Increment workload of chosen agent
-            agentsWorkload.put(chosenAgent, agentsWorkload.get(chosenAgent) + 1);
-
-            // Assign desire to chosen agent
-            agentDesiresMap.get(chosenAgent).enqueue(currentGoalDesire, (double) desireCostByAgent.get(chosenAgent));
-        }
-        ConsoleLogger.logInfo(LOGGER, "Step 4: Done (semi-optimally) assigning desires to agents");
-
-        return agentDesiresMap;
+    public BDIManager() {
+        this.unsolvedGoals = ConcurrentHashMap.newKeySet();
+        this.unsolvedGoals.addAll(Level.getGoals());
+        this.achievedGoalDesires = ConcurrentHashMap.newKeySet();
+        this.agentDesireMap = new ConcurrentHashMap<>();
+        this.levelManager = ClientManager.getInstance().getLevelManager();
+        this.globalGoalPriorities = new PriorityQueue<>(new GoalComparator());
+        preProcessing();
+        computeGoalPriorities();
     }
 
-    private static int getDiscount(SokobanObject object) {
-        int discount = 0, consecutiveWalls = 0;
-        for (Coordinate coordinate : object.getCoordinate().getClockwiseNeighbours()) {
-            if (!Level.isNotWall(coordinate)) {
-                // It's a wall
-                discount -= 10;
-                consecutiveWalls++;
-            } else
-                consecutiveWalls = 0;
-            if (Level.isGoalCell(coordinate))
-                discount -= 10;
-            if (consecutiveWalls > 1) {
-                // Additional discount for consecutive walls
-                discount -= 10;
-            }
+    private void preProcessing() {
+        List<Agent> allAgents = this.levelManager.getLevel().getAgents();
+        List<Box> allBoxes = this.levelManager.getLevel().getBoxes();
+        List<Goal> allGoals = Level.getGoals();
+
+        // Compute Agent -> Movable Boxes mapping
+        this.agentBoxesMap = new ConcurrentHashMap<>();
+        for (Agent agent : allAgents) {
+            Set<Box> movableBoxesForAgent = allBoxes.stream()
+                    .filter(box -> box.getColor() == agent.getColor()).collect(Collectors.toSet());
+            this.agentBoxesMap.put(agent, movableBoxesForAgent);
         }
-        return discount;
+
+        // Compute Agent -> Solvable Goals mapping
+        this.agentGoalsMap = new ConcurrentHashMap<>();
+        for (Agent agent : allAgents) {
+            Set<Goal> solvableGoals = allGoals.stream().filter(goal -> this.agentBoxesMap.get(agent).stream().anyMatch(box -> Character.toLowerCase(box.getBoxType()) == goal.getGoalType())).collect(Collectors.toSet());
+            this.agentGoalsMap.put(agent, solvableGoals);
+        }
+
+        // Compute Box -> Solvable Goals mapping
+        this.boxGoalsMap = new ConcurrentHashMap<>();
+        for (Box box : allBoxes) {
+            Set<Goal> solvableGoals = allGoals.stream().filter(goal -> Character.toLowerCase(box.getBoxType()) == goal.getGoalType()).collect(Collectors.toSet());
+            this.boxGoalsMap.put(box, solvableGoals);
+        }
+    }
+
+    private void computeGoalPriorities() {
+        // For each goal, start the A* search from the empty cell to the goal
+        // Then count how many goals I have to pass through and use -(this number) as priority
+        for (Goal goal : Level.getGoals()) {
+            ConsoleLogger.logInfo(LOGGER, String.format("Computing priority for goal %s...", goal));
+            // Start position for the search is the closest empty cell
+            Set<Coordinate> emptyCells = levelManager.getLevel().getEmptyCellsPositions().stream().map(Coordinate::new).collect(Collectors.toSet());
+            emptyCells.removeAll(Level.getGoals().stream().map(g -> new Coordinate(g.getCoordinate())).collect(Collectors.toSet()));
+            emptyCells.addAll(levelManager.getLevel().getAgents().stream().map(a -> new Coordinate(a.getCoordinate())).collect(Collectors.toSet()));
+            Map<Object, Integer> distances = new HashMap<>();
+            emptyCells.forEach(c -> distances.put(c, Coordinate.manhattanDistance(goal.getCoordinate(), c)));
+            Coordinate startPosition = (Coordinate) HashMapHelper.getKeyByMinIntValue(distances);
+            Search search = new Search(startPosition, goal);
+            Deque<Node> plan = search.search();
+            int priority = countTraversedGoals(plan);
+            goal.setPriority(priority);
+            this.globalGoalPriorities.add(goal);
+            ConsoleLogger.logInfo(LOGGER, String.format("Priority: %d ", priority));
+        }
+    }
+
+    private int countTraversedGoals(Deque<Node> plan) {
+        int traversedGoals = 0;
+        while (!plan.isEmpty()) {
+            Node n = plan.pop();
+            if (Level.isGoalCell(n.getPosition()))
+                traversedGoals++;
+        }
+        return traversedGoals;
     }
 
     private static int getCostBetweenObjects(SokobanObject o1, SokobanObject o2) {
         return Coordinate.manhattanDistance(o1.getCoordinate(), o2.getCoordinate());
     }
 
-    public static FibonacciHeap<Desire> recomputeDesiresForAgent(Agent agent, FibonacciHeap<Desire> desires) {
-        int oldNumberOfDesires = desires.size();
+    public synchronized Desire getNextGoalDesireForAgent(Agent agent) throws NoAvailableBoxesException, NotLowestPriorityGoalException, NoAvailableGoalsException {
+        // Get all the goals that can be solved by this agent (that are not solved yet)
+        Set<Goal> solvableGoals = getUnsolvedGoalsForAgent(agent);
 
-        // 1) Remove all ClearPathDesires
-        List<Desire> goalDesires = new ArrayList<>();
-        while (!desires.isEmpty()) {
-            FibonacciHeap.Entry<Desire> entry = desires.dequeueMin();
-            if (entry.getValue() instanceof GoalDesire)
-                goalDesires.add(entry.getValue());
-        }
+        // Copy goal priorities into temp array (to preserve the priority queue)
+        Goal[] goalsByPriority = this.globalGoalPriorities.toArray(new Goal[0]);
+        Arrays.sort(goalsByPriority, new GoalComparator());
 
-        // 2) Re-create goal desires
-        List<Box> boxes = goalDesires.stream().map(Desire::getBox).collect(Collectors.toList());
-        List<Goal> goals = goalDesires.stream().map(d -> ((GoalDesire) d).getGoal()).collect(Collectors.toList());
-        assert goals.size() == boxes.size();
-        List<Desire> newDesires = new ArrayList<>();
-        while (!goals.isEmpty()) {
-            Map<Object, Integer> desireCostMap = new HashMap<>();
-            for (Box box : boxes) {
-                for (Goal goal : goals) {
-                    if (Character.toLowerCase(box.getBoxType()) == goal.getGoalType()) {
-                        int cost = getCostBetweenObjects(box, goal);
-                        cost += getDiscount(goal);
-                        desireCostMap.put(new GoalDesire(box, goal), cost);
-                    }
-                }
+        // First iteration: get the priority of the first goal the agent could solve
+        List<Goal> unsolvedGoalsWithLowerPriority = new ArrayList<>();
+        int goalPriorityThreshold = 0;
+        for (Goal goal : goalsByPriority) {
+            if (solvableGoals.contains(goal)) {
+                goalPriorityThreshold = goal.getPriority();
+                break;
             }
-            Desire minCostGoalDesire = (Desire) HashMapHelper.getKeyByMinIntValue(desireCostMap);
-            newDesires.add(minCostGoalDesire);
-            goals.remove(((GoalDesire) minCostGoalDesire).getGoal());
-            boxes.remove(minCostGoalDesire.getBox());
+            if (this.unsolvedGoals.contains(goal))
+                unsolvedGoalsWithLowerPriority.add(goal);
         }
+        final int finalThreshold = goalPriorityThreshold;
 
-        // Re-prioritize goal desires
-        for (Desire goalDesire : newDesires) {
-            int priority = getCostBetweenObjects(agent, goalDesire.getBox()) + getDiscount(((GoalDesire) goalDesire).getGoal());
-            desires.enqueue(goalDesire, priority);
+        // Second iteration: get all the goals with priority equal to the one found above
+        List<Goal> goalsForAgentWithSamePriority = new ArrayList<>();
+        Arrays.stream(goalsByPriority)
+                .filter(goal -> goal.getPriority() == finalThreshold && solvableGoals.contains(goal))
+                .forEach(goalsForAgentWithSamePriority::add);
+
+        // Compute cost to achieve goal and choose the best one
+        // Prefer goals at edge cells and close to solved goals and closest to the agent
+        Map<Object, Integer> goalDistanceMap = new HashMap<>();
+        goalsForAgentWithSamePriority.stream()
+                .filter(goal -> !this.levelManager.getLevel().isGoalSolved(goal))
+                .forEach(goal -> {
+                    int cost = 0;
+                    cost += getCostBetweenObjects(agent, goal);
+                    if (Coordinate.isEdgeCell(goal.getCoordinate(), false))
+                        cost -= 100;
+                    List<Coordinate> neighbours = goal.getCoordinate().getClockwiseNeighbours();
+                    for (Coordinate c : neighbours) {
+                        if (!Level.isNotWall(c))
+                            cost -= 100;
+                        Goal neighbourGoal = Level.goalAt(c);
+                        if (neighbourGoal != null && this.levelManager.getLevel().isGoalSolved(neighbourGoal))
+                            cost -= 100;
+                    }
+                    goalDistanceMap.put(goal, cost);
+                });
+        Goal chosenGoal = (Goal) (HashMapHelper.getKeyByMinIntValue(goalDistanceMap));
+        if (chosenGoal == null)
+            throw new NoAvailableGoalsException(agent);
+
+        // Get all boxes that satisfy the following requirements:
+        // 1) Can be moved by the agent;
+        // 2) Have not been assigned to another agent yet
+        // 3) Are not currently solving a goal
+        // 4) Closest box that can achieve the goal chosen above
+        Set<Box> movableBoxes = this.agentBoxesMap.get(agent).stream() // (1)
+                .filter(box -> this.agentDesireMap.values().stream().noneMatch(d -> d.getBox() != null && d.getBox().equals(box)) && // (2)
+                        this.achievedGoalDesires.stream().noneMatch(desire -> desire.getBox().equals(box)) && // (3)
+                        Character.toLowerCase(box.getBoxType()) == chosenGoal.getGoalType()) // (4.1)
+                .collect(Collectors.toSet());
+        if (movableBoxes.size() == 0)
+            throw new NoAvailableBoxesException(agent); // No available boxes for the agent, will wait and send NoOps
+        Map<Object, Integer> boxDistanceMap = new HashMap<>();
+        movableBoxes.forEach(box -> boxDistanceMap.put(box, getCostBetweenObjects(agent, box)));
+        Box chosenBox = (Box) (HashMapHelper.getKeyByMinIntValue(boxDistanceMap));
+        assert chosenBox != null;
+
+        // If there are unsolved goals with lower priority, agent has to wait until they're solved
+        if (unsolvedGoalsWithLowerPriority.size() > 0) {
+            throw new NotLowestPriorityGoalException(agent, chosenGoal);
         }
-        assert desires.size() == oldNumberOfDesires;
+        return new GoalDesire(chosenBox, chosenGoal);
+    }
 
-        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Done cleaning up and re-prioritizing desires.", agent.getAgentId()));
-        return desires;
+    public void solvedGoal(Agent agent, Desire desire) {
+        Goal goal = Level.goalAt(desire.getTarget());
+        this.unsolvedGoals.remove(goal);
+        this.achievedGoalDesires.add(desire);
+        if (this.agentDesireMap.containsKey(agent) && this.agentDesireMap.get(agent).equals(desire))
+            resetAgentDesire(agent);
+    }
+
+    public void agentCommitsToDesire(Agent agent, Desire desire) {
+        this.agentDesireMap.put(agent, desire);
+    }
+
+    public void resetAgentDesire(Agent agent) {
+        this.agentDesireMap.remove(agent);
+    }
+
+    public synchronized void checkIfSolvedGoalsAreStillSolved() {
+        Iterator<Desire> it = this.achievedGoalDesires.iterator();
+        while (it.hasNext()) {
+            Desire desire = it.next();
+            Goal goal = Level.goalAt(desire.getTarget());
+            if (!this.levelManager.getLevel().isGoalSolved(goal)) {
+                ConsoleLogger.logInfo(LOGGER, String.format("%s has to be achieved again!", goal));
+                unsolvedGoals.add(goal);
+                it.remove();
+            }
+        }
+    }
+
+    public synchronized boolean canSolveGoalWithNoPriorityConflicts(Box box) {
+        Set<Goal> solvableGoals = getUnsolvedGoalsForBox(box);
+        Goal[] goalsByPriority = this.globalGoalPriorities.toArray(new Goal[0]);
+        Arrays.sort(goalsByPriority, new GoalComparator());
+
+        // If there is at least one unsolved goal that has lower priority, this box can't be moved to its goal
+        int goalsWithLowerPriority = 0;
+        for (Goal goal : goalsByPriority) {
+            if (solvableGoals.contains(goal))
+                break;
+            if (unsolvedGoals.contains(goal))
+                goalsWithLowerPriority++;
+        }
+        return goalsWithLowerPriority == 0;
+    }
+
+    public Set<Goal> getUnsolvedGoalsForAgent(Agent agent) {
+        return this.agentGoalsMap.get(agent).stream().filter(goal -> unsolvedGoals.contains(goal)).collect(Collectors.toSet());
+    }
+
+    public Set<Goal> getUnsolvedGoalsForBox(Box box) {
+        return this.boxGoalsMap.get(box).stream().filter(goal -> unsolvedGoals.contains(goal)).collect(Collectors.toSet());
     }
 }

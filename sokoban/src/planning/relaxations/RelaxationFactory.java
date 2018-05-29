@@ -10,7 +10,6 @@ public class RelaxationFactory {
 
     private static final Logger LOGGER = ConsoleLogger.getLogger(RelaxationFactory.class.getSimpleName());
 
-    // TODO: this is not beautiful, it can be improved
     public static Relaxation getBestPlanningRelaxation(Agent agent, int planFailureCounter) {
         if (ClientManager.getInstance().getNumberOfAgents() == 1) {
             // Single-Agent

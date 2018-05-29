@@ -49,6 +49,7 @@ public class LevelChooser {
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
 
     // Competition levels
+    public static final String SAAiAiCap = competitionPath + "SAAiAiCap" + ext;
     public static final String MAAlphaOne = competitionPath + "MAAlphaOne" + ext;
     public static final String MABeTrayEd = competitionPath + "MABeTrayEd" + ext;
     public static final String MADaVinci = competitionPath + "MADaVinci" + ext;
@@ -81,7 +82,7 @@ public class LevelChooser {
     // Custom made levels
     public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
     public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
-    public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
     public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
     public static final String SAmultibox = rootPath + "custom_levels/SAmultibox" + ext;
+    public static final String MApriority = rootPath + "custom_levels/MApriority" + ext;
 }

@@ -2,13 +2,11 @@ package architecture.agent;
 
 import architecture.ClientManager;
 import architecture.LevelManager;
+import architecture.bdi.BDIManager;
 import architecture.bdi.ClearBoxDesire;
 import architecture.bdi.ClearCellDesire;
 import architecture.bdi.Desire;
-import board.Agent;
-import board.Box;
-import board.Coordinate;
-import board.SokobanObject;
+import board.*;
 import exceptions.NoAvailableTargetsException;
 import exceptions.NoProgressException;
 import exceptions.StuckByAgentException;
@@ -34,6 +32,8 @@ public class LockDetector {
     private Map<SokobanObject, Integer> objectClearingDistanceMap;
     private Map<SokobanObject, Set<Coordinate>> chosenTargetsForObjectToClear;
     private Deque<SokobanObject> blockingObjects;
+    private Set<SokobanObject> falsePositivesBlockingObjects;
+    private BDIManager bdiManager;
 
     public LockDetector(Agent agent) {
         this.agent = agent;
@@ -42,6 +42,8 @@ public class LockDetector {
         this.objectClearingDistanceMap = new HashMap<>();
         this.chosenTargetsForObjectToClear = new HashMap<>();
         this.blockingObjects = new ArrayDeque<>();
+        this.falsePositivesBlockingObjects = new HashSet<>();
+        this.bdiManager = ClientManager.getInstance().getBdiManager();
     }
 
     protected int getClearingDistance(SokobanObject object) {
@@ -87,9 +89,23 @@ public class LockDetector {
         } else if (blockingObject instanceof Box) {
             Box blockingBox = (Box) blockingObject;
             if (blockingBox.getColor() == this.agent.getColor()) {
-                // Blocking box is of the same color --> Clear the box
-                noProgress();
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found blocking box %s", this.agent.getAgentId(), blockingBox));
+                // Blocking box is of the same color
+                // Prefer moving this box to a goal instead of clearing it
+                if (this.bdiManager.canSolveGoalWithNoPriorityConflicts(blockingBox)) {
+                    Set<Goal> goalsForBlockingBox = this.bdiManager.getUnsolvedGoalsForBox(blockingBox);
+                    if (goalsForBlockingBox.size() > 0 && !this.falsePositivesBlockingObjects.contains(blockingBox)) {
+                        ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: box %s can be moved to a goal", this.agent.getAgentId(), blockingBox));
+                        this.falsePositivesBlockingObjects.add(blockingBox);
+                        return;
+                    }
+                }
+
+                // Eventually remove false positive
+                this.falsePositivesBlockingObjects.remove(blockingBox);
+
+                // Clear the box
+                noProgress();
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: %d failed actions since last successful progress", this.agent.getAgentId(), this.noProgressCounter));
                 if (needsToReprioritizeDesires())
                     throw new NoProgressException(agent);
@@ -101,6 +117,10 @@ public class LockDetector {
                 throw new StuckByForeignBoxException(agent, blockingBox);
             }
         }
+    }
+
+    public void clearFalsePositiveBlockingObjects() {
+        this.falsePositivesBlockingObjects.clear();
     }
 
     public Desire getDesireFromBlockingObject(SokobanObject blockingObject) throws NoAvailableTargetsException {
@@ -288,7 +308,7 @@ public class LockDetector {
 
     private Set<Coordinate> getEmptyEdgeCells() {
         Set<Coordinate> emptyCells = levelManager.getLevel().getEmptyCellsPositions();
-        return emptyCells.stream().filter(Coordinate::isEdgeCell).collect(Collectors.toSet());
+        return emptyCells.stream().filter(c -> Coordinate.isEdgeCell(c, true)).collect(Collectors.toSet());
     }
 
     public void progressPerformed() {

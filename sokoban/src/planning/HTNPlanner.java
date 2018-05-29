@@ -5,8 +5,8 @@ import exceptions.NoValidRefinementsException;
 import exceptions.PlanNotFoundException;
 import logging.ConsoleLogger;
 import planning.actions.*;
-import planning.strategy.Strategy;
-import planning.strategy.StrategyBestFirst;
+import planning.strategy.HTNStrategy;
+import planning.strategy.HTNStrategyBestFirst;
 import utils.Memory;
 
 import java.util.ArrayDeque;
@@ -22,13 +22,13 @@ public class HTNPlanner {
     private Deque<HTNDecompositionRecord> decompositionHistory;
     private PrimitivePlan finalPlan;
     private int planningStep;
-    private Strategy strategy;
+    private HTNStrategy strategy;
     private int planFailureCounter;
 
     public HTNPlanner(HTNWorldState currentWorldState, Desire desire) {
         this.currentWorldState = currentWorldState;
         this.decompositionHistory = new ArrayDeque<>();
-        this.strategy = new StrategyBestFirst(new RefinementComparator(currentWorldState), desire);
+        this.strategy = new HTNStrategyBestFirst(new RefinementComparator(currentWorldState), desire);
     }
 
     /**

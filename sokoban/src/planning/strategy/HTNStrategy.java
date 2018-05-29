@@ -8,14 +8,14 @@ import planning.actions.Task;
 
 import java.util.*;
 
-public abstract class Strategy {
+public abstract class HTNStrategy {
 
     private Set<HTNWorldState> exploredStatesSet;
     private Deque<Task> tasksToProcess;
     protected Set<Refinement> refinementsBlacklist;
     protected Desire desire;
 
-    public Strategy(Desire desire) {
+    public HTNStrategy(Desire desire) {
         this.exploredStatesSet = new HashSet<>();
         this.tasksToProcess = new ArrayDeque<>();
         this.desire = desire;
