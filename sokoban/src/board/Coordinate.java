@@ -64,8 +64,8 @@ public class Coordinate {
      * @param coordinate cell to be examined
      * @return true if edge cell, false otherwise
      */
-    public static boolean isEdgeCell(Coordinate coordinate) {
-        if (Level.isGoalCell(coordinate))
+    public static boolean isEdgeCell(Coordinate coordinate, boolean excludeGoals) {
+        if (excludeGoals && Level.isGoalCell(coordinate))
             return false;
         List<Coordinate> neighbours = coordinate.getClockwiseNeighbours();
         Level level = ClientManager.getInstance().getLevelManager().getLevel();

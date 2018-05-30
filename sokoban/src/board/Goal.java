@@ -5,6 +5,7 @@ import java.util.Objects;
 public class Goal extends SokobanObject {
 
     private char goalType;
+    private int priority;
 
     public Goal(int row, int col, char goalType) {
         super(row, col);
@@ -44,5 +45,13 @@ public class Goal extends SokobanObject {
         return "Goal{" + super.toString() +
                 ", goalType=" + goalType + ", " + this.getCoordinate() +
                 '}';
+    }
+
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 }

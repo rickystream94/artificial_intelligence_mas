@@ -4,10 +4,9 @@ public class LevelChooser {
 
     private static final String rootPath = "../../../environment/levels/";
     private static final String ext = ".lvl";
-    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
-    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
-    public static final String SAHanoi = rootPath + "custom_levels/SAHanoi" + ext;
-    public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
+    public static final String competitionPath = rootPath + "competition_levels/";
+
+    // Example levels
     public static final String SAchoice = rootPath + "SAchoice" + ext;
     public static final String SAanagram = rootPath + "SAanagram" + ext;
     public static final String SApushing = rootPath + "SApushing" + ext;
@@ -48,4 +47,42 @@ public class LevelChooser {
     public static final String SAgroup42 = rootPath + "example_levels/single_agent/easy/SAgroup42" + ext;
     public static final String SARyther = rootPath + "example_levels/single_agent/easy/SARyther" + ext;
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
+
+    // Competition levels
+    public static final String SAAiAiCap = competitionPath + "SAAiAiCap" + ext;
+    public static final String MAAlphaOne = competitionPath + "MAAlphaOne" + ext;
+    public static final String MABeTrayEd = competitionPath + "MABeTrayEd" + ext;
+    public static final String MADaVinci = competitionPath + "MADaVinci" + ext;
+    public static final String MAKarlMarx = competitionPath + "MAKarlMarx" + ext;
+    public static final String MAAIFather = competitionPath + "MAAIFather" + ext;
+    public static final String MACybot = competitionPath + "MACybot" + ext;
+    public static final String MANavy = competitionPath + "MANavy" + ext;
+    public static final String MAJMAI = competitionPath + "MAJMAI" + ext;
+    public static final String MAPushPush = competitionPath + "MAPushPush" + ext;
+    public static final String MAZEROagent = competitionPath + "MAZEROagent" + ext;
+    public static final String MAora = competitionPath + "MAora" + ext;
+    public static final String MAAntsStar = competitionPath + "MAAntsStar" + ext;
+    public static final String MALobot = competitionPath + "MALobot" + ext;
+    public static final String SABeTrayEd = competitionPath + "SABeTrayEd" + ext;
+    public static final String MAAiMasTers = competitionPath + "MAAiMasTers" + ext;
+    public static final String SADaVinci = competitionPath + "SADaVinci" + ext;
+    public static final String MAbongu = competitionPath + "MAbongu" + ext;
+    public static final String SAAlphaOne = competitionPath + "SAAlphaOne" + ext;
+    public static final String SAAIFather = competitionPath + "SAAIFather" + ext;
+    public static final String SANikrima = competitionPath + "SANikrima" + ext;
+    public static final String SAAiMasTers = competitionPath + "SAAiMasTers" + ext;
+    public static final String MAdashen = competitionPath + "MAdashen" + ext;
+    public static final String SAKaldi = competitionPath + "SAKaldi" + ext;
+    public static final String SAdashen = competitionPath + "SAdashen" + ext;
+    public static final String SAKarlMarx = competitionPath + "SAKarlMarx" + ext;
+    public static final String SAEasyPeasy = competitionPath + "SAEasyPeasy" + ext;
+    public static final String SANavy = competitionPath + "SANavy" + ext;
+    public static final String SAPushPush = competitionPath + "SAPushPush" + ext;
+
+    // Custom made levels
+    public static final String SAPyramid = rootPath + "custom_levels/SAPyramid" + ext;
+    public static final String SAPikachu = rootPath + "custom_levels/SAPikachu" + ext;
+    public static final String MAHanoi = rootPath + "custom_levels/MAHanoi" + ext;
+    public static final String SAmultibox = rootPath + "custom_levels/SAmultibox" + ext;
+    public static final String MApriority = rootPath + "custom_levels/MApriority" + ext;
 }

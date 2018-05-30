@@ -1,6 +1,7 @@
 package planning.actions;
 
 import board.Coordinate;
+import board.Level;
 import planning.HTNWorldState;
 
 import java.util.Objects;
@@ -91,11 +92,14 @@ public class PrimitiveTask implements Task<PrimitiveTaskType> {
         worldState.applyEffect(getEffect(worldState.getAgentPosition(), worldState.getBoxPosition()));
 
         // Manhattan Distance from box to goal and from agent to box
+        // Agent and box should prefer staying close to walls
         if (worldState.getBoxPosition() != null) {
             cost += Coordinate.manhattanDistance(worldState.getBoxPosition(), worldState.getTarget());
             cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getBoxPosition());
+            cost -= worldState.getBoxPosition().getClockwiseNeighbours().stream().filter(n -> !Level.isNotWall(n)).count();
         } else
             cost += Coordinate.manhattanDistance(worldState.getAgentPosition(), worldState.getTarget());
+        cost -= worldState.getAgentPosition().getClockwiseNeighbours().stream().filter(n -> !Level.isNotWall(n)).count();
         return cost;
     }
 
