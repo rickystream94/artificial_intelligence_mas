@@ -49,6 +49,29 @@ public class LevelChooser {
     public static final String SAsampdoria = rootPath + "example_levels/single_agent/easy/SAsampdoria" + ext;
 
     // Competition levels
+    public static final String SAbongu = competitionPath + "SAbongu" + ext;
+    public static final String SAZEROagent = competitionPath + "SAZEROagent" + ext;
+    public static final String MAAiAiCap = competitionPath + "MAAiAiCap" + ext;
+    public static final String SAMagicians = competitionPath + "SAMagicians" + ext;
+    public static final String MAKJFWAOL = competitionPath + "MAKJFWAOL" + ext;
+    public static final String MAKaldi = competitionPath + "MAKaldi" + ext;
+    public static final String MANotHard = competitionPath + "MANotHard" + ext;
+    public static final String SABahaMAS = competitionPath + "SABahaMAS" + ext;
+    public static final String MAGreenDots = competitionPath + "MAGreenDots" + ext;
+    public static final String SACybot = competitionPath + "SACybot" + ext;
+    public static final String MAEasyPeasy = competitionPath + "MAEasyPeasy" + ext;
+    public static final String SANotHard = competitionPath + "SANotHard" + ext;
+    public static final String MAMagicians = competitionPath + "MAMagicians" + ext;
+    public static final String MANikrima = competitionPath + "MANikrima" + ext;
+    public static final String SAora = competitionPath + "SAora" + ext;
+    public static final String SAKJFWAOL = competitionPath + "SAKJFWAOL" + ext;
+    public static final String SAJMAI = competitionPath + "SAJMAI" + ext;
+    public static final String MAbAnAnA = competitionPath + "MAbAnAnA" + ext;
+    public static final String SAGreenDots = competitionPath + "SAGreenDots" + ext;
+    public static final String SAbAnAnA = competitionPath + "SAbAnAnA" + ext;
+    public static final String MABahamas = competitionPath + "MABahaMAS" + ext;
+    public static final String SAAntsStar = competitionPath + "SAAntsStar" + ext;
+    public static final String SALobot = competitionPath + "SALobot" + ext;
     public static final String SAAiAiCap = competitionPath + "SAAiAiCap" + ext;
     public static final String MAAlphaOne = competitionPath + "MAAlphaOne" + ext;
     public static final String MABeTrayEd = competitionPath + "MABeTrayEd" + ext;

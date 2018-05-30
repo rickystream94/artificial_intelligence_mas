@@ -83,6 +83,14 @@ public class BDIManager {
             Search search = new Search(startPosition, goal);
             Deque<Node> plan = search.search();
             int priority = countTraversedGoals(plan);
+            List<Coordinate> neighbours = goal.getCoordinate().getClockwiseNeighbours();
+            int walls = 0;
+            for (Coordinate c : neighbours) {
+                if (!Level.isNotWall(c))
+                    walls++;
+            }
+            if (walls == 3)
+                priority += 100;
             goal.setPriority(priority);
             this.globalGoalPriorities.add(goal);
             ConsoleLogger.logInfo(LOGGER, String.format("Priority: %d ", priority));
