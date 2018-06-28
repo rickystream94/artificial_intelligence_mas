@@ -92,9 +92,9 @@ public class LockDetector {
                 ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: Found blocking box %s", this.agent.getAgentId(), blockingBox));
                 // Blocking box is of the same color
                 // Prefer moving this box to a goal instead of clearing it
-                if (this.bdiManager.canSolveGoalWithNoPriorityConflicts(blockingBox)) {
+                if (this.bdiManager.canSolveGoalWithNoPriorityConflicts(blockingBox) && !this.falsePositivesBlockingObjects.contains(blockingBox)) {
                     Set<Goal> goalsForBlockingBox = this.bdiManager.getUnsolvedGoalsForBox(blockingBox);
-                    if (goalsForBlockingBox.size() > 0 && !this.falsePositivesBlockingObjects.contains(blockingBox)) {
+                    if (goalsForBlockingBox.size() > 0) {
                         ConsoleLogger.logInfo(LOGGER, String.format("Agent %c: box %s can be moved to a goal", this.agent.getAgentId(), blockingBox));
                         this.falsePositivesBlockingObjects.add(blockingBox);
                         return;
